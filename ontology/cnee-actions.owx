@@ -1,0 +1,566 @@
+<?xml version="1.0"?>
+<Ontology xmlns="http://www.w3.org/2002/07/owl#"
+     xml:base="http://www.semanticweb.org/patryk/ontologies/2026/4/cnee-actions"
+     xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+     xmlns:xml="http://www.w3.org/XML/1998/namespace"
+     xmlns:xsd="http://www.w3.org/2001/XMLSchema#"
+     xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
+     ontologyIRI="http://www.semanticweb.org/patryk/ontologies/2026/4/cnee-actions">
+    <Prefix name="" IRI="http://www.semanticweb.org/patryk/ontologies/2026/4/cnee-actions/"/>
+    <Prefix name="owl" IRI="http://www.w3.org/2002/07/owl#"/>
+    <Prefix name="rdf" IRI="http://www.w3.org/1999/02/22-rdf-syntax-ns#"/>
+    <Prefix name="xml" IRI="http://www.w3.org/XML/1998/namespace"/>
+    <Prefix name="xsd" IRI="http://www.w3.org/2001/XMLSchema#"/>
+    <Prefix name="rdfs" IRI="http://www.w3.org/2000/01/rdf-schema#"/>
+    <Annotation>
+        <AnnotationProperty abbreviatedIRI="rdfs:comment"/>
+        <Literal>Ontology about knowledge representation of actions used in Cloud Native Execution Enviroment by autonomic computing components</Literal>
+    </Annotation>
+    <Declaration>
+        <Class IRI="#AutonomicAction"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="#CircuitBreakAction"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="#ComplexWorkflow"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="#ConfigurationAction"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="#EvacuateAction"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="#ExecutionCondition"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="#ExecutionCost"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="#FunctionalIntent"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="#HorizontalScalingAction"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="#LayerBoundary"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="#LifecycleControlAction"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="#MetricBasedCondition"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="#MigrateAction"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="#MobilityAction"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="#PatchAction"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="#RestartAction"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="#RollbackAction"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="#ScalingAction"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="#SecurityPolicyCondition"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="#SimpleAction"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="#StartAction"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="#StateBasedCondition"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="#StopAction"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="#TargetResource"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="#TemporalCondition"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="#TerminateAction"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="#TrafficDrainingAction"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="#TrafficMirroringAction"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="#TrafficRoutingAction"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="#UpdateAction"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="#VerticalScalingAction"/>
+    </Declaration>
+    <Declaration>
+        <ObjectProperty IRI="#dependsOn"/>
+    </Declaration>
+    <Declaration>
+        <ObjectProperty IRI="#hasCompensation"/>
+    </Declaration>
+    <Declaration>
+        <ObjectProperty IRI="#hasCondition"/>
+    </Declaration>
+    <Declaration>
+        <ObjectProperty IRI="#hasExecutionCost"/>
+    </Declaration>
+    <Declaration>
+        <ObjectProperty IRI="#hasFunctionalIntent"/>
+    </Declaration>
+    <Declaration>
+        <ObjectProperty IRI="#hasLayerBoundary"/>
+    </Declaration>
+    <Declaration>
+        <ObjectProperty IRI="#hasPostCondition"/>
+    </Declaration>
+    <Declaration>
+        <ObjectProperty IRI="#hasPreCondition"/>
+    </Declaration>
+    <Declaration>
+        <ObjectProperty IRI="#isDecomposedInto"/>
+    </Declaration>
+    <Declaration>
+        <ObjectProperty IRI="#targetsEntity"/>
+    </Declaration>
+    <Declaration>
+        <DataProperty IRI="#costValue"/>
+    </Declaration>
+    <Declaration>
+        <DataProperty IRI="#hasActionID"/>
+    </Declaration>
+    <Declaration>
+        <DataProperty IRI="#isIdempotent"/>
+    </Declaration>
+    <Declaration>
+        <DataProperty IRI="#maxRetries"/>
+    </Declaration>
+    <Declaration>
+        <DataProperty IRI="#policyQueryString"/>
+    </Declaration>
+    <Declaration>
+        <DataProperty IRI="#timeoutSeconds"/>
+    </Declaration>
+    <SubClassOf>
+        <Class IRI="#AutonomicAction"/>
+        <ObjectSomeValuesFrom>
+            <ObjectProperty IRI="#targetsEntity"/>
+            <Class IRI="#TargetResource"/>
+        </ObjectSomeValuesFrom>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="#AutonomicAction"/>
+        <ObjectMinCardinality cardinality="1">
+            <ObjectProperty IRI="#hasPreCondition"/>
+            <Class IRI="#ExecutionCondition"/>
+        </ObjectMinCardinality>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="#AutonomicAction"/>
+        <ObjectExactCardinality cardinality="1">
+            <ObjectProperty IRI="#hasExecutionCost"/>
+            <Class IRI="#ExecutionCost"/>
+        </ObjectExactCardinality>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="#AutonomicAction"/>
+        <ObjectExactCardinality cardinality="1">
+            <ObjectProperty IRI="#hasLayerBoundary"/>
+            <Class IRI="#LayerBoundary"/>
+        </ObjectExactCardinality>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="#AutonomicAction"/>
+        <DataExactCardinality cardinality="1">
+            <DataProperty IRI="#hasActionID"/>
+            <Datatype abbreviatedIRI="xsd:string"/>
+        </DataExactCardinality>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="#AutonomicAction"/>
+        <DataExactCardinality cardinality="1">
+            <DataProperty IRI="#timeoutSeconds"/>
+            <Datatype abbreviatedIRI="xsd:int"/>
+        </DataExactCardinality>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="#CircuitBreakAction"/>
+        <Class IRI="#TrafficRoutingAction"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="#ComplexWorkflow"/>
+        <Class IRI="#AutonomicAction"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="#ComplexWorkflow"/>
+        <ObjectMinCardinality cardinality="1">
+            <ObjectProperty IRI="#isDecomposedInto"/>
+            <Class IRI="#AutonomicAction"/>
+        </ObjectMinCardinality>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="#ConfigurationAction"/>
+        <Class IRI="#FunctionalIntent"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="#EvacuateAction"/>
+        <Class IRI="#MobilityAction"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="#ExecutionCondition"/>
+        <DataExactCardinality cardinality="1">
+            <DataProperty IRI="#policyQueryString"/>
+            <Datatype abbreviatedIRI="xsd:string"/>
+        </DataExactCardinality>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="#ExecutionCost"/>
+        <DataExactCardinality cardinality="1">
+            <DataProperty IRI="#costValue"/>
+            <Datatype abbreviatedIRI="xsd:float"/>
+        </DataExactCardinality>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="#HorizontalScalingAction"/>
+        <Class IRI="#ScalingAction"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="#LifecycleControlAction"/>
+        <Class IRI="#FunctionalIntent"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="#MetricBasedCondition"/>
+        <Class IRI="#ExecutionCondition"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="#MigrateAction"/>
+        <Class IRI="#MobilityAction"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="#MobilityAction"/>
+        <Class IRI="#FunctionalIntent"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="#PatchAction"/>
+        <Class IRI="#ConfigurationAction"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="#RestartAction"/>
+        <Class IRI="#LifecycleControlAction"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="#RollbackAction"/>
+        <Class IRI="#ConfigurationAction"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="#ScalingAction"/>
+        <Class IRI="#FunctionalIntent"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="#SecurityPolicyCondition"/>
+        <Class IRI="#ExecutionCondition"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="#SimpleAction"/>
+        <Class IRI="#AutonomicAction"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="#SimpleAction"/>
+        <ObjectExactCardinality cardinality="1">
+            <ObjectProperty IRI="#hasCompensation"/>
+            <Class IRI="#SimpleAction"/>
+        </ObjectExactCardinality>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="#SimpleAction"/>
+        <ObjectMaxCardinality cardinality="0">
+            <ObjectProperty IRI="#isDecomposedInto"/>
+            <Class IRI="#AutonomicAction"/>
+        </ObjectMaxCardinality>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="#SimpleAction"/>
+        <DataExactCardinality cardinality="1">
+            <DataProperty IRI="#isIdempotent"/>
+            <Datatype abbreviatedIRI="xsd:boolean"/>
+        </DataExactCardinality>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="#SimpleAction"/>
+        <DataExactCardinality cardinality="1">
+            <DataProperty IRI="#maxRetries"/>
+            <Datatype abbreviatedIRI="xsd:int"/>
+        </DataExactCardinality>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="#StartAction"/>
+        <Class IRI="#LifecycleControlAction"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="#StateBasedCondition"/>
+        <Class IRI="#ExecutionCondition"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="#StopAction"/>
+        <Class IRI="#LifecycleControlAction"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="#TemporalCondition"/>
+        <Class IRI="#ExecutionCondition"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="#TerminateAction"/>
+        <Class IRI="#LifecycleControlAction"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="#TrafficDrainingAction"/>
+        <Class IRI="#TrafficRoutingAction"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="#TrafficMirroringAction"/>
+        <Class IRI="#TrafficRoutingAction"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="#TrafficRoutingAction"/>
+        <Class IRI="#FunctionalIntent"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="#UpdateAction"/>
+        <Class IRI="#ConfigurationAction"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="#VerticalScalingAction"/>
+        <Class IRI="#ScalingAction"/>
+    </SubClassOf>
+    <DisjointClasses>
+        <Class IRI="#AutonomicAction"/>
+        <Class IRI="#ExecutionCondition"/>
+        <Class IRI="#ExecutionCost"/>
+        <Class IRI="#FunctionalIntent"/>
+        <Class IRI="#LayerBoundary"/>
+        <Class IRI="#TargetResource"/>
+    </DisjointClasses>
+    <DisjointClasses>
+        <Class IRI="#CircuitBreakAction"/>
+        <Class IRI="#TrafficDrainingAction"/>
+        <Class IRI="#TrafficMirroringAction"/>
+    </DisjointClasses>
+    <DisjointClasses>
+        <Class IRI="#ComplexWorkflow"/>
+        <Class IRI="#SimpleAction"/>
+    </DisjointClasses>
+    <DisjointClasses>
+        <Class IRI="#ConfigurationAction"/>
+        <Class IRI="#LifecycleControlAction"/>
+        <Class IRI="#MobilityAction"/>
+        <Class IRI="#ScalingAction"/>
+        <Class IRI="#TrafficRoutingAction"/>
+    </DisjointClasses>
+    <DisjointClasses>
+        <Class IRI="#EvacuateAction"/>
+        <Class IRI="#MigrateAction"/>
+    </DisjointClasses>
+    <DisjointClasses>
+        <Class IRI="#HorizontalScalingAction"/>
+        <Class IRI="#VerticalScalingAction"/>
+    </DisjointClasses>
+    <DisjointClasses>
+        <Class IRI="#MetricBasedCondition"/>
+        <Class IRI="#SecurityPolicyCondition"/>
+        <Class IRI="#StateBasedCondition"/>
+        <Class IRI="#TemporalCondition"/>
+    </DisjointClasses>
+    <DisjointClasses>
+        <Class IRI="#PatchAction"/>
+        <Class IRI="#RollbackAction"/>
+        <Class IRI="#UpdateAction"/>
+    </DisjointClasses>
+    <DisjointClasses>
+        <Class IRI="#RestartAction"/>
+        <Class IRI="#StartAction"/>
+        <Class IRI="#StopAction"/>
+        <Class IRI="#TerminateAction"/>
+    </DisjointClasses>
+    <SubObjectPropertyOf>
+        <ObjectProperty IRI="#hasPostCondition"/>
+        <ObjectProperty IRI="#hasCondition"/>
+    </SubObjectPropertyOf>
+    <SubObjectPropertyOf>
+        <ObjectProperty IRI="#hasPreCondition"/>
+        <ObjectProperty IRI="#hasCondition"/>
+    </SubObjectPropertyOf>
+    <FunctionalObjectProperty>
+        <ObjectProperty IRI="#hasCompensation"/>
+    </FunctionalObjectProperty>
+    <FunctionalObjectProperty>
+        <ObjectProperty IRI="#hasExecutionCost"/>
+    </FunctionalObjectProperty>
+    <FunctionalObjectProperty>
+        <ObjectProperty IRI="#hasFunctionalIntent"/>
+    </FunctionalObjectProperty>
+    <FunctionalObjectProperty>
+        <ObjectProperty IRI="#hasLayerBoundary"/>
+    </FunctionalObjectProperty>
+    <AsymmetricObjectProperty>
+        <ObjectProperty IRI="#isDecomposedInto"/>
+    </AsymmetricObjectProperty>
+    <TransitiveObjectProperty>
+        <ObjectProperty IRI="#dependsOn"/>
+    </TransitiveObjectProperty>
+    <IrreflexiveObjectProperty>
+        <ObjectProperty IRI="#isDecomposedInto"/>
+    </IrreflexiveObjectProperty>
+    <ObjectPropertyDomain>
+        <ObjectProperty IRI="#dependsOn"/>
+        <Class IRI="#AutonomicAction"/>
+    </ObjectPropertyDomain>
+    <ObjectPropertyDomain>
+        <ObjectProperty IRI="#hasCompensation"/>
+        <Class IRI="#AutonomicAction"/>
+    </ObjectPropertyDomain>
+    <ObjectPropertyDomain>
+        <ObjectProperty IRI="#hasCondition"/>
+        <Class IRI="#AutonomicAction"/>
+    </ObjectPropertyDomain>
+    <ObjectPropertyDomain>
+        <ObjectProperty IRI="#hasExecutionCost"/>
+        <Class IRI="#AutonomicAction"/>
+    </ObjectPropertyDomain>
+    <ObjectPropertyDomain>
+        <ObjectProperty IRI="#hasFunctionalIntent"/>
+        <Class IRI="#AutonomicAction"/>
+    </ObjectPropertyDomain>
+    <ObjectPropertyDomain>
+        <ObjectProperty IRI="#hasLayerBoundary"/>
+        <Class IRI="#AutonomicAction"/>
+    </ObjectPropertyDomain>
+    <ObjectPropertyDomain>
+        <ObjectProperty IRI="#hasPostCondition"/>
+        <Class IRI="#AutonomicAction"/>
+    </ObjectPropertyDomain>
+    <ObjectPropertyDomain>
+        <ObjectProperty IRI="#hasPreCondition"/>
+        <Class IRI="#AutonomicAction"/>
+    </ObjectPropertyDomain>
+    <ObjectPropertyDomain>
+        <ObjectProperty IRI="#isDecomposedInto"/>
+        <Class IRI="#ComplexWorkflow"/>
+    </ObjectPropertyDomain>
+    <ObjectPropertyDomain>
+        <ObjectProperty IRI="#targetsEntity"/>
+        <Class IRI="#AutonomicAction"/>
+    </ObjectPropertyDomain>
+    <ObjectPropertyRange>
+        <ObjectProperty IRI="#dependsOn"/>
+        <Class IRI="#AutonomicAction"/>
+    </ObjectPropertyRange>
+    <ObjectPropertyRange>
+        <ObjectProperty IRI="#hasCompensation"/>
+        <Class IRI="#AutonomicAction"/>
+    </ObjectPropertyRange>
+    <ObjectPropertyRange>
+        <ObjectProperty IRI="#hasCondition"/>
+        <Class IRI="#ExecutionCondition"/>
+    </ObjectPropertyRange>
+    <ObjectPropertyRange>
+        <ObjectProperty IRI="#hasExecutionCost"/>
+        <Class IRI="#ExecutionCost"/>
+    </ObjectPropertyRange>
+    <ObjectPropertyRange>
+        <ObjectProperty IRI="#hasFunctionalIntent"/>
+        <Class IRI="#FunctionalIntent"/>
+    </ObjectPropertyRange>
+    <ObjectPropertyRange>
+        <ObjectProperty IRI="#hasLayerBoundary"/>
+        <Class IRI="#LayerBoundary"/>
+    </ObjectPropertyRange>
+    <ObjectPropertyRange>
+        <ObjectProperty IRI="#hasPostCondition"/>
+        <Class IRI="#ExecutionCondition"/>
+    </ObjectPropertyRange>
+    <ObjectPropertyRange>
+        <ObjectProperty IRI="#hasPreCondition"/>
+        <Class IRI="#ExecutionCondition"/>
+    </ObjectPropertyRange>
+    <ObjectPropertyRange>
+        <ObjectProperty IRI="#isDecomposedInto"/>
+        <Class IRI="#AutonomicAction"/>
+    </ObjectPropertyRange>
+    <ObjectPropertyRange>
+        <ObjectProperty IRI="#targetsEntity"/>
+        <Class IRI="#TargetResource"/>
+    </ObjectPropertyRange>
+    <DisjointObjectProperties>
+        <ObjectProperty IRI="#hasPostCondition"/>
+        <ObjectProperty IRI="#hasPreCondition"/>
+    </DisjointObjectProperties>
+    <DataPropertyDomain>
+        <DataProperty IRI="#costValue"/>
+        <Class IRI="#ExecutionCost"/>
+    </DataPropertyDomain>
+    <DataPropertyDomain>
+        <DataProperty IRI="#hasActionID"/>
+        <Class IRI="#AutonomicAction"/>
+    </DataPropertyDomain>
+    <DataPropertyDomain>
+        <DataProperty IRI="#isIdempotent"/>
+        <Class IRI="#SimpleAction"/>
+    </DataPropertyDomain>
+    <DataPropertyDomain>
+        <DataProperty IRI="#maxRetries"/>
+        <Class IRI="#SimpleAction"/>
+    </DataPropertyDomain>
+    <DataPropertyDomain>
+        <DataProperty IRI="#policyQueryString"/>
+        <Class IRI="#ExecutionCondition"/>
+    </DataPropertyDomain>
+    <DataPropertyDomain>
+        <DataProperty IRI="#timeoutSeconds"/>
+        <Class IRI="#AutonomicAction"/>
+    </DataPropertyDomain>
+    <DataPropertyRange>
+        <DataProperty IRI="#costValue"/>
+        <Datatype abbreviatedIRI="xsd:float"/>
+    </DataPropertyRange>
+    <DataPropertyRange>
+        <DataProperty IRI="#hasActionID"/>
+        <Datatype abbreviatedIRI="xsd:string"/>
+    </DataPropertyRange>
+    <DataPropertyRange>
+        <DataProperty IRI="#isIdempotent"/>
+        <Datatype abbreviatedIRI="xsd:boolean"/>
+    </DataPropertyRange>
+    <DataPropertyRange>
+        <DataProperty IRI="#maxRetries"/>
+        <Datatype abbreviatedIRI="xsd:int"/>
+    </DataPropertyRange>
+    <DataPropertyRange>
+        <DataProperty IRI="#policyQueryString"/>
+        <Datatype abbreviatedIRI="xsd:string"/>
+    </DataPropertyRange>
+    <DataPropertyRange>
+        <DataProperty IRI="#timeoutSeconds"/>
+        <Datatype abbreviatedIRI="xsd:int"/>
+    </DataPropertyRange>
+</Ontology>
+
+
+
+<!-- Generated by the OWL API (version 4.5.29.2024-05-13T12:11:03Z) https://github.com/owlcs/owlapi -->
+
