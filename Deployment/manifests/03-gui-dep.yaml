@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: hephaestus-gui
-          image: hephaestusmetrics/gui:latest
+          image: sglomski/gui:latest
           env:
           - name: prometheus.address
             value: prometheus.monitoring:9090
