@@ -1,0 +1,6 @@
+themis:
+  graphdb:
+    url: http://localhost:7200
+    repository-id: moamont
+  kubernetes:
+    management-url: http://localhost:8080

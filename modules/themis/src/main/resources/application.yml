@@ -1,0 +1,9 @@
+spring:
+  threads:
+    virtual:
+      enabled: true
+  profiles:
+    active: dev
+grpc:
+  server:
+    port: 50051

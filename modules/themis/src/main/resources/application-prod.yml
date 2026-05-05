@@ -1,0 +1,6 @@
+themis:
+  graphdb:
+    url: ${GRAPHDB_URL:http://graphdb:7200}
+    repository-id: ${GRAPHDB_REPO:moamont}
+  kubernetes:
+    management-url: ${K8S_MGMT_URL:http://kubernetes-management:8080}
