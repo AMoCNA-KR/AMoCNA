@@ -289,13 +289,16 @@
         <ObjectProperty IRI="/isHostedOn"/>
     </Declaration>
     <Declaration>
+        <ObjectProperty IRI="/isRealizedBy"/>
+    </Declaration>
+    <Declaration>
         <ObjectProperty IRI="/isPartOf"/>
     </Declaration>
     <Declaration>
         <ObjectProperty IRI="/locatedIn"/>
     </Declaration>
     <Declaration>
-        <ObjectProperty IRI="/monitoredByProbe"/>
+        <ObjectProperty IRI="/monitoredByCheck"/>
     </Declaration>
     <Declaration>
         <ObjectProperty IRI="/pullsImageFrom"/>
@@ -432,6 +435,20 @@
         </ObjectExactCardinality>
     </SubClassOf>
     <SubClassOf>
+        <Class IRI="/CloudNativeEntity"/>
+        <DataSomeValuesFrom>
+            <DataProperty IRI="/resourceName"/>
+            <Datatype abbreviatedIRI="xsd:string"/>
+        </DataSomeValuesFrom>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="/CloudNativeEntity"/>
+        <DataSomeValuesFrom>
+            <DataProperty IRI="/resourceID"/>
+            <Datatype abbreviatedIRI="xsd:string"/>
+        </DataSomeValuesFrom>
+    </SubClassOf>
+    <SubClassOf>
         <Class IRI="/ContainerCreated"/>
         <Class IRI="/ContainerState"/>
     </SubClassOf>
@@ -517,6 +534,48 @@
             <ObjectProperty IRI="/hasCurrentState"/>
             <Class IRI="/ExecutionUnitState"/>
         </ObjectExactCardinality>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="/ExecutionUnit"/>
+        <DataSomeValuesFrom>
+            <DataProperty IRI="/allocatedCPU"/>
+            <Datatype abbreviatedIRI="xsd:string"/>
+        </DataSomeValuesFrom>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="/ExecutionUnit"/>
+        <DataSomeValuesFrom>
+            <DataProperty IRI="/memoryLimit"/>
+            <Datatype abbreviatedIRI="xsd:string"/>
+        </DataSomeValuesFrom>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="/ExecutionUnit"/>
+        <ObjectSomeValuesFrom>
+            <ObjectProperty IRI="/assignedIP"/>
+            <Class IRI="/IPAddress"/>
+        </ObjectSomeValuesFrom>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="/ExecutionUnit"/>
+        <ObjectSomeValuesFrom>
+            <ObjectProperty IRI="/monitoredByCheck"/>
+            <Class IRI="/HealthCheckEndpoint"/>
+        </ObjectSomeValuesFrom>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="/ExecutionUnit"/>
+        <ObjectSomeValuesFrom>
+            <ObjectProperty IRI="/pullsImageFrom"/>
+            <Class IRI="/ImageRegistry"/>
+        </ObjectSomeValuesFrom>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="/ExecutionUnit"/>
+        <ObjectSomeValuesFrom>
+            <ObjectProperty IRI="/usesStorage"/>
+            <Class IRI="/StorageResource"/>
+        </ObjectSomeValuesFrom>
     </SubClassOf>
     <SubClassOf>
         <Class IRI="/ExecutionUnitFailed"/>
@@ -627,8 +686,15 @@
     <SubClassOf>
         <Class IRI="/Microservice"/>
         <ObjectSomeValuesFrom>
-            <ObjectProperty IRI="/isHostedOn"/>
+            <ObjectProperty IRI="/isRealizedBy"/>
             <Class IRI="/Workload"/>
+        </ObjectSomeValuesFrom>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="/Microservice"/>
+        <ObjectSomeValuesFrom>
+            <ObjectProperty IRI="/communicatesWith"/>
+            <Class IRI="/Microservice"/>
         </ObjectSomeValuesFrom>
     </SubClassOf>
     <SubClassOf>
@@ -797,6 +863,34 @@
         </ObjectSomeValuesFrom>
     </SubClassOf>
     <SubClassOf>
+        <Class IRI="/Workload"/>
+        <DataSomeValuesFrom>
+            <DataProperty IRI="/logicalGroup"/>
+            <Datatype abbreviatedIRI="xsd:string"/>
+        </DataSomeValuesFrom>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="/Workload"/>
+        <DataSomeValuesFrom>
+            <DataProperty IRI="/metricsEndpoint"/>
+            <Datatype abbreviatedIRI="xsd:string"/>
+        </DataSomeValuesFrom>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="/Workload"/>
+        <DataSomeValuesFrom>
+            <DataProperty IRI="/resourceQuota"/>
+            <Datatype abbreviatedIRI="xsd:string"/>
+        </DataSomeValuesFrom>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="/Workload"/>
+        <DataSomeValuesFrom>
+            <DataProperty IRI="/healthCheckURL"/>
+            <Datatype abbreviatedIRI="xsd:anyURI"/>
+        </DataSomeValuesFrom>
+    </SubClassOf>
+    <SubClassOf>
         <Class IRI="/WorkloadController"/>
         <Class IRI="/Workload"/>
     </SubClassOf>
@@ -879,9 +973,17 @@
         <ObjectProperty IRI="/usesImage"/>
         <Class IRI="/Container"/>
     </ObjectPropertyDomain>
+    <ObjectPropertyDomain>
+        <ObjectProperty IRI="/isRealizedBy"/>
+        <Class IRI="/Microservice"/>
+    </ObjectPropertyDomain>
     <ObjectPropertyRange>
         <ObjectProperty IRI="/assignedIP"/>
         <Class IRI="/IPAddress"/>
+    </ObjectPropertyRange>
+    <ObjectPropertyRange>
+        <ObjectProperty IRI="/isRealizedBy"/>
+        <Class IRI="/Workload"/>
     </ObjectPropertyRange>
     <ObjectPropertyRange>
         <ObjectProperty IRI="/emitsTelemetry"/>
@@ -900,7 +1002,7 @@
         <Class IRI="/TopologyElement"/>
     </ObjectPropertyRange>
     <ObjectPropertyRange>
-        <ObjectProperty IRI="/monitoredByProbe"/>
+        <ObjectProperty IRI="/monitoredByCheck"/>
         <Class IRI="/HealthCheckEndpoint"/>
     </ObjectPropertyRange>
     <ObjectPropertyRange>
