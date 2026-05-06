@@ -303,6 +303,9 @@
     <Declaration>
         <ObjectProperty IRI="/usesStorage"/>
     </Declaration>
+    <Declaration>
+        <DataProperty IRI="/version"/>
+    </Declaration>
     <SubClassOf>
         <Class IRI="/APIEndpoint"/>
         <Class IRI="/Endpoint"/>
@@ -390,6 +393,13 @@
         <Class IRI="/ContainerizationLayerElement"/>
     </SubClassOf>
     <SubClassOf>
+        <Class IRI="/ContainerRuntime"/>
+        <DataSomeValuesFrom>
+            <DataProperty IRI="/version"/>
+            <Datatype abbreviatedIRI="xsd:string"/>
+        </DataSomeValuesFrom>
+    </SubClassOf>
+    <SubClassOf>
         <Class IRI="/ContainerState"/>
         <Class IRI="/State"/>
     </SubClassOf>
@@ -442,6 +452,13 @@
         <Class IRI="/ContainerizationLayerElement"/>
     </SubClassOf>
     <SubClassOf>
+        <Class IRI="/Image"/>
+        <DataSomeValuesFrom>
+            <DataProperty IRI="/version"/>
+            <Datatype abbreviatedIRI="xsd:string"/>
+        </DataSomeValuesFrom>
+    </SubClassOf>
+    <SubClassOf>
         <Class IRI="/ImageRegistry"/>
         <Class IRI="/ManagementElement"/>
     </SubClassOf>
@@ -476,6 +493,13 @@
     <SubClassOf>
         <Class IRI="/Microservice"/>
         <Class IRI="/ApplicationLayerElement"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="/Microservice"/>
+        <DataSomeValuesFrom>
+            <DataProperty IRI="/version"/>
+            <Datatype abbreviatedIRI="xsd:string"/>
+        </DataSomeValuesFrom>
     </SubClassOf>
     <SubClassOf>
         <Class IRI="/Microservice"/>
@@ -518,6 +542,13 @@
     <SubClassOf>
         <Class IRI="/Orchestrator"/>
         <Class IRI="/ContainerizationLayerElement"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="/Orchestrator"/>
+        <DataSomeValuesFrom>
+            <DataProperty IRI="/version"/>
+            <Datatype abbreviatedIRI="xsd:string"/>
+        </DataSomeValuesFrom>
     </SubClassOf>
     <SubClassOf>
         <Class IRI="/PersistentStorageResource"/>
@@ -616,6 +647,13 @@
     <SubClassOf>
         <Class IRI="/SystemSoftware"/>
         <Class IRI="/InfrastructureLayerElement"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="/SystemSoftware"/>
+        <DataSomeValuesFrom>
+            <DataProperty IRI="/version"/>
+            <Datatype abbreviatedIRI="xsd:string"/>
+        </DataSomeValuesFrom>
     </SubClassOf>
     <SubClassOf>
         <Class IRI="/TopologyElement"/>
@@ -756,6 +794,10 @@
         <ObjectProperty IRI="/usesStorage"/>
         <Class IRI="/StorageResource"/>
     </ObjectPropertyRange>
+    <DataPropertyRange>
+        <DataProperty IRI="/version"/>
+        <Datatype abbreviatedIRI="xsd:string"/>
+    </DataPropertyRange>
 </Ontology>
 
 
