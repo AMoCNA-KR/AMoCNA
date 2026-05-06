@@ -1,0 +1,764 @@
+<?xml version="1.0"?>
+<Ontology xmlns="http://www.w3.org/2002/07/owl#"
+     xml:base="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt"
+     xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+     xmlns:xml="http://www.w3.org/XML/1998/namespace"
+     xmlns:xsd="http://www.w3.org/2001/XMLSchema#"
+     xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
+     ontologyIRI="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt">
+    <Prefix name="" IRI="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/"/>
+    <Prefix name="owl" IRI="http://www.w3.org/2002/07/owl#"/>
+    <Prefix name="rdf" IRI="http://www.w3.org/1999/02/22-rdf-syntax-ns#"/>
+    <Prefix name="xml" IRI="http://www.w3.org/XML/1998/namespace"/>
+    <Prefix name="xsd" IRI="http://www.w3.org/2001/XMLSchema#"/>
+    <Prefix name="rdfs" IRI="http://www.w3.org/2000/01/rdf-schema#"/>
+    <Declaration>
+        <Class IRI="/APIEndpoint"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="/ApplicationLayerElement"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="/ArtifactRepository"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="/AvailabiltyZone"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="/BlockStorage"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="/CDPipeline"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="/CIPipeline"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="/CPUResource"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="/Cluster"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="/ComputeResource"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="/ConfigMap"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="/Container"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="/ContainerCreated"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="/ContainerDead"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="/ContainerExited"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="/ContainerPaused"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="/ContainerRestarting"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="/ContainerRunning"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="/ContainerRuntime"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="/ContainerState"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="/ContainerizationLayerElement"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="/DataService"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="/Deployment"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="/DeviceDriver"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="/Endpoint"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="/Firewall"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="/GPUResource"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="/HealthCheckEndpoint"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="/Hypervisor"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="/IPAddress"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="/IPv4Address"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="/IPv6Address"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="/Image"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="/ImageRegistry"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="/InfrastructureLayerElement"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="/Kernel"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="/LivenessProbe"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="/LoadBalancer"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="/Log"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="/ManagementElement"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="/MasterNode"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="/Metric"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="/MetricsEndpoint"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="/Microservice"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="/Namespace"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="/NetworkInterface"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="/NetworkResource"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="/Node"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="/ObjectStorage"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="/ObservabilityElement"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="/OperatingSystem"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="/Orchestrator"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="/PersistentStorageResource"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="/PhysicalServer"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="/Pipeline"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="/Pod"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="/PodFailed"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="/PodPending"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="/PodRunning"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="/PodState"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="/PodSucceeded"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="/Profile"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="/ReadinessProbe"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="/Region"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="/ReplicaSet"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="/SecretManagementService"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="/Service"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="/SourceCodeRepository"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="/StartupProbe"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="/State"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="/StatefulSet"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="/StorageResource"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="/Subnet"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="/SystemSoftware"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="/TopologyElement"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="/Trace"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="/Unknown"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="/VirtualMachine"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="/VirtualPrivateCloud"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="/WorkerNode"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="/Workload"/>
+    </Declaration>
+    <Declaration>
+        <ObjectProperty IRI="/assignedIP"/>
+    </Declaration>
+    <Declaration>
+        <ObjectProperty IRI="/communicatesWith"/>
+    </Declaration>
+    <Declaration>
+        <ObjectProperty IRI="/contains"/>
+    </Declaration>
+    <Declaration>
+        <ObjectProperty IRI="/dependsOn"/>
+    </Declaration>
+    <Declaration>
+        <ObjectProperty IRI="/deploys"/>
+    </Declaration>
+    <Declaration>
+        <ObjectProperty IRI="/emitsTelemetry"/>
+    </Declaration>
+    <Declaration>
+        <ObjectProperty IRI="/exposesEndpoint"/>
+    </Declaration>
+    <Declaration>
+        <ObjectProperty IRI="/hasCurrentState"/>
+    </Declaration>
+    <Declaration>
+        <ObjectProperty IRI="/hosts"/>
+    </Declaration>
+    <Declaration>
+        <ObjectProperty IRI="/isHostedOn"/>
+    </Declaration>
+    <Declaration>
+        <ObjectProperty IRI="/isPartOf"/>
+    </Declaration>
+    <Declaration>
+        <ObjectProperty IRI="/locatedIn"/>
+    </Declaration>
+    <Declaration>
+        <ObjectProperty IRI="/monitoredByProbe"/>
+    </Declaration>
+    <Declaration>
+        <ObjectProperty IRI="/pullsImageFrom"/>
+    </Declaration>
+    <Declaration>
+        <ObjectProperty IRI="/usesImage"/>
+    </Declaration>
+    <Declaration>
+        <ObjectProperty IRI="/usesStorage"/>
+    </Declaration>
+    <SubClassOf>
+        <Class IRI="/APIEndpoint"/>
+        <Class IRI="/Endpoint"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="/ArtifactRepository"/>
+        <Class IRI="/ManagementElement"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="/AvailabiltyZone"/>
+        <Class IRI="/TopologyElement"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="/BlockStorage"/>
+        <Class IRI="/StorageResource"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="/CDPipeline"/>
+        <Class IRI="/Pipeline"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="/CIPipeline"/>
+        <Class IRI="/Pipeline"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="/CPUResource"/>
+        <Class IRI="/ComputeResource"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="/Cluster"/>
+        <Class IRI="/ContainerizationLayerElement"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="/ComputeResource"/>
+        <Class IRI="/InfrastructureLayerElement"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="/ConfigMap"/>
+        <Class IRI="/ContainerizationLayerElement"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="/Container"/>
+        <Class IRI="/ContainerizationLayerElement"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="/Container"/>
+        <ObjectExactCardinality cardinality="1">
+            <ObjectProperty IRI="/hasCurrentState"/>
+            <Class IRI="/ContainerState"/>
+        </ObjectExactCardinality>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="/Container"/>
+        <ObjectExactCardinality cardinality="1">
+            <ObjectProperty IRI="/usesImage"/>
+            <Class IRI="/Image"/>
+        </ObjectExactCardinality>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="/ContainerCreated"/>
+        <Class IRI="/ContainerState"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="/ContainerDead"/>
+        <Class IRI="/ContainerState"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="/ContainerExited"/>
+        <Class IRI="/ContainerState"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="/ContainerPaused"/>
+        <Class IRI="/ContainerState"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="/ContainerRestarting"/>
+        <Class IRI="/ContainerState"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="/ContainerRunning"/>
+        <Class IRI="/ContainerState"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="/ContainerRuntime"/>
+        <Class IRI="/ContainerizationLayerElement"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="/ContainerState"/>
+        <Class IRI="/State"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="/DataService"/>
+        <Class IRI="/ApplicationLayerElement"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="/Deployment"/>
+        <Class IRI="/Workload"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="/DeviceDriver"/>
+        <Class IRI="/SystemSoftware"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="/Endpoint"/>
+        <Class IRI="/ApplicationLayerElement"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="/Firewall"/>
+        <Class IRI="/NetworkResource"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="/GPUResource"/>
+        <Class IRI="/ComputeResource"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="/HealthCheckEndpoint"/>
+        <Class IRI="/Endpoint"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="/Hypervisor"/>
+        <Class IRI="/SystemSoftware"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="/IPAddress"/>
+        <Class IRI="/NetworkResource"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="/IPv4Address"/>
+        <Class IRI="/IPAddress"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="/IPv6Address"/>
+        <Class IRI="/IPAddress"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="/Image"/>
+        <Class IRI="/ContainerizationLayerElement"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="/ImageRegistry"/>
+        <Class IRI="/ManagementElement"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="/Kernel"/>
+        <Class IRI="/SystemSoftware"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="/LivenessProbe"/>
+        <Class IRI="/HealthCheckEndpoint"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="/LoadBalancer"/>
+        <Class IRI="/NetworkResource"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="/Log"/>
+        <Class IRI="/ObservabilityElement"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="/MasterNode"/>
+        <Class IRI="/Node"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="/Metric"/>
+        <Class IRI="/ObservabilityElement"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="/MetricsEndpoint"/>
+        <Class IRI="/Endpoint"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="/Microservice"/>
+        <Class IRI="/ApplicationLayerElement"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="/Microservice"/>
+        <ObjectSomeValuesFrom>
+            <ObjectProperty IRI="/exposesEndpoint"/>
+            <Class IRI="/APIEndpoint"/>
+        </ObjectSomeValuesFrom>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="/Microservice"/>
+        <ObjectSomeValuesFrom>
+            <ObjectProperty IRI="/isHostedOn"/>
+            <Class IRI="/Workload"/>
+        </ObjectSomeValuesFrom>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="/Namespace"/>
+        <Class IRI="/ContainerizationLayerElement"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="/NetworkInterface"/>
+        <Class IRI="/NetworkResource"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="/NetworkResource"/>
+        <Class IRI="/InfrastructureLayerElement"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="/Node"/>
+        <Class IRI="/ContainerizationLayerElement"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="/ObjectStorage"/>
+        <Class IRI="/StorageResource"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="/OperatingSystem"/>
+        <Class IRI="/SystemSoftware"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="/Orchestrator"/>
+        <Class IRI="/ContainerizationLayerElement"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="/PersistentStorageResource"/>
+        <Class IRI="/StorageResource"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="/PhysicalServer"/>
+        <Class IRI="/ComputeResource"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="/Pipeline"/>
+        <Class IRI="/ManagementElement"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="/Pod"/>
+        <Class IRI="/ContainerizationLayerElement"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="/Pod"/>
+        <ObjectSomeValuesFrom>
+            <ObjectProperty IRI="/contains"/>
+            <Class IRI="/Container"/>
+        </ObjectSomeValuesFrom>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="/Pod"/>
+        <ObjectExactCardinality cardinality="1">
+            <ObjectProperty IRI="/hasCurrentState"/>
+            <Class IRI="/PodState"/>
+        </ObjectExactCardinality>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="/PodFailed"/>
+        <Class IRI="/PodState"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="/PodPending"/>
+        <Class IRI="/PodState"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="/PodRunning"/>
+        <Class IRI="/PodState"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="/PodState"/>
+        <Class IRI="/State"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="/PodSucceeded"/>
+        <Class IRI="/PodState"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="/Profile"/>
+        <Class IRI="/ObservabilityElement"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="/ReadinessProbe"/>
+        <Class IRI="/HealthCheckEndpoint"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="/Region"/>
+        <Class IRI="/TopologyElement"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="/ReplicaSet"/>
+        <Class IRI="/ContainerizationLayerElement"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="/SecretManagementService"/>
+        <Class IRI="/ApplicationLayerElement"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="/Service"/>
+        <Class IRI="/Workload"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="/SourceCodeRepository"/>
+        <Class IRI="/ManagementElement"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="/StartupProbe"/>
+        <Class IRI="/HealthCheckEndpoint"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="/StatefulSet"/>
+        <Class IRI="/Workload"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="/StorageResource"/>
+        <Class IRI="/InfrastructureLayerElement"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="/Subnet"/>
+        <Class IRI="/NetworkResource"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="/SystemSoftware"/>
+        <Class IRI="/InfrastructureLayerElement"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="/TopologyElement"/>
+        <Class IRI="/InfrastructureLayerElement"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="/Trace"/>
+        <Class IRI="/ObservabilityElement"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="/Unknown"/>
+        <Class IRI="/PodState"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="/VirtualMachine"/>
+        <Class IRI="/ComputeResource"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="/VirtualPrivateCloud"/>
+        <Class IRI="/NetworkResource"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="/WorkerNode"/>
+        <Class IRI="/Node"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="/Workload"/>
+        <Class IRI="/ContainerizationLayerElement"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="/Workload"/>
+        <ObjectSomeValuesFrom>
+            <ObjectProperty IRI="/contains"/>
+            <Class IRI="/Pod"/>
+        </ObjectSomeValuesFrom>
+    </SubClassOf>
+    <DisjointClasses>
+        <Class IRI="/ApplicationLayerElement"/>
+        <Class IRI="/ContainerizationLayerElement"/>
+        <Class IRI="/InfrastructureLayerElement"/>
+        <Class IRI="/ManagementElement"/>
+        <Class IRI="/ObservabilityElement"/>
+    </DisjointClasses>
+    <DisjointClasses>
+        <Class IRI="/Container"/>
+        <Class IRI="/Image"/>
+        <Class IRI="/Orchestrator"/>
+        <Class IRI="/ReplicaSet"/>
+    </DisjointClasses>
+    <DisjointClasses>
+        <Class IRI="/ContainerCreated"/>
+        <Class IRI="/ContainerDead"/>
+        <Class IRI="/ContainerExited"/>
+        <Class IRI="/ContainerPaused"/>
+        <Class IRI="/ContainerRestarting"/>
+        <Class IRI="/ContainerRunning"/>
+    </DisjointClasses>
+    <DisjointClasses>
+        <Class IRI="/ContainerRunning"/>
+        <Class IRI="/PodFailed"/>
+        <Class IRI="/PodPending"/>
+        <Class IRI="/PodSucceeded"/>
+        <Class IRI="/Unknown"/>
+    </DisjointClasses>
+    <DisjointClasses>
+        <Class IRI="/Node"/>
+        <Class IRI="/VirtualMachine"/>
+    </DisjointClasses>
+    <InverseObjectProperties>
+        <ObjectProperty IRI="/contains"/>
+        <ObjectProperty IRI="/isPartOf"/>
+    </InverseObjectProperties>
+    <InverseObjectProperties>
+        <ObjectProperty IRI="/hosts"/>
+        <ObjectProperty IRI="/isHostedOn"/>
+    </InverseObjectProperties>
+    <FunctionalObjectProperty>
+        <ObjectProperty IRI="/hasCurrentState"/>
+    </FunctionalObjectProperty>
+    <SymmetricObjectProperty>
+        <ObjectProperty IRI="/communicatesWith"/>
+    </SymmetricObjectProperty>
+    <TransitiveObjectProperty>
+        <ObjectProperty IRI="/contains"/>
+    </TransitiveObjectProperty>
+    <TransitiveObjectProperty>
+        <ObjectProperty IRI="/dependsOn"/>
+    </TransitiveObjectProperty>
+    <TransitiveObjectProperty>
+        <ObjectProperty IRI="/hosts"/>
+    </TransitiveObjectProperty>
+    <TransitiveObjectProperty>
+        <ObjectProperty IRI="/isHostedOn"/>
+    </TransitiveObjectProperty>
+    <TransitiveObjectProperty>
+        <ObjectProperty IRI="/isPartOf"/>
+    </TransitiveObjectProperty>
+    <TransitiveObjectProperty>
+        <ObjectProperty IRI="/locatedIn"/>
+    </TransitiveObjectProperty>
+    <ObjectPropertyDomain>
+        <ObjectProperty IRI="/usesImage"/>
+        <Class IRI="/Container"/>
+    </ObjectPropertyDomain>
+    <ObjectPropertyRange>
+        <ObjectProperty IRI="/assignedIP"/>
+        <Class IRI="/IPAddress"/>
+    </ObjectPropertyRange>
+    <ObjectPropertyRange>
+        <ObjectProperty IRI="/emitsTelemetry"/>
+        <Class IRI="/ObservabilityElement"/>
+    </ObjectPropertyRange>
+    <ObjectPropertyRange>
+        <ObjectProperty IRI="/exposesEndpoint"/>
+        <Class IRI="/Endpoint"/>
+    </ObjectPropertyRange>
+    <ObjectPropertyRange>
+        <ObjectProperty IRI="/hasCurrentState"/>
+        <Class IRI="/State"/>
+    </ObjectPropertyRange>
+    <ObjectPropertyRange>
+        <ObjectProperty IRI="/locatedIn"/>
+        <Class IRI="/TopologyElement"/>
+    </ObjectPropertyRange>
+    <ObjectPropertyRange>
+        <ObjectProperty IRI="/monitoredByProbe"/>
+        <Class IRI="/HealthCheckEndpoint"/>
+    </ObjectPropertyRange>
+    <ObjectPropertyRange>
+        <ObjectProperty IRI="/pullsImageFrom"/>
+        <Class IRI="/ImageRegistry"/>
+    </ObjectPropertyRange>
+    <ObjectPropertyRange>
+        <ObjectProperty IRI="/usesImage"/>
+        <Class IRI="/Image"/>
+    </ObjectPropertyRange>
+    <ObjectPropertyRange>
+        <ObjectProperty IRI="/usesStorage"/>
+        <Class IRI="/StorageResource"/>
+    </ObjectPropertyRange>
+</Ontology>
+
+
+
+<!-- Generated by the OWL API (version 4.5.29.2024-05-13T12:11:03Z) https://github.com/owlcs/owlapi -->
+
