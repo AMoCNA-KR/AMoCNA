@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
+PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 IMAGE_NAME="gui"
 DOCKERFILE_PATH="Hphaestus-GUI-Backend/hephaestus-backend/Dockerfile"
 
