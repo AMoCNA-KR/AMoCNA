@@ -379,6 +379,13 @@
         <Class IRI="/ContainerizationLayerElement"/>
     </SubClassOf>
     <SubClassOf>
+        <Class IRI="/Cluster"/>
+        <ObjectSomeValuesFrom>
+            <ObjectProperty IRI="/isHostedOn"/>
+            <Class IRI="/InfrastructureLayerElement"/>
+        </ObjectSomeValuesFrom>
+    </SubClassOf>
+    <SubClassOf>
         <Class IRI="/ComputeResource"/>
         <Class IRI="/InfrastructureLayerElement"/>
     </SubClassOf>
@@ -387,8 +394,22 @@
         <Class IRI="/ContainerizationLayerElement"/>
     </SubClassOf>
     <SubClassOf>
+        <Class IRI="/ConfigurationResource"/>
+        <ObjectSomeValuesFrom>
+            <ObjectProperty IRI="/isPartOf"/>
+            <Class IRI="/Workload"/>
+        </ObjectSomeValuesFrom>
+    </SubClassOf>
+    <SubClassOf>
         <Class IRI="/Container"/>
         <Class IRI="/ContainerizationLayerElement"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="/Container"/>
+        <ObjectSomeValuesFrom>
+            <ObjectProperty IRI="/isPartOf"/>
+            <Class IRI="/ExecutionUnit"/>
+        </ObjectSomeValuesFrom>
     </SubClassOf>
     <SubClassOf>
         <Class IRI="/Container"/>
@@ -572,6 +593,20 @@
         <Class IRI="/ContainerizationLayerElement"/>
     </SubClassOf>
     <SubClassOf>
+        <Class IRI="/Node"/>
+        <ObjectSomeValuesFrom>
+            <ObjectProperty IRI="/isPartOf"/>
+            <Class IRI="/Cluster"/>
+        </ObjectSomeValuesFrom>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="/Node"/>
+        <ObjectSomeValuesFrom>
+            <ObjectProperty IRI="/isHostedOn"/>
+            <Class IRI="/ComputeResource"/>
+        </ObjectSomeValuesFrom>
+    </SubClassOf>
+    <SubClassOf>
         <Class IRI="/ObjectStorage"/>
         <Class IRI="/StorageResource"/>
     </SubClassOf>
@@ -604,7 +639,21 @@
     </SubClassOf>
     <SubClassOf>
         <Class IRI="/ExecutionUnit"/>
-        <Class IRI="/Workload"/>
+        <Class IRI="/ContainerizationLayerElement"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="/ExecutionUnit"/>
+        <ObjectSomeValuesFrom>
+            <ObjectProperty IRI="/isPartOf"/>
+            <Class IRI="/Workload"/>
+        </ObjectSomeValuesFrom>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="/ExecutionUnit"/>
+        <ObjectSomeValuesFrom>
+            <ObjectProperty IRI="/isHostedOn"/>
+            <Class IRI="/Node"/>
+        </ObjectSomeValuesFrom>
     </SubClassOf>
     <SubClassOf>
         <Class IRI="/ExecutionUnit"/>
@@ -710,6 +759,13 @@
     <SubClassOf>
         <Class IRI="/VirtualMachine"/>
         <Class IRI="/ComputeResource"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="/VirtualMachine"/>
+        <ObjectSomeValuesFrom>
+            <ObjectProperty IRI="/isHostedOn"/>
+            <Class IRI="/PhysicalServer"/>
+        </ObjectSomeValuesFrom>
     </SubClassOf>
     <SubClassOf>
         <Class IRI="/VirtualPrivateCloud"/>
