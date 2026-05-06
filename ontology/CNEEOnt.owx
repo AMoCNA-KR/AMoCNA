@@ -44,6 +44,10 @@
     </Declaration>
     <Declaration>
         <Class IRI="/ConfigurationResource"/>
+        <Annotation>
+            <AnnotationProperty abbreviatedIRI="rdfs:comment"/>
+            <Literal>A generic resource for storing configuration data (e.g., K8s ConfigMap).</Literal>
+        </Annotation>
     </Declaration>
     <Declaration>
         <Class IRI="/Container"/>
@@ -79,13 +83,32 @@
         <Class IRI="/DataService"/>
     </Declaration>
     <Declaration>
-        <Class IRI="/Deployment"/>
-    </Declaration>
-    <Declaration>
         <Class IRI="/DeviceDriver"/>
     </Declaration>
     <Declaration>
         <Class IRI="/Endpoint"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="/ExecutionUnit"/>
+        <Annotation>
+            <AnnotationProperty abbreviatedIRI="rdfs:comment"/>
+            <Literal>The smallest deployable unit of computing. Maps to a Kubernetes Pod, Docker Swarm Task, or Nomad Allocation.</Literal>
+        </Annotation>
+    </Declaration>
+    <Declaration>
+        <Class IRI="/ExecutionUnitFailed"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="/ExecutionUnitPending"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="/ExecutionUnitRunning"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="/ExecutionUnitState"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="/ExecutionUnitSucceeded"/>
     </Declaration>
     <Declaration>
         <Class IRI="/Firewall"/>
@@ -182,28 +205,6 @@
         <Class IRI="/Pipeline"/>
     </Declaration>
     <Declaration>
-        <Class IRI="/ExecutionUnit"/>
-        <Annotation>
-            <AnnotationProperty abbreviatedIRI="rdfs:comment"/>
-            <Literal>The smallest deployable unit of computing. Maps to a Kubernetes Pod, Docker Swarm Task.</Literal>
-        </Annotation>
-    </Declaration>
-    <Declaration>
-        <Class IRI="/ExecutionUnitFailed"/>
-    </Declaration>
-    <Declaration>
-        <Class IRI="/ExecutionUnitPending"/>
-    </Declaration>
-    <Declaration>
-        <Class IRI="/ExecutionUnitRunning"/>
-    </Declaration>
-    <Declaration>
-        <Class IRI="/ExecutionUnitState"/>
-    </Declaration>
-    <Declaration>
-        <Class IRI="/ExecutionUnitSucceeded"/>
-    </Declaration>
-    <Declaration>
         <Class IRI="/Profile"/>
     </Declaration>
     <Declaration>
@@ -217,13 +218,14 @@
         <Class IRI="/Region"/>
     </Declaration>
     <Declaration>
-        <Class IRI="/ReplicaSet"/>
-    </Declaration>
-    <Declaration>
         <Class IRI="/SecretManagementService"/>
     </Declaration>
     <Declaration>
         <Class IRI="/Service"/>
+        <Annotation>
+            <AnnotationProperty abbreviatedIRI="rdfs:comment"/>
+            <Literal>An abstract way to expose an application running on a set of execution units as a network service (e.g., K8s Service).</Literal>
+        </Annotation>
     </Declaration>
     <Declaration>
         <Class IRI="/SourceCodeRepository"/>
@@ -239,7 +241,18 @@
         <Class IRI="/State"/>
     </Declaration>
     <Declaration>
-        <Class IRI="/StatefulSet"/>
+        <Class IRI="/StatefulWorkloadController"/>
+        <Annotation>
+            <AnnotationProperty abbreviatedIRI="rdfs:comment"/>
+            <Literal>A controller for workloads that require stable persistence and unique identifiers (e.g., K8s StatefulSet).</Literal>
+        </Annotation>
+    </Declaration>
+    <Declaration>
+        <Class IRI="/StatelessWorkloadController"/>
+        <Annotation>
+            <AnnotationProperty abbreviatedIRI="rdfs:comment"/>
+            <Literal>A controller for workloads that do not maintain persistent state across restarts (e.g., K8s ReplicaSet).</Literal>
+        </Annotation>
     </Declaration>
     <Declaration>
         <Class IRI="/StorageResource"/>
@@ -270,6 +283,17 @@
     </Declaration>
     <Declaration>
         <Class IRI="/Workload"/>
+        <Annotation>
+            <AnnotationProperty abbreviatedIRI="rdfs:comment"/>
+            <Literal>Represents an application or a component of an application running on the infrastructure.</Literal>
+        </Annotation>
+    </Declaration>
+    <Declaration>
+        <Class IRI="/WorkloadController"/>
+        <Annotation>
+            <AnnotationProperty abbreviatedIRI="rdfs:comment"/>
+            <Literal>An abstract entity that manages the deployment and scaling of execution units (e.g., K8s Deployment).</Literal>
+        </Annotation>
     </Declaration>
     <Declaration>
         <ObjectProperty IRI="/assignedIP"/>
@@ -424,7 +448,7 @@
         <Class IRI="/ApplicationLayerElement"/>
     </SubClassOf>
     <SubClassOf>
-        <Class IRI="/Deployment"/>
+        <Class IRI="/WorkloadController"/>
         <Class IRI="/Workload"/>
     </SubClassOf>
     <SubClassOf>
@@ -580,7 +604,7 @@
     </SubClassOf>
     <SubClassOf>
         <Class IRI="/ExecutionUnit"/>
-        <Class IRI="/ContainerizationLayerElement"/>
+        <Class IRI="/Workload"/>
     </SubClassOf>
     <SubClassOf>
         <Class IRI="/ExecutionUnit"/>
@@ -629,8 +653,8 @@
         <Class IRI="/TopologyElement"/>
     </SubClassOf>
     <SubClassOf>
-        <Class IRI="/ReplicaSet"/>
-        <Class IRI="/ContainerizationLayerElement"/>
+        <Class IRI="/StatelessWorkloadController"/>
+        <Class IRI="/Workload"/>
     </SubClassOf>
     <SubClassOf>
         <Class IRI="/SecretManagementService"/>
@@ -649,7 +673,7 @@
         <Class IRI="/HealthCheckEndpoint"/>
     </SubClassOf>
     <SubClassOf>
-        <Class IRI="/StatefulSet"/>
+        <Class IRI="/StatefulWorkloadController"/>
         <Class IRI="/Workload"/>
     </SubClassOf>
     <SubClassOf>
@@ -717,7 +741,7 @@
         <Class IRI="/Container"/>
         <Class IRI="/Image"/>
         <Class IRI="/Orchestrator"/>
-        <Class IRI="/ReplicaSet"/>
+        <Class IRI="/StatelessWorkloadController"/>
     </DisjointClasses>
     <DisjointClasses>
         <Class IRI="/ContainerCreated"/>
