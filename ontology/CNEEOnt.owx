@@ -44,10 +44,6 @@
     </Declaration>
     <Declaration>
         <Class IRI="/ConfigurationResource"/>
-        <Annotation>
-            <AnnotationProperty abbreviatedIRI="rdfs:comment"/>
-            <Literal>A generic resource for storing configuration data (e.g., K8s ConfigMap).</Literal>
-        </Annotation>
     </Declaration>
     <Declaration>
         <Class IRI="/Container"/>
@@ -90,10 +86,6 @@
     </Declaration>
     <Declaration>
         <Class IRI="/ExecutionUnit"/>
-        <Annotation>
-            <AnnotationProperty abbreviatedIRI="rdfs:comment"/>
-            <Literal>The smallest deployable unit of computing. Maps to a Kubernetes Pod, Docker Swarm Task, or Nomad Allocation.</Literal>
-        </Annotation>
     </Declaration>
     <Declaration>
         <Class IRI="/ExecutionUnitFailed"/>
@@ -145,10 +137,6 @@
     </Declaration>
     <Declaration>
         <Class IRI="/LivenessCheck"/>
-        <Annotation>
-            <AnnotationProperty abbreviatedIRI="rdfs:comment"/>
-            <Literal>A health check to determine if an execution unit is still running correctly (e.g., K8s LivenessProbe).</Literal>
-        </Annotation>
     </Declaration>
     <Declaration>
         <Class IRI="/LoadBalancer"/>
@@ -209,10 +197,6 @@
     </Declaration>
     <Declaration>
         <Class IRI="/ReadinessCheck"/>
-        <Annotation>
-            <AnnotationProperty abbreviatedIRI="rdfs:comment"/>
-            <Literal>A health check to determine if an execution unit is ready to receive traffic (e.g., K8s ReadinessProbe).</Literal>
-        </Annotation>
     </Declaration>
     <Declaration>
         <Class IRI="/Region"/>
@@ -222,37 +206,21 @@
     </Declaration>
     <Declaration>
         <Class IRI="/Service"/>
-        <Annotation>
-            <AnnotationProperty abbreviatedIRI="rdfs:comment"/>
-            <Literal>An abstract way to expose an application running on a set of execution units as a network service (e.g., K8s Service).</Literal>
-        </Annotation>
     </Declaration>
     <Declaration>
         <Class IRI="/SourceCodeRepository"/>
     </Declaration>
     <Declaration>
         <Class IRI="/StartupCheck"/>
-        <Annotation>
-            <AnnotationProperty abbreviatedIRI="rdfs:comment"/>
-            <Literal>A health check to determine if an execution unit has successfully started (e.g., K8s StartupProbe).</Literal>
-        </Annotation>
     </Declaration>
     <Declaration>
         <Class IRI="/State"/>
     </Declaration>
     <Declaration>
         <Class IRI="/StatefulWorkloadController"/>
-        <Annotation>
-            <AnnotationProperty abbreviatedIRI="rdfs:comment"/>
-            <Literal>A controller for workloads that require stable persistence and unique identifiers (e.g., K8s StatefulSet).</Literal>
-        </Annotation>
     </Declaration>
     <Declaration>
         <Class IRI="/StatelessWorkloadController"/>
-        <Annotation>
-            <AnnotationProperty abbreviatedIRI="rdfs:comment"/>
-            <Literal>A controller for workloads that do not maintain persistent state across restarts (e.g., K8s ReplicaSet).</Literal>
-        </Annotation>
     </Declaration>
     <Declaration>
         <Class IRI="/StorageResource"/>
@@ -283,17 +251,9 @@
     </Declaration>
     <Declaration>
         <Class IRI="/Workload"/>
-        <Annotation>
-            <AnnotationProperty abbreviatedIRI="rdfs:comment"/>
-            <Literal>Represents an application or a component of an application running on the infrastructure.</Literal>
-        </Annotation>
     </Declaration>
     <Declaration>
         <Class IRI="/WorkloadController"/>
-        <Annotation>
-            <AnnotationProperty abbreviatedIRI="rdfs:comment"/>
-            <Literal>An abstract entity that manages the deployment and scaling of execution units (e.g., K8s Deployment).</Literal>
-        </Annotation>
     </Declaration>
     <Declaration>
         <ObjectProperty IRI="/assignedIP"/>
@@ -306,6 +266,9 @@
     </Declaration>
     <Declaration>
         <ObjectProperty IRI="/dependsOn"/>
+    </Declaration>
+    <Declaration>
+        <ObjectProperty IRI="/dependsOnResource"/>
     </Declaration>
     <Declaration>
         <ObjectProperty IRI="/deploys"/>
@@ -344,11 +307,54 @@
         <ObjectProperty IRI="/usesStorage"/>
     </Declaration>
     <Declaration>
+        <DataProperty IRI="/allocatedCPU"/>
+    </Declaration>
+    <Declaration>
+        <DataProperty IRI="/annotation"/>
+    </Declaration>
+    <Declaration>
+        <DataProperty IRI="/availableStorage"/>
+    </Declaration>
+    <Declaration>
+        <DataProperty IRI="/healthCheckURL"/>
+    </Declaration>
+    <Declaration>
+        <DataProperty IRI="/label"/>
+    </Declaration>
+    <Declaration>
+        <DataProperty IRI="/logicalGroup"/>
+    </Declaration>
+    <Declaration>
+        <DataProperty IRI="/memoryLimit"/>
+    </Declaration>
+    <Declaration>
+        <DataProperty IRI="/metricsEndpoint"/>
+    </Declaration>
+    <Declaration>
+        <DataProperty IRI="/resourceID"/>
+    </Declaration>
+    <Declaration>
+        <DataProperty IRI="/resourceName"/>
+    </Declaration>
+    <Declaration>
+        <DataProperty IRI="/resourceQuota"/>
+    </Declaration>
+    <Declaration>
+        <DataProperty IRI="/telemetryPort"/>
+    </Declaration>
+    <Declaration>
         <DataProperty IRI="/version"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="/CloudNativeEntity"/>
     </Declaration>
     <SubClassOf>
         <Class IRI="/APIEndpoint"/>
         <Class IRI="/Endpoint"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="/ApplicationLayerElement"/>
+        <Class IRI="/CloudNativeEntity"/>
     </SubClassOf>
     <SubClassOf>
         <Class IRI="/ArtifactRepository"/>
@@ -465,12 +471,12 @@
         <Class IRI="/State"/>
     </SubClassOf>
     <SubClassOf>
-        <Class IRI="/DataService"/>
-        <Class IRI="/ApplicationLayerElement"/>
+        <Class IRI="/ContainerizationLayerElement"/>
+        <Class IRI="/CloudNativeEntity"/>
     </SubClassOf>
     <SubClassOf>
-        <Class IRI="/WorkloadController"/>
-        <Class IRI="/Workload"/>
+        <Class IRI="/DataService"/>
+        <Class IRI="/ApplicationLayerElement"/>
     </SubClassOf>
     <SubClassOf>
         <Class IRI="/DeviceDriver"/>
@@ -479,6 +485,58 @@
     <SubClassOf>
         <Class IRI="/Endpoint"/>
         <Class IRI="/ApplicationLayerElement"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="/ExecutionUnit"/>
+        <Class IRI="/ContainerizationLayerElement"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="/ExecutionUnit"/>
+        <ObjectSomeValuesFrom>
+            <ObjectProperty IRI="/contains"/>
+            <Class IRI="/Container"/>
+        </ObjectSomeValuesFrom>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="/ExecutionUnit"/>
+        <ObjectSomeValuesFrom>
+            <ObjectProperty IRI="/isHostedOn"/>
+            <Class IRI="/Node"/>
+        </ObjectSomeValuesFrom>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="/ExecutionUnit"/>
+        <ObjectSomeValuesFrom>
+            <ObjectProperty IRI="/isPartOf"/>
+            <Class IRI="/Workload"/>
+        </ObjectSomeValuesFrom>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="/ExecutionUnit"/>
+        <ObjectExactCardinality cardinality="1">
+            <ObjectProperty IRI="/hasCurrentState"/>
+            <Class IRI="/ExecutionUnitState"/>
+        </ObjectExactCardinality>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="/ExecutionUnitFailed"/>
+        <Class IRI="/ExecutionUnitState"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="/ExecutionUnitPending"/>
+        <Class IRI="/ExecutionUnitState"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="/ExecutionUnitRunning"/>
+        <Class IRI="/ExecutionUnitState"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="/ExecutionUnitState"/>
+        <Class IRI="/State"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="/ExecutionUnitSucceeded"/>
+        <Class IRI="/ExecutionUnitState"/>
     </SubClassOf>
     <SubClassOf>
         <Class IRI="/Firewall"/>
@@ -524,6 +582,10 @@
         <Class IRI="/ManagementElement"/>
     </SubClassOf>
     <SubClassOf>
+        <Class IRI="/InfrastructureLayerElement"/>
+        <Class IRI="/CloudNativeEntity"/>
+    </SubClassOf>
+    <SubClassOf>
         <Class IRI="/Kernel"/>
         <Class IRI="/SystemSoftware"/>
     </SubClassOf>
@@ -557,13 +619,6 @@
     </SubClassOf>
     <SubClassOf>
         <Class IRI="/Microservice"/>
-        <DataSomeValuesFrom>
-            <DataProperty IRI="/version"/>
-            <Datatype abbreviatedIRI="xsd:string"/>
-        </DataSomeValuesFrom>
-    </SubClassOf>
-    <SubClassOf>
-        <Class IRI="/Microservice"/>
         <ObjectSomeValuesFrom>
             <ObjectProperty IRI="/exposesEndpoint"/>
             <Class IRI="/APIEndpoint"/>
@@ -575,6 +630,13 @@
             <ObjectProperty IRI="/isHostedOn"/>
             <Class IRI="/Workload"/>
         </ObjectSomeValuesFrom>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="/Microservice"/>
+        <DataSomeValuesFrom>
+            <DataProperty IRI="/version"/>
+            <Datatype abbreviatedIRI="xsd:string"/>
+        </DataSomeValuesFrom>
     </SubClassOf>
     <SubClassOf>
         <Class IRI="/Namespace"/>
@@ -595,15 +657,15 @@
     <SubClassOf>
         <Class IRI="/Node"/>
         <ObjectSomeValuesFrom>
-            <ObjectProperty IRI="/isPartOf"/>
-            <Class IRI="/Cluster"/>
+            <ObjectProperty IRI="/isHostedOn"/>
+            <Class IRI="/ComputeResource"/>
         </ObjectSomeValuesFrom>
     </SubClassOf>
     <SubClassOf>
         <Class IRI="/Node"/>
         <ObjectSomeValuesFrom>
-            <ObjectProperty IRI="/isHostedOn"/>
-            <Class IRI="/ComputeResource"/>
+            <ObjectProperty IRI="/isPartOf"/>
+            <Class IRI="/Cluster"/>
         </ObjectSomeValuesFrom>
     </SubClassOf>
     <SubClassOf>
@@ -638,58 +700,6 @@
         <Class IRI="/ManagementElement"/>
     </SubClassOf>
     <SubClassOf>
-        <Class IRI="/ExecutionUnit"/>
-        <Class IRI="/ContainerizationLayerElement"/>
-    </SubClassOf>
-    <SubClassOf>
-        <Class IRI="/ExecutionUnit"/>
-        <ObjectSomeValuesFrom>
-            <ObjectProperty IRI="/isPartOf"/>
-            <Class IRI="/Workload"/>
-        </ObjectSomeValuesFrom>
-    </SubClassOf>
-    <SubClassOf>
-        <Class IRI="/ExecutionUnit"/>
-        <ObjectSomeValuesFrom>
-            <ObjectProperty IRI="/isHostedOn"/>
-            <Class IRI="/Node"/>
-        </ObjectSomeValuesFrom>
-    </SubClassOf>
-    <SubClassOf>
-        <Class IRI="/ExecutionUnit"/>
-        <ObjectSomeValuesFrom>
-            <ObjectProperty IRI="/contains"/>
-            <Class IRI="/Container"/>
-        </ObjectSomeValuesFrom>
-    </SubClassOf>
-    <SubClassOf>
-        <Class IRI="/ExecutionUnit"/>
-        <ObjectExactCardinality cardinality="1">
-            <ObjectProperty IRI="/hasCurrentState"/>
-            <Class IRI="/ExecutionUnitState"/>
-        </ObjectExactCardinality>
-    </SubClassOf>
-    <SubClassOf>
-        <Class IRI="/ExecutionUnitFailed"/>
-        <Class IRI="/ExecutionUnitState"/>
-    </SubClassOf>
-    <SubClassOf>
-        <Class IRI="/ExecutionUnitPending"/>
-        <Class IRI="/ExecutionUnitState"/>
-    </SubClassOf>
-    <SubClassOf>
-        <Class IRI="/ExecutionUnitRunning"/>
-        <Class IRI="/ExecutionUnitState"/>
-    </SubClassOf>
-    <SubClassOf>
-        <Class IRI="/ExecutionUnitState"/>
-        <Class IRI="/State"/>
-    </SubClassOf>
-    <SubClassOf>
-        <Class IRI="/ExecutionUnitSucceeded"/>
-        <Class IRI="/ExecutionUnitState"/>
-    </SubClassOf>
-    <SubClassOf>
         <Class IRI="/Profile"/>
         <Class IRI="/ObservabilityElement"/>
     </SubClassOf>
@@ -700,10 +710,6 @@
     <SubClassOf>
         <Class IRI="/Region"/>
         <Class IRI="/TopologyElement"/>
-    </SubClassOf>
-    <SubClassOf>
-        <Class IRI="/StatelessWorkloadController"/>
-        <Class IRI="/Workload"/>
     </SubClassOf>
     <SubClassOf>
         <Class IRI="/SecretManagementService"/>
@@ -723,6 +729,10 @@
     </SubClassOf>
     <SubClassOf>
         <Class IRI="/StatefulWorkloadController"/>
+        <Class IRI="/Workload"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="/StatelessWorkloadController"/>
         <Class IRI="/Workload"/>
     </SubClassOf>
     <SubClassOf>
@@ -786,6 +796,10 @@
             <Class IRI="/ExecutionUnit"/>
         </ObjectSomeValuesFrom>
     </SubClassOf>
+    <SubClassOf>
+        <Class IRI="/WorkloadController"/>
+        <Class IRI="/Workload"/>
+    </SubClassOf>
     <DisjointClasses>
         <Class IRI="/ApplicationLayerElement"/>
         <Class IRI="/ContainerizationLayerElement"/>
@@ -839,6 +853,9 @@
         <ObjectProperty IRI="/dependsOn"/>
     </TransitiveObjectProperty>
     <TransitiveObjectProperty>
+        <ObjectProperty IRI="/dependsOnResource"/>
+    </TransitiveObjectProperty>
+    <TransitiveObjectProperty>
         <ObjectProperty IRI="/hosts"/>
     </TransitiveObjectProperty>
     <TransitiveObjectProperty>
@@ -850,6 +867,14 @@
     <TransitiveObjectProperty>
         <ObjectProperty IRI="/locatedIn"/>
     </TransitiveObjectProperty>
+    <ObjectPropertyDomain>
+        <ObjectProperty IRI="/communicatesWith"/>
+        <Class IRI="/CloudNativeEntity"/>
+    </ObjectPropertyDomain>
+    <ObjectPropertyDomain>
+        <ObjectProperty IRI="/dependsOnResource"/>
+        <Class IRI="/CloudNativeEntity"/>
+    </ObjectPropertyDomain>
     <ObjectPropertyDomain>
         <ObjectProperty IRI="/usesImage"/>
         <Class IRI="/Container"/>
@@ -890,12 +915,163 @@
         <ObjectProperty IRI="/usesStorage"/>
         <Class IRI="/StorageResource"/>
     </ObjectPropertyRange>
+    <DataPropertyDomain>
+        <DataProperty IRI="/allocatedCPU"/>
+        <Class IRI="/ExecutionUnit"/>
+    </DataPropertyDomain>
+    <DataPropertyDomain>
+        <DataProperty IRI="/annotation"/>
+        <Class IRI="/CloudNativeEntity"/>
+    </DataPropertyDomain>
+    <DataPropertyDomain>
+        <DataProperty IRI="/availableStorage"/>
+        <Class IRI="/StorageResource"/>
+    </DataPropertyDomain>
+    <DataPropertyDomain>
+        <DataProperty IRI="/healthCheckURL"/>
+        <Class IRI="/Workload"/>
+    </DataPropertyDomain>
+    <DataPropertyDomain>
+        <DataProperty IRI="/label"/>
+        <Class IRI="/CloudNativeEntity"/>
+    </DataPropertyDomain>
+    <DataPropertyDomain>
+        <DataProperty IRI="/logicalGroup"/>
+        <Class IRI="/CloudNativeEntity"/>
+    </DataPropertyDomain>
+    <DataPropertyDomain>
+        <DataProperty IRI="/memoryLimit"/>
+        <Class IRI="/ExecutionUnit"/>
+    </DataPropertyDomain>
+    <DataPropertyDomain>
+        <DataProperty IRI="/metricsEndpoint"/>
+        <Class IRI="/Workload"/>
+    </DataPropertyDomain>
+    <DataPropertyDomain>
+        <DataProperty IRI="/resourceID"/>
+        <Class IRI="/CloudNativeEntity"/>
+    </DataPropertyDomain>
+    <DataPropertyDomain>
+        <DataProperty IRI="/resourceName"/>
+        <Class IRI="/CloudNativeEntity"/>
+    </DataPropertyDomain>
+    <DataPropertyDomain>
+        <DataProperty IRI="/resourceQuota"/>
+        <Class IRI="/Workload"/>
+    </DataPropertyDomain>
+    <DataPropertyDomain>
+        <DataProperty IRI="/telemetryPort"/>
+        <Class IRI="/Workload"/>
+    </DataPropertyDomain>
+    <DataPropertyDomain>
+        <DataProperty IRI="/version"/>
+        <Class IRI="/CloudNativeEntity"/>
+    </DataPropertyDomain>
+    <DataPropertyRange>
+        <DataProperty IRI="/allocatedCPU"/>
+        <Datatype abbreviatedIRI="xsd:string"/>
+    </DataPropertyRange>
+    <DataPropertyRange>
+        <DataProperty IRI="/annotation"/>
+        <Datatype abbreviatedIRI="xsd:string"/>
+    </DataPropertyRange>
+    <DataPropertyRange>
+        <DataProperty IRI="/availableStorage"/>
+        <Datatype abbreviatedIRI="xsd:string"/>
+    </DataPropertyRange>
+    <DataPropertyRange>
+        <DataProperty IRI="/healthCheckURL"/>
+        <Datatype abbreviatedIRI="xsd:anyURI"/>
+    </DataPropertyRange>
+    <DataPropertyRange>
+        <DataProperty IRI="/label"/>
+        <Datatype abbreviatedIRI="xsd:string"/>
+    </DataPropertyRange>
+    <DataPropertyRange>
+        <DataProperty IRI="/logicalGroup"/>
+        <Datatype abbreviatedIRI="xsd:string"/>
+    </DataPropertyRange>
+    <DataPropertyRange>
+        <DataProperty IRI="/memoryLimit"/>
+        <Datatype abbreviatedIRI="xsd:string"/>
+    </DataPropertyRange>
+    <DataPropertyRange>
+        <DataProperty IRI="/metricsEndpoint"/>
+        <Datatype abbreviatedIRI="xsd:string"/>
+    </DataPropertyRange>
+    <DataPropertyRange>
+        <DataProperty IRI="/resourceID"/>
+        <Datatype abbreviatedIRI="xsd:string"/>
+    </DataPropertyRange>
+    <DataPropertyRange>
+        <DataProperty IRI="/resourceName"/>
+        <Datatype abbreviatedIRI="xsd:string"/>
+    </DataPropertyRange>
+    <DataPropertyRange>
+        <DataProperty IRI="/resourceQuota"/>
+        <Datatype abbreviatedIRI="xsd:string"/>
+    </DataPropertyRange>
+    <DataPropertyRange>
+        <DataProperty IRI="/telemetryPort"/>
+        <Datatype abbreviatedIRI="xsd:integer"/>
+    </DataPropertyRange>
     <DataPropertyRange>
         <DataProperty IRI="/version"/>
         <Datatype abbreviatedIRI="xsd:string"/>
     </DataPropertyRange>
-</Ontology>
 
+    <AnnotationAssertion>
+        <AnnotationProperty abbreviatedIRI="rdfs:comment"/>
+        <IRI>/Workload</IRI>
+        <Literal>Represents an application or a component of an application running on the infrastructure.</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty abbreviatedIRI="rdfs:comment"/>
+        <IRI>/WorkloadController</IRI>
+        <Literal>An abstract entity that manages the deployment and scaling of execution units (e.g., K8s Deployment).</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty abbreviatedIRI="rdfs:comment"/>
+        <IRI>/StatelessWorkloadController</IRI>
+        <Literal>A controller for workloads that do not maintain persistent state across restarts (e.g., K8s ReplicaSet).</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty abbreviatedIRI="rdfs:comment"/>
+        <IRI>/StatefulWorkloadController</IRI>
+        <Literal>A controller for workloads that require stable persistence and unique identifiers (e.g., K8s StatefulSet).</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty abbreviatedIRI="rdfs:comment"/>
+        <IRI>/Service</IRI>
+        <Literal>An abstract way to expose an application running on a set of execution units as a network service (e.g., K8s Service).</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty abbreviatedIRI="rdfs:comment"/>
+        <IRI>/ExecutionUnit</IRI>
+        <Literal>The smallest deployable unit of computing. Maps to a Kubernetes Pod, Docker Swarm Task, or Nomad Allocation.</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty abbreviatedIRI="rdfs:comment"/>
+        <IRI>/ConfigurationResource</IRI>
+        <Literal>A generic resource for storing configuration data (e.g., K8s ConfigMap).</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty abbreviatedIRI="rdfs:comment"/>
+        <IRI>/LivenessCheck</IRI>
+        <Literal>A health check to determine if an execution unit is still running correctly (e.g., K8s LivenessProbe).</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty abbreviatedIRI="rdfs:comment"/>
+        <IRI>/ReadinessCheck</IRI>
+        <Literal>A health check to determine if an execution unit is ready to receive traffic (e.g., K8s ReadinessProbe).</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty abbreviatedIRI="rdfs:comment"/>
+        <IRI>/StartupCheck</IRI>
+        <Literal>A health check to determine if an execution unit has successfully started (e.g., K8s StartupProbe).</Literal>
+    </AnnotationAssertion>
+
+</Ontology>
 
 
 <!-- Generated by the OWL API (version 4.5.29.2024-05-13T12:11:03Z) https://github.com/owlcs/owlapi -->
