@@ -43,7 +43,7 @@
         <Class IRI="/ComputeResource"/>
     </Declaration>
     <Declaration>
-        <Class IRI="/ConfigMap"/>
+        <Class IRI="/ConfigurationResource"/>
     </Declaration>
     <Declaration>
         <Class IRI="/Container"/>
@@ -121,7 +121,11 @@
         <Class IRI="/Kernel"/>
     </Declaration>
     <Declaration>
-        <Class IRI="/LivenessProbe"/>
+        <Class IRI="/LivenessCheck"/>
+        <Annotation>
+            <AnnotationProperty abbreviatedIRI="rdfs:comment"/>
+            <Literal>A health check to determine if an execution unit is still running correctly (e.g., K8s LivenessProbe).</Literal>
+        </Annotation>
     </Declaration>
     <Declaration>
         <Class IRI="/LoadBalancer"/>
@@ -178,28 +182,36 @@
         <Class IRI="/Pipeline"/>
     </Declaration>
     <Declaration>
-        <Class IRI="/Pod"/>
+        <Class IRI="/ExecutionUnit"/>
+        <Annotation>
+            <AnnotationProperty abbreviatedIRI="rdfs:comment"/>
+            <Literal>The smallest deployable unit of computing. Maps to a Kubernetes Pod, Docker Swarm Task.</Literal>
+        </Annotation>
     </Declaration>
     <Declaration>
-        <Class IRI="/PodFailed"/>
+        <Class IRI="/ExecutionUnitFailed"/>
     </Declaration>
     <Declaration>
-        <Class IRI="/PodPending"/>
+        <Class IRI="/ExecutionUnitPending"/>
     </Declaration>
     <Declaration>
-        <Class IRI="/PodRunning"/>
+        <Class IRI="/ExecutionUnitRunning"/>
     </Declaration>
     <Declaration>
-        <Class IRI="/PodState"/>
+        <Class IRI="/ExecutionUnitState"/>
     </Declaration>
     <Declaration>
-        <Class IRI="/PodSucceeded"/>
+        <Class IRI="/ExecutionUnitSucceeded"/>
     </Declaration>
     <Declaration>
         <Class IRI="/Profile"/>
     </Declaration>
     <Declaration>
-        <Class IRI="/ReadinessProbe"/>
+        <Class IRI="/ReadinessCheck"/>
+        <Annotation>
+            <AnnotationProperty abbreviatedIRI="rdfs:comment"/>
+            <Literal>A health check to determine if an execution unit is ready to receive traffic (e.g., K8s ReadinessProbe).</Literal>
+        </Annotation>
     </Declaration>
     <Declaration>
         <Class IRI="/Region"/>
@@ -217,7 +229,11 @@
         <Class IRI="/SourceCodeRepository"/>
     </Declaration>
     <Declaration>
-        <Class IRI="/StartupProbe"/>
+        <Class IRI="/StartupCheck"/>
+        <Annotation>
+            <AnnotationProperty abbreviatedIRI="rdfs:comment"/>
+            <Literal>A health check to determine if an execution unit has successfully started (e.g., K8s StartupProbe).</Literal>
+        </Annotation>
     </Declaration>
     <Declaration>
         <Class IRI="/State"/>
@@ -343,7 +359,7 @@
         <Class IRI="/InfrastructureLayerElement"/>
     </SubClassOf>
     <SubClassOf>
-        <Class IRI="/ConfigMap"/>
+        <Class IRI="/ConfigurationResource"/>
         <Class IRI="/ContainerizationLayerElement"/>
     </SubClassOf>
     <SubClassOf>
@@ -467,7 +483,7 @@
         <Class IRI="/SystemSoftware"/>
     </SubClassOf>
     <SubClassOf>
-        <Class IRI="/LivenessProbe"/>
+        <Class IRI="/LivenessCheck"/>
         <Class IRI="/HealthCheckEndpoint"/>
     </SubClassOf>
     <SubClassOf>
@@ -563,49 +579,49 @@
         <Class IRI="/ManagementElement"/>
     </SubClassOf>
     <SubClassOf>
-        <Class IRI="/Pod"/>
+        <Class IRI="/ExecutionUnit"/>
         <Class IRI="/ContainerizationLayerElement"/>
     </SubClassOf>
     <SubClassOf>
-        <Class IRI="/Pod"/>
+        <Class IRI="/ExecutionUnit"/>
         <ObjectSomeValuesFrom>
             <ObjectProperty IRI="/contains"/>
             <Class IRI="/Container"/>
         </ObjectSomeValuesFrom>
     </SubClassOf>
     <SubClassOf>
-        <Class IRI="/Pod"/>
+        <Class IRI="/ExecutionUnit"/>
         <ObjectExactCardinality cardinality="1">
             <ObjectProperty IRI="/hasCurrentState"/>
-            <Class IRI="/PodState"/>
+            <Class IRI="/ExecutionUnitState"/>
         </ObjectExactCardinality>
     </SubClassOf>
     <SubClassOf>
-        <Class IRI="/PodFailed"/>
-        <Class IRI="/PodState"/>
+        <Class IRI="/ExecutionUnitFailed"/>
+        <Class IRI="/ExecutionUnitState"/>
     </SubClassOf>
     <SubClassOf>
-        <Class IRI="/PodPending"/>
-        <Class IRI="/PodState"/>
+        <Class IRI="/ExecutionUnitPending"/>
+        <Class IRI="/ExecutionUnitState"/>
     </SubClassOf>
     <SubClassOf>
-        <Class IRI="/PodRunning"/>
-        <Class IRI="/PodState"/>
+        <Class IRI="/ExecutionUnitRunning"/>
+        <Class IRI="/ExecutionUnitState"/>
     </SubClassOf>
     <SubClassOf>
-        <Class IRI="/PodState"/>
+        <Class IRI="/ExecutionUnitState"/>
         <Class IRI="/State"/>
     </SubClassOf>
     <SubClassOf>
-        <Class IRI="/PodSucceeded"/>
-        <Class IRI="/PodState"/>
+        <Class IRI="/ExecutionUnitSucceeded"/>
+        <Class IRI="/ExecutionUnitState"/>
     </SubClassOf>
     <SubClassOf>
         <Class IRI="/Profile"/>
         <Class IRI="/ObservabilityElement"/>
     </SubClassOf>
     <SubClassOf>
-        <Class IRI="/ReadinessProbe"/>
+        <Class IRI="/ReadinessCheck"/>
         <Class IRI="/HealthCheckEndpoint"/>
     </SubClassOf>
     <SubClassOf>
@@ -629,7 +645,7 @@
         <Class IRI="/ManagementElement"/>
     </SubClassOf>
     <SubClassOf>
-        <Class IRI="/StartupProbe"/>
+        <Class IRI="/StartupCheck"/>
         <Class IRI="/HealthCheckEndpoint"/>
     </SubClassOf>
     <SubClassOf>
@@ -665,7 +681,7 @@
     </SubClassOf>
     <SubClassOf>
         <Class IRI="/Unknown"/>
-        <Class IRI="/PodState"/>
+        <Class IRI="/ExecutionUnitState"/>
     </SubClassOf>
     <SubClassOf>
         <Class IRI="/VirtualMachine"/>
@@ -687,7 +703,7 @@
         <Class IRI="/Workload"/>
         <ObjectSomeValuesFrom>
             <ObjectProperty IRI="/contains"/>
-            <Class IRI="/Pod"/>
+            <Class IRI="/ExecutionUnit"/>
         </ObjectSomeValuesFrom>
     </SubClassOf>
     <DisjointClasses>
@@ -713,9 +729,9 @@
     </DisjointClasses>
     <DisjointClasses>
         <Class IRI="/ContainerRunning"/>
-        <Class IRI="/PodFailed"/>
-        <Class IRI="/PodPending"/>
-        <Class IRI="/PodSucceeded"/>
+        <Class IRI="/ExecutionUnitFailed"/>
+        <Class IRI="/ExecutionUnitPending"/>
+        <Class IRI="/ExecutionUnitSucceeded"/>
         <Class IRI="/Unknown"/>
     </DisjointClasses>
     <DisjointClasses>
