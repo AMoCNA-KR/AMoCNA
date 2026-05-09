@@ -18,6 +18,19 @@ import static com.kubiki.themis.constants.OntologyConstants.CLASS_PROMETHEUS_CON
 @Component
 public class PrometheusConditionEvaluator implements ConditionEvaluator {
 
+    private static final String PROMETHEUS_QUERY_PATH = "/api/v1/query";
+    private static final String QUERY_PARAM = "query";
+    private static final String RESPONSE_STATUS_SUCCESS = "success";
+    private static final String FIELD_STATUS = "status";
+    private static final String FIELD_DATA = "data";
+    private static final String FIELD_RESULT = "result";
+
+    private static final String ERROR_STATUS = "Prometheus query failed with status: ";
+    private static final String ERROR_EMPTY_BODY = "Prometheus returned empty body";
+    private static final String ERROR_NOT_SUCCESSFUL = "Prometheus query was not successful";
+    private static final String ERROR_PARSE = "Error parsing Prometheus response: ";
+    private static final String ERROR_EVALUATE = "Error evaluating Prometheus condition: ";
+
     private final RestClient restClient;
     private final ThemisProperties properties;
     private final ObjectMapper objectMapper;
@@ -40,33 +53,33 @@ public class PrometheusConditionEvaluator implements ConditionEvaluator {
     public boolean evaluate(ActionData.ConditionData condition) {
         try {
             String responseBody = restClient.get()
-                    .uri(uriBuilder -> uriBuilder.path("/api/v1/query")
-                            .queryParam("query", condition.policy())
+                    .uri(uriBuilder -> uriBuilder.path(PROMETHEUS_QUERY_PATH)
+                            .queryParam(QUERY_PARAM, condition.policy())
                             .build())
                     .retrieve()
                     .onStatus(HttpStatusCode::isError, (request, resp) -> {
-                        throw new ConditionEvaluationException("Prometheus query failed with status: " + resp.getStatusCode());
+                        throw new ConditionEvaluationException(ERROR_STATUS + resp.getStatusCode());
                     })
                     .body(String.class);
 
             if (responseBody == null) {
-                throw new ConditionEvaluationException("Prometheus returned empty body");
+                throw new ConditionEvaluationException(ERROR_EMPTY_BODY);
             }
 
             JsonNode response = objectMapper.readTree(responseBody);
-            if (!"success".equals(response.get("status").asText())) {
-                throw new ConditionEvaluationException("Prometheus query was not successful");
+            if (!RESPONSE_STATUS_SUCCESS.equals(response.get(FIELD_STATUS).asText())) {
+                throw new ConditionEvaluationException(ERROR_NOT_SUCCESSFUL);
             }
 
-            JsonNode result = response.get("data").get("result");
+            JsonNode result = response.get(FIELD_DATA).get(FIELD_RESULT);
             return result.isArray() && !result.isEmpty();
         } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
-            throw new ConditionEvaluationException("Error parsing Prometheus response: " + e.getMessage(), e);
+            throw new ConditionEvaluationException(ERROR_PARSE + e.getMessage(), e);
         } catch (Exception e) {
             if (e instanceof ConditionEvaluationException) {
                 throw e;
             }
-            throw new ConditionEvaluationException("Error evaluating Prometheus condition: " + e.getMessage(), e);
+            throw new ConditionEvaluationException(ERROR_EVALUATE + e.getMessage(), e);
         }
     }
 }
