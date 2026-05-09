@@ -13,6 +13,8 @@ import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
+import static com.kubiki.themis.constants.OntologyConstants.CLASS_PROMETHEUS_CONDITION;
+
 @Component
 public class PrometheusConditionEvaluator implements ConditionEvaluator {
 
@@ -30,7 +32,7 @@ public class PrometheusConditionEvaluator implements ConditionEvaluator {
 
     @Override
     public boolean supports(IRI conditionType) {
-        String prometheusCondition = properties.ontology().moamNamespace() + OntologyConstants.CLASS_PROMETHEUS_CONDITION;
+        String prometheusCondition = properties.ontology().moamNamespace() + CLASS_PROMETHEUS_CONDITION;
         return prometheusCondition.equals(conditionType.stringValue());
     }
 

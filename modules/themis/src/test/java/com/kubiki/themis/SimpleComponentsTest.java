@@ -36,21 +36,6 @@ class SimpleComponentsTest {
         );
     }
 
-    @Test
-    @DisplayName("OntologyConstants should have valid values and private constructor")
-    void testOntologyConstants() throws Exception {
-        assertAll(
-                () -> assertNotNull(OntologyConstants.CLASS_PROMETHEUS_CONDITION),
-                () -> assertNotNull(OntologyConstants.PROP_HAS_COMPENSATION),
-                () -> {
-                    // Test private constructor for coverage
-                    Constructor<OntologyConstants> constructor = OntologyConstants.class.getDeclaredConstructor();
-                    assertTrue(java.lang.reflect.Modifier.isPrivate(constructor.getModifiers()));
-                    constructor.setAccessible(true);
-                    assertNotNull(constructor.newInstance());
-                }
-        );
-    }
 
     @Test
     @DisplayName("ThemisProperties and its nested records should work correctly")

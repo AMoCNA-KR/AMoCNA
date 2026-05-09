@@ -8,6 +8,8 @@ import com.kubiki.themis.model.ActionData;
 import org.eclipse.rdf4j.model.IRI;
 import org.springframework.stereotype.Component;
 
+import static com.kubiki.themis.constants.OntologyConstants.*;
+
 @Component
 public class SparqlConditionEvaluator implements ConditionEvaluator {
     private final GraphDBGateway graphDBGateway;
@@ -20,7 +22,7 @@ public class SparqlConditionEvaluator implements ConditionEvaluator {
 
     @Override
     public boolean supports(IRI conditionType) {
-        String stateBasedCondition = properties.ontology().moamNamespace() + OntologyConstants.CLASS_STATE_BASED_CONDITION;
+        String stateBasedCondition = properties.ontology().moamNamespace() + CLASS_STATE_BASED_CONDITION;
         return stateBasedCondition.equals(conditionType.stringValue());
     }
 
