@@ -8,6 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+import jakarta.annotation.PreDestroy;
 import java.util.Stack;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -23,6 +24,12 @@ public class SagaEngine {
     public SagaEngine(GraphDBGateway gateway) {
         this.gateway = gateway;
         this.executor = Executors.newVirtualThreadPerTaskExecutor();
+    }
+
+    @PreDestroy
+    public void shutdown() {
+        log.info("Shutting down SagaEngine executor");
+        executor.shutdown();
     }
 
     public boolean execute(ActionData action, UUID executionId, ActionDispatcher dispatcher) {
