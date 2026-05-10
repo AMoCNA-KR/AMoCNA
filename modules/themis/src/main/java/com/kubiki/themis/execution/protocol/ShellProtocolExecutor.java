@@ -28,16 +28,29 @@ public class ShellProtocolExecutor implements ProtocolExecutor {
             return false;
         }
 
-        String command = hydrate(simpleAction.instruction(), simpleAction.data());
-        if (command == null || command.isBlank()) {
-            log.error("Hydrated command is null or blank for action {} in execution {}", action.id(), executionId);
+        String template = simpleAction.instruction();
+        if (template == null || template.isBlank()) {
+            log.error("Instruction is null or blank for action {} in execution {}", action.id(), executionId);
             return false;
+        }
+
+        ProcessBuilder pb = new ProcessBuilder();
+        java.util.Map<String, String> env = pb.environment();
+
+        String command = template;
+        for (var entry : simpleAction.data().entrySet()) {
+            String key = entry.getKey();
+            String value = entry.getValue();
+            // Map placeholder {key} to environment variable $THEMIS_KEY
+            String envVarName = "THEMIS_" + key.toUpperCase().replaceAll("[^A-Z0-9_]", "_");
+            command = command.replace("{" + key + "}", "$" + envVarName);
+            env.put(envVarName, value);
         }
 
         log.info("Executing shell command for execution {}: {}", executionId, command);
 
         try {
-            Process process = new ProcessBuilder("/bin/sh", "-c", command).start();
+            Process process = pb.command("/bin/sh", "-c", command).start();
             // Capture output in separate threads to avoid hanging
             Thread.ofVirtual().start(() -> readStream(process.inputReader(), "STDOUT", action.id()));
             Thread.ofVirtual().start(() -> readStream(process.errorReader(), "STDERR", action.id()));
@@ -61,14 +74,5 @@ public class ShellProtocolExecutor implements ProtocolExecutor {
         } catch (Exception e) {
             log.error("Error reading {} for action {}: {}", type, actionId, e.getMessage());
         }
-    }
-
-    private String hydrate(String template, java.util.Map<String, String> data) {
-        if (template == null) return null;
-        String result = template;
-        for (var entry : data.entrySet()) {
-            result = result.replace("{" + entry.getKey() + "}", entry.getValue());
-        }
-        return result;
     }
 }

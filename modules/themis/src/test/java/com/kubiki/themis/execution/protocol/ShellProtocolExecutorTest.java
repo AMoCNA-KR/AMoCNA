@@ -39,7 +39,7 @@ class ShellProtocolExecutorTest {
                 SimpleValueFactory.getInstance().createIRI("test:echo"),
                 "EchoAction",
                 Protocol.SHELL,
-                "echo 'Hello {name}'",
+                "echo \"Hello {name}\"",
                 SimpleValueFactory.getInstance().createIRI("test:resource"),
                 Map.of("name", "Themis"),
                 null,
@@ -129,5 +129,46 @@ class ShellProtocolExecutorTest {
 
         // Then
         assertFalse(result);
+    }
+
+    @Test
+    @DisplayName("Should prevent command injection")
+    void shouldPreventCommandInjection() {
+        // Given
+        // We try to inject a command that creates a file.
+        // If injection is successful, 'touch injected' will be executed.
+        ActionData.SimpleAction action = new ActionData.SimpleAction(
+                SimpleValueFactory.getInstance().createIRI("test:inject"),
+                "InjectAction",
+                Protocol.SHELL,
+                "touch \"{name}.txt\"",
+                SimpleValueFactory.getInstance().createIRI("test:resource"),
+                Map.of("name", "safe; touch injected"),
+                null,
+                null,
+                Collections.emptyList(),
+                Collections.emptyList()
+        );
+        UUID executionId = UUID.randomUUID();
+
+        // When
+        shellProtocolExecutor.execute(action, executionId);
+
+        // Then
+        java.io.File safeFile = new java.io.File("safe; touch injected.txt");
+        java.io.File injectedFile = new java.io.File("injected");
+
+        boolean safeFileExists = safeFile.exists();
+        boolean injectedFileExists = injectedFile.exists();
+
+        if (safeFileExists) {
+            safeFile.delete();
+        }
+        if (injectedFileExists) {
+            injectedFile.delete();
+        }
+
+        assertTrue(safeFileExists, "Safe file should have been created (demonstrates substitution worked)");
+        assertFalse(injectedFileExists, "Command injection was successful! 'injected' file was created.");
     }
 }
