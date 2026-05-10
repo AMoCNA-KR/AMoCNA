@@ -82,6 +82,7 @@ class GraphDBGatewayTest {
             conn.add(actionIri, RDF.TYPE, intent);
             conn.add(actionIri, vf.createIRI(moam_NS + "targetsEntity"), resourceIri);
             conn.add(actionIri, vf.createIRI(moam_NS + "hasExecutionProtocol"), vf.createIRI(moam_NS + "REST"));
+            conn.add(actionIri, vf.createIRI(moam_NS + "hasExecutionInstruction"), vf.createLiteral("restart"));
         }
 
         java.util.List<com.kubiki.themis.model.ActionData.SimpleAction> actions = gateway.findActionsForResource(resourceIri);
@@ -110,5 +111,38 @@ class GraphDBGatewayTest {
         
         assertEquals(actionIri, action.id());
         assertEquals(intent.stringValue(), action.functionalIntent());
+    }
+
+    @Test
+    @DisplayName("Should fetch complex workflow structure")
+    void shouldFetchComplexWorkflowStructure() {
+        ValueFactory vf = repository.getValueFactory();
+        IRI workflowIri = vf.createIRI(moam_NS + "workflow1");
+        IRI stepIri = vf.createIRI(moam_NS + "step1");
+        IRI workflowIntent = vf.createIRI(moam_NS + "RestartComplexWorkflow");
+        IRI stepIntent = vf.createIRI(moam_NS + "RestartAction");
+        IRI resourceIri = vf.createIRI(moam_NS + "resource1");
+
+        try (RepositoryConnection conn = repository.getConnection()) {
+            // Workflow
+            conn.add(workflowIri, RDF.TYPE, workflowIntent);
+            conn.add(workflowIri, vf.createIRI(moam_NS + "isDecomposedInto"), stepIri);
+
+            // Step
+            conn.add(stepIri, RDF.TYPE, stepIntent);
+            conn.add(stepIri, vf.createIRI(moam_NS + "targetsEntity"), resourceIri);
+            conn.add(stepIri, vf.createIRI(moam_NS + "hasExecutionProtocol"), vf.createIRI(moam_NS + "REST"));
+            conn.add(stepIri, vf.createIRI(moam_NS + "hasExecutionInstruction"), vf.createLiteral("restart"));
+        }
+
+        com.kubiki.themis.model.ActionData action = gateway.fetchActionStructure(workflowIri);
+
+        org.junit.jupiter.api.Assertions.assertNotNull(action, "Workflow should not be null");
+        assertEquals(workflowIri, action.id());
+        assertEquals(workflowIntent.stringValue(), action.functionalIntent());
+        
+        com.kubiki.themis.model.ActionData.ComplexWorkflow workflow = (com.kubiki.themis.model.ActionData.ComplexWorkflow) action;
+        assertEquals(1, workflow.steps().size());
+        assertEquals(stepIri, workflow.steps().get(0).id());
     }
 }
