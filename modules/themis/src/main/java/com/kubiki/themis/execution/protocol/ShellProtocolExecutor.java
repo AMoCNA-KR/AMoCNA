@@ -29,6 +29,11 @@ public class ShellProtocolExecutor implements ProtocolExecutor {
         }
 
         String command = hydrate(simpleAction.instruction(), simpleAction.data());
+        if (command == null || command.isBlank()) {
+            log.error("Hydrated command is null or blank for action {} in execution {}", action.id(), executionId);
+            return false;
+        }
+
         log.info("Executing shell command for execution {}: {}", executionId, command);
 
         try {

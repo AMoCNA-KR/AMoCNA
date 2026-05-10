@@ -80,4 +80,54 @@ class ShellProtocolExecutorTest {
         // Then
         assertFalse(result);
     }
+
+    @Test
+    @DisplayName("Should return false when instruction is missing")
+    void shouldReturnFalseWhenInstructionIsMissing() {
+        // Given
+        ActionData.SimpleAction action = new ActionData.SimpleAction(
+                SimpleValueFactory.getInstance().createIRI("test:fail"),
+                "FailAction",
+                Protocol.SHELL,
+                null, // missing instruction
+                SimpleValueFactory.getInstance().createIRI("test:resource"),
+                Map.of(),
+                null,
+                null,
+                Collections.emptyList(),
+                Collections.emptyList()
+        );
+        UUID executionId = UUID.randomUUID();
+
+        // When
+        boolean result = shellProtocolExecutor.execute(action, executionId);
+
+        // Then
+        assertFalse(result);
+    }
+
+    @Test
+    @DisplayName("Should return false when instruction is blank")
+    void shouldReturnFalseWhenInstructionIsBlank() {
+        // Given
+        ActionData.SimpleAction action = new ActionData.SimpleAction(
+                SimpleValueFactory.getInstance().createIRI("test:fail"),
+                "FailAction",
+                Protocol.SHELL,
+                "   ", // blank instruction
+                SimpleValueFactory.getInstance().createIRI("test:resource"),
+                Map.of(),
+                null,
+                null,
+                Collections.emptyList(),
+                Collections.emptyList()
+        );
+        UUID executionId = UUID.randomUUID();
+
+        // When
+        boolean result = shellProtocolExecutor.execute(action, executionId);
+
+        // Then
+        assertFalse(result);
+    }
 }
