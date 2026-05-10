@@ -143,4 +143,20 @@ class ModelMapperTest {
         assertThat(result.isSuccess()).isFalse();
         assertThat(result.error()).contains("Missing binding: instruction");
     }
+
+    @Test
+    void shouldReturnFailureForUnknownProtocol() {
+        IRI actionId = vf.createIRI("http://example.org/action1");
+        MapBindingSet bs = new MapBindingSet();
+        bs.addBinding("action", actionId);
+        bs.addBinding("intent", vf.createIRI("http://example.org/SimpleAction"));
+        bs.addBinding("protocol", vf.createIRI("http://example.org/UNKNOWN"));
+        bs.addBinding("target", vf.createIRI("http://example.org/target1"));
+        bs.addBinding("instruction", vf.createLiteral("Do something"));
+
+        Result<ActionData> result = mapper.mapAction(actionId, Map.of(actionId, List.of(bs)));
+
+        assertThat(result.isSuccess()).isFalse();
+        assertThat(result.error()).contains("Unknown protocol: UNKNOWN");
+    }
 }

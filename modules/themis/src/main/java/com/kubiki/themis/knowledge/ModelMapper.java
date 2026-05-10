@@ -168,7 +168,21 @@ public class ModelMapper {
         if (!protocolStrResult.isSuccess()) {
             return Result.success(Protocol.REST); // Default
         }
-        return parseEnum(protocolStrResult.value());
+        return parseProtocol(protocolStrResult.value());
+    }
+
+    private Result<Protocol> parseProtocol(String raw) {
+        String name = raw;
+        if (raw.contains("#")) {
+            name = raw.substring(raw.indexOf("#") + 1);
+        } else if (raw.contains("/")) {
+            name = raw.substring(raw.lastIndexOf("/") + 1);
+        }
+        try {
+            return Result.success(Protocol.valueOf(name.toUpperCase()));
+        } catch (IllegalArgumentException e) {
+            return Result.failure("Unknown protocol: " + name);
+        }
     }
 
     private Result<HttpMethod> getHttpMethod(BindingSet bs) {
@@ -185,15 +199,6 @@ public class ModelMapper {
             return HttpMethod.valueOf(name.toUpperCase());
         } catch (Exception e) {
             return null;
-        }
-    }
-
-    private <T extends Enum<T>> Result<T> parseEnum(String raw) {
-        try {
-            String name = raw.contains("#") ? raw.substring(raw.indexOf("#") + 1) : raw;
-            return Result.success(Enum.valueOf((Class<T>) Protocol.class, name.toUpperCase()));
-        } catch (Exception e) {
-            return Result.success((T) Protocol.REST);
         }
     }
 }
