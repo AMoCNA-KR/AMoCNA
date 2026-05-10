@@ -10,6 +10,7 @@ import com.kubiki.themis.model.ActionData;
 import org.eclipse.rdf4j.model.IRI;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatusCode;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
@@ -30,12 +31,13 @@ public class PrometheusConditionEvaluator implements ConditionEvaluator {
     private static final String ERROR_NOT_SUCCESSFUL = "Prometheus query was not successful";
     private static final String ERROR_PARSE = "Error parsing Prometheus response: ";
     private static final String ERROR_EVALUATE = "Error evaluating Prometheus condition: ";
+    private static final String ERROR_NOT_CONFIGURED = "Prometheus RestClient is not configured. Check 'themis.prometheus.url' property.";
 
     private final RestClient restClient;
     private final ThemisProperties properties;
     private final ObjectMapper objectMapper;
 
-    public PrometheusConditionEvaluator(@Qualifier("prometheusRestClient") RestClient restClient,
+    public PrometheusConditionEvaluator(@Nullable @Qualifier("prometheusRestClient") RestClient restClient,
                                         ThemisProperties properties,
                                         ObjectMapper objectMapper) {
         this.restClient = restClient;
@@ -51,6 +53,9 @@ public class PrometheusConditionEvaluator implements ConditionEvaluator {
 
     @Override
     public boolean evaluate(ActionData.ConditionData condition) {
+        if (restClient == null) {
+            throw new ConditionEvaluationException(ERROR_NOT_CONFIGURED);
+        }
         try {
             String responseBody = restClient.get()
                     .uri(uriBuilder -> uriBuilder.path(PROMETHEUS_QUERY_PATH)

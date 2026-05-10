@@ -95,4 +95,16 @@ class PrometheusConditionEvaluatorTest {
                 "up");
         assertThrows(ConditionEvaluationException.class, () -> evaluator.evaluate(condition));
     }
+
+    @Test
+    @DisplayName("should throw ConditionEvaluationException when RestClient is null")
+    void shouldThrowExceptionWhenRestClientIsNull() {
+        PrometheusConditionEvaluator nullClientEvaluator = new PrometheusConditionEvaluator(null, properties, objectMapper);
+        ActionData.ConditionData condition = new ActionData.ConditionData(
+                SimpleValueFactory.getInstance().createIRI("http://example.org/moa#cond1"),
+                SimpleValueFactory.getInstance().createIRI("http://example.org/moa#PrometheusCondition"),
+                "up");
+        ConditionEvaluationException exception = assertThrows(ConditionEvaluationException.class, () -> nullClientEvaluator.evaluate(condition));
+        assertEquals("Prometheus RestClient is not configured. Check 'themis.prometheus.url' property.", exception.getMessage());
+    }
 }
