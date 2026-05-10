@@ -57,9 +57,45 @@ public class SparqlQueryBuilder {
                 return "<" + iri.stringValue() + ">";
             }
             if (value instanceof String s) {
-                return "\"" + s + "\"";
+                return "\"" + escapeSparqlString(s) + "\"";
             }
-            return value.toString();
+            if (value instanceof Number || value instanceof Boolean) {
+                return value.toString();
+            }
+            return "\"" + escapeSparqlString(String.valueOf(value)) + "\"";
+        }
+
+        private String escapeSparqlString(String value) {
+            StringBuilder escaped = new StringBuilder(value.length());
+            for (int i = 0; i < value.length(); i++) {
+                char c = value.charAt(i);
+                switch (c) {
+                    case '\\':
+                        escaped.append("\\\\");
+                        break;
+                    case '"':
+                        escaped.append("\\\"");
+                        break;
+                    case '\n':
+                        escaped.append("\\n");
+                        break;
+                    case '\r':
+                        escaped.append("\\r");
+                        break;
+                    case '\t':
+                        escaped.append("\\t");
+                        break;
+                    case '\b':
+                        escaped.append("\\b");
+                        break;
+                    case '\f':
+                        escaped.append("\\f");
+                        break;
+                    default:
+                        escaped.append(c);
+                }
+            }
+            return escaped.toString();
         }
     }
 }
