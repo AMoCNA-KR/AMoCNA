@@ -132,7 +132,7 @@ class ActionServiceImplTest {
 
         ArgumentCaptor<ExecutionStatus> captor = ArgumentCaptor.forClass(ExecutionStatus.class);
         verify(executionStatusObserver, times(2)).onNext(captor.capture());
-        
+
         List<ExecutionStatus> statuses = captor.getAllValues();
         assertEquals("IN_PROGRESS", statuses.get(0).getState());
         assertEquals("SUCCESS", statuses.get(statuses.size() - 1).getState());

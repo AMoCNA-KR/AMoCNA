@@ -1,15 +1,12 @@
 package com.kubiki.themis;
 
 import com.kubiki.themis.config.ThemisProperties;
-import com.kubiki.themis.constants.OntologyConstants;
 import com.kubiki.themis.model.ExecutionStatus;
 import com.kubiki.themis.model.Protocol;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
-
-import java.lang.reflect.Constructor;
 
 import static org.junit.jupiter.api.Assertions.*;
 

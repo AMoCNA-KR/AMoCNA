@@ -22,11 +22,10 @@ import static org.mockito.Mockito.when;
 
 @DisplayName("GraphDBGateway Tests")
 class GraphDBGatewayTest {
+    private static final String moam_NS = "http://moam#";
     private Repository repository;
     private GraphDBGateway gateway;
     private ThemisProperties properties;
-
-    private static final String moam_NS = "http://moam#";
 
     @BeforeEach
     void setUp() {
@@ -86,7 +85,7 @@ class GraphDBGatewayTest {
         }
 
         java.util.List<com.kubiki.themis.model.ActionData.SimpleAction> actions = gateway.findActionsForResource(resourceIri);
-        
+
         assertEquals(1, actions.size());
         assertEquals(actionIri, actions.getFirst().id());
         assertEquals(intent.stringValue(), actions.getFirst().functionalIntent());
@@ -108,7 +107,7 @@ class GraphDBGatewayTest {
         }
 
         com.kubiki.themis.model.ActionData action = gateway.fetchActionStructure(actionIri);
-        
+
         assertEquals(actionIri, action.id());
         assertEquals(intent.stringValue(), action.functionalIntent());
     }
@@ -140,7 +139,7 @@ class GraphDBGatewayTest {
         org.junit.jupiter.api.Assertions.assertNotNull(action, "Workflow should not be null");
         assertEquals(workflowIri, action.id());
         assertEquals(workflowIntent.stringValue(), action.functionalIntent());
-        
+
         com.kubiki.themis.model.ActionData.ComplexWorkflow workflow = (com.kubiki.themis.model.ActionData.ComplexWorkflow) action;
         assertEquals(1, workflow.steps().size());
         assertEquals(stepIri, workflow.steps().get(0).id());

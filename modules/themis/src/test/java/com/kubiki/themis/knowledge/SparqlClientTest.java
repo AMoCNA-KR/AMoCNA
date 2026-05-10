@@ -16,7 +16,8 @@ import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class SparqlClientTest {
@@ -46,8 +47,8 @@ class SparqlClientTest {
         when(tupleQuery.evaluate()).thenReturn(queryResult);
         when(queryResult.stream()).thenReturn(Stream.of(bindingSet));
 
-        List<BindingSet> result = sparqlClient.executeQuery("SELECT * WHERE { ?s ?p ?o }", 
-            stream -> stream.toList());
+        List<BindingSet> result = sparqlClient.executeQuery("SELECT * WHERE { ?s ?p ?o }",
+                stream -> stream.toList());
 
         assertThat(result).hasSize(1);
         verify(connection).close();

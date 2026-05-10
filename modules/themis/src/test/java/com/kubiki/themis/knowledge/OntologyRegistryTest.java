@@ -3,6 +3,7 @@ package com.kubiki.themis.knowledge;
 import com.kubiki.themis.config.ThemisProperties;
 import org.eclipse.rdf4j.model.IRI;
 import org.junit.jupiter.api.Test;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class OntologyRegistryTest {

@@ -14,13 +14,12 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class SparqlQueryBuilderTest {
 
+    private final SimpleValueFactory vf = SimpleValueFactory.getInstance();
     @Mock
     private SparqlLoader sparqlLoader;
     @Mock
     private OntologyRegistry ontologyRegistry;
-
     private SparqlQueryBuilder queryBuilder;
-    private final SimpleValueFactory vf = SimpleValueFactory.getInstance();
 
     @BeforeEach
     void setUp() {
@@ -31,16 +30,16 @@ class SparqlQueryBuilderTest {
     void shouldBuildQueryWithPrefixesAndVariables() {
         when(sparqlLoader.loadRaw("test-query")).thenReturn("SELECT * WHERE { ${subject} ?p ${object} }");
         when(ontologyRegistry.getMoamNamespace()).thenReturn("http://example.org/moam#");
-        
+
         IRI subject = vf.createIRI("http://example.org/resource1");
         String object = "test-value";
-        
+
         String query = queryBuilder.builder()
                 .template("test-query")
                 .variable("subject", subject)
                 .variable("object", object)
                 .build();
-        
+
         assertThat(query).startsWith("PREFIX moam: <http://example.org/moam#>");
         assertThat(query).contains("<http://example.org/resource1>");
         assertThat(query).contains("\"test-value\"");

@@ -36,7 +36,7 @@ class SparqlLoaderTest {
         when(resource.getContentAsString(StandardCharsets.UTF_8)).thenReturn(templateContent);
 
         String query = sparqlLoader.loadRaw("test-template");
-        
+
         assertThat(query).isEqualTo(templateContent);
     }
 }

@@ -22,9 +22,9 @@ import static org.springframework.test.web.client.response.MockRestResponseCreat
 @DisplayName("RestProtocolExecutor Slice Tests")
 class RestProtocolExecutorSliceTest {
 
+    private static final SimpleValueFactory VF = SimpleValueFactory.getInstance();
     private RestProtocolExecutor executor;
     private MockRestServiceServer server;
-    private static final SimpleValueFactory VF = SimpleValueFactory.getInstance();
 
     @BeforeEach
     void setup() {
@@ -65,7 +65,7 @@ class RestProtocolExecutorSliceTest {
     void testUriEncoding() {
         String urlTemplate = "http://api.test/delete?ns={ns}&pod={pod}";
         String expectedUrl = "http://api.test/delete?ns=prod&pod=nginx%20v1";
-        
+
         server.expect(requestTo(expectedUrl))
                 .andExpect(method(HttpMethod.GET))
                 .andRespond(withSuccess());

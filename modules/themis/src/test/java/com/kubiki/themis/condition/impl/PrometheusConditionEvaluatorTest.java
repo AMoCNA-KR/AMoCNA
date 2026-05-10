@@ -9,11 +9,16 @@ import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.web.client.RestClient;
 
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
@@ -23,15 +28,44 @@ import static org.springframework.test.web.client.response.MockRestResponseCreat
 @DisplayName("PrometheusConditionEvaluator Tests")
 class PrometheusConditionEvaluatorTest {
 
-    private PrometheusConditionEvaluator evaluator;
-    private MockRestServiceServer server;
     private final ObjectMapper objectMapper = new ObjectMapper();
-
     private final ThemisProperties properties = new ThemisProperties(
             null,
-            new ThemisProperties.Ontology("http://example.org/moa#"),
+            new ThemisProperties.Ontology("http://example.org/moam#"),
             new ThemisProperties.Prometheus("http://prometheus:9090")
     );
+    private PrometheusConditionEvaluator evaluator;
+    private MockRestServiceServer server;
+
+    static Stream<Arguments> resultCases() throws JsonProcessingException {
+        ObjectMapper om = new ObjectMapper();
+        return Stream.of(
+                Arguments.of("result not empty", om.writeValueAsString(Map.of(
+                        "status", "success",
+                        "data", Map.of("result", List.of(Map.of("metric", Map.of(), "value", List.of(1, "1"))))
+                )), true),
+                Arguments.of("result empty", om.writeValueAsString(Map.of(
+                        "status", "success",
+                        "data", Map.of("result", List.of())
+                )), false)
+        );
+    }
+
+    static Stream<Arguments> missingFieldCases() throws JsonProcessingException {
+        ObjectMapper om = new ObjectMapper();
+        return Stream.of(
+                Arguments.of("missing status", om.writeValueAsString(Map.of(
+                        "data", Map.of("result", List.of())
+                )), "Missing 'status' field"),
+                Arguments.of("missing data", om.writeValueAsString(Map.of(
+                        "status", "success"
+                )), "Missing 'data' field"),
+                Arguments.of("missing result", om.writeValueAsString(Map.of(
+                        "status", "success",
+                        "data", Map.of()
+                )), "Missing 'result' field")
+        );
+    }
 
     @BeforeEach
     void setUp() {
@@ -44,43 +78,21 @@ class PrometheusConditionEvaluatorTest {
     @Test
     @DisplayName("should support PrometheusCondition IRI")
     void shouldSupportPrometheusCondition() {
-        assertTrue(evaluator.supports(SimpleValueFactory.getInstance().createIRI("http://example.org/moa#PrometheusCondition")));
+        assertTrue(evaluator.supports(SimpleValueFactory.getInstance().createIRI("http://example.org/moam#PrometheusCondition")));
     }
 
-    @Test
-    @DisplayName("should return true when Prometheus query result is not empty")
-    void shouldReturnTrueWhenResultIsNotEmpty() throws JsonProcessingException {
-        String response = objectMapper.writeValueAsString(Map.of(
-                "status", "success",
-                "data", Map.of("result", java.util.List.of(Map.of("metric", Map.of(), "value", java.util.List.of(1, "1"))))
-        ));
-
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("resultCases")
+    void shouldEvaluateBasedOnResultPresence(String name, String responseJson, boolean expected) {
         server.expect(requestTo("http://prometheus:9090/api/v1/query?query=up"))
-                .andRespond(withSuccess(response, MediaType.APPLICATION_JSON));
+                .andRespond(withSuccess(responseJson, MediaType.APPLICATION_JSON));
 
         ActionData.ConditionData condition = new ActionData.ConditionData(
-                SimpleValueFactory.getInstance().createIRI("http://example.org/moa#cond1"),
-                SimpleValueFactory.getInstance().createIRI("http://example.org/moa#PrometheusCondition"),
+                SimpleValueFactory.getInstance().createIRI("http://example.org/moam#cond1"),
+                SimpleValueFactory.getInstance().createIRI("http://example.org/moam#PrometheusCondition"),
                 "up");
-        assertTrue(evaluator.evaluate(condition));
-    }
 
-    @Test
-    @DisplayName("should return false when Prometheus query result is empty")
-    void shouldReturnFalseWhenResultIsEmpty() throws JsonProcessingException {
-        String response = objectMapper.writeValueAsString(Map.of(
-                "status", "success",
-                "data", Map.of("result", java.util.List.of())
-        ));
-
-        server.expect(requestTo("http://prometheus:9090/api/v1/query?query=up"))
-                .andRespond(withSuccess(response, MediaType.APPLICATION_JSON));
-
-        ActionData.ConditionData condition = new ActionData.ConditionData(
-                SimpleValueFactory.getInstance().createIRI("http://example.org/moa#cond1"),
-                SimpleValueFactory.getInstance().createIRI("http://example.org/moa#PrometheusCondition"),
-                "up");
-        assertFalse(evaluator.evaluate(condition));
+        assertEquals(expected, evaluator.evaluate(condition));
     }
 
     @Test
@@ -90,8 +102,8 @@ class PrometheusConditionEvaluatorTest {
                 .andRespond(withServerError());
 
         ActionData.ConditionData condition = new ActionData.ConditionData(
-                SimpleValueFactory.getInstance().createIRI("http://example.org/moa#cond1"),
-                SimpleValueFactory.getInstance().createIRI("http://example.org/moa#PrometheusCondition"),
+                SimpleValueFactory.getInstance().createIRI("http://example.org/moam#cond1"),
+                SimpleValueFactory.getInstance().createIRI("http://example.org/moam#PrometheusCondition"),
                 "up");
         assertThrows(ConditionEvaluationException.class, () -> evaluator.evaluate(condition));
     }
@@ -101,68 +113,25 @@ class PrometheusConditionEvaluatorTest {
     void shouldThrowExceptionWhenRestClientIsNull() {
         PrometheusConditionEvaluator nullClientEvaluator = new PrometheusConditionEvaluator(null, properties, objectMapper);
         ActionData.ConditionData condition = new ActionData.ConditionData(
-                SimpleValueFactory.getInstance().createIRI("http://example.org/moa#cond1"),
-                SimpleValueFactory.getInstance().createIRI("http://example.org/moa#PrometheusCondition"),
+                SimpleValueFactory.getInstance().createIRI("http://example.org/moam#cond1"),
+                SimpleValueFactory.getInstance().createIRI("http://example.org/moam#PrometheusCondition"),
                 "up");
         ConditionEvaluationException exception = assertThrows(ConditionEvaluationException.class, () -> nullClientEvaluator.evaluate(condition));
         assertEquals("Prometheus RestClient is not configured. Check 'themis.prometheus.url' property.", exception.getMessage());
     }
 
-    @Test
-    @DisplayName("should throw ConditionEvaluationException when status field is missing")
-    void shouldThrowExceptionWhenStatusIsMissing() throws JsonProcessingException {
-        String response = objectMapper.writeValueAsString(Map.of(
-                "data", Map.of("result", java.util.List.of())
-        ));
-
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("missingFieldCases")
+    void shouldThrowExceptionWhenRequiredFieldIsMissing(String name, String responseJson, String expectedMessage) {
         server.expect(requestTo("http://prometheus:9090/api/v1/query?query=up"))
-                .andRespond(withSuccess(response, MediaType.APPLICATION_JSON));
+                .andRespond(withSuccess(responseJson, MediaType.APPLICATION_JSON));
 
         ActionData.ConditionData condition = new ActionData.ConditionData(
-                SimpleValueFactory.getInstance().createIRI("http://example.org/moa#cond1"),
-                SimpleValueFactory.getInstance().createIRI("http://example.org/moa#PrometheusCondition"),
+                SimpleValueFactory.getInstance().createIRI("http://example.org/moam#cond1"),
+                SimpleValueFactory.getInstance().createIRI("http://example.org/moam#PrometheusCondition"),
                 "up");
 
         ConditionEvaluationException exception = assertThrows(ConditionEvaluationException.class, () -> evaluator.evaluate(condition));
-        assertTrue(exception.getMessage().contains("Missing 'status' field"));
-    }
-
-    @Test
-    @DisplayName("should throw ConditionEvaluationException when data field is missing")
-    void shouldThrowExceptionWhenDataIsMissing() throws JsonProcessingException {
-        String response = objectMapper.writeValueAsString(Map.of(
-                "status", "success"
-        ));
-
-        server.expect(requestTo("http://prometheus:9090/api/v1/query?query=up"))
-                .andRespond(withSuccess(response, MediaType.APPLICATION_JSON));
-
-        ActionData.ConditionData condition = new ActionData.ConditionData(
-                SimpleValueFactory.getInstance().createIRI("http://example.org/moa#cond1"),
-                SimpleValueFactory.getInstance().createIRI("http://example.org/moa#PrometheusCondition"),
-                "up");
-
-        ConditionEvaluationException exception = assertThrows(ConditionEvaluationException.class, () -> evaluator.evaluate(condition));
-        assertTrue(exception.getMessage().contains("Missing 'data' field"));
-    }
-
-    @Test
-    @DisplayName("should throw ConditionEvaluationException when result field is missing")
-    void shouldThrowExceptionWhenResultIsMissing() throws JsonProcessingException {
-        String response = objectMapper.writeValueAsString(Map.of(
-                "status", "success",
-                "data", Map.of()
-        ));
-
-        server.expect(requestTo("http://prometheus:9090/api/v1/query?query=up"))
-                .andRespond(withSuccess(response, MediaType.APPLICATION_JSON));
-
-        ActionData.ConditionData condition = new ActionData.ConditionData(
-                SimpleValueFactory.getInstance().createIRI("http://example.org/moa#cond1"),
-                SimpleValueFactory.getInstance().createIRI("http://example.org/moa#PrometheusCondition"),
-                "up");
-
-        ConditionEvaluationException exception = assertThrows(ConditionEvaluationException.class, () -> evaluator.evaluate(condition));
-        assertTrue(exception.getMessage().contains("Missing 'result' field"));
+        assertTrue(exception.getMessage().contains(expectedMessage));
     }
 }

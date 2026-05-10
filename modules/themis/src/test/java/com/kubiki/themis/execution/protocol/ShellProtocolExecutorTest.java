@@ -7,12 +7,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.io.File;
 import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 @DisplayName("ShellProtocolExecutor Tests")
 class ShellProtocolExecutorTest {
@@ -155,8 +155,8 @@ class ShellProtocolExecutorTest {
         shellProtocolExecutor.execute(action, executionId);
 
         // Then
-        java.io.File safeFile = new java.io.File("safe; touch injected.txt");
-        java.io.File injectedFile = new java.io.File("injected");
+        var safeFile = new File("safe; touch injected.txt");
+        var injectedFile = new File("injected");
 
         boolean safeFileExists = safeFile.exists();
         boolean injectedFileExists = injectedFile.exists();
@@ -168,7 +168,10 @@ class ShellProtocolExecutorTest {
             injectedFile.delete();
         }
 
-        assertTrue(safeFileExists, "Safe file should have been created (demonstrates substitution worked)");
-        assertFalse(injectedFileExists, "Command injection was successful! 'injected' file was created.");
+
+        assertAll(
+                () -> assertTrue(safeFileExists, "Safe file should have been created"),
+                () -> assertFalse(injectedFileExists, "Command injection was successful! 'injected' file was created.")
+        );
     }
 }

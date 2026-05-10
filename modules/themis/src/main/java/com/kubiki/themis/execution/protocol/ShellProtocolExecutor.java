@@ -9,12 +9,17 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import java.io.BufferedReader;
+import java.util.Map;
 import java.util.UUID;
 
 @Component
 public class ShellProtocolExecutor implements ProtocolExecutor {
     private static final Logger log = LoggerFactory.getLogger(ShellProtocolExecutor.class);
     private static final int SUCCESS_EXIT_CODE = 0;
+    public static final String ENV_THEMIS_PREFIX = "THEMIS_";
+    public static final String COMMAND_SANITIZE_REGEX = "[^A-Z0-9_]";
+    public static final String ENV_PREFIX = "$";
+    public static final String BIN_SH = "/bin/sh";
 
     @Override
     public boolean supports(Protocol protocol) {
@@ -35,22 +40,22 @@ public class ShellProtocolExecutor implements ProtocolExecutor {
         }
 
         ProcessBuilder pb = new ProcessBuilder();
-        java.util.Map<String, String> env = pb.environment();
+        Map<String, String> env = pb.environment();
 
         String command = template;
         for (var entry : simpleAction.data().entrySet()) {
             String key = entry.getKey();
             String value = entry.getValue();
             // Map placeholder {key} to environment variable $THEMIS_KEY
-            String envVarName = "THEMIS_" + key.toUpperCase().replaceAll("[^A-Z0-9_]", "_");
-            command = command.replace("{" + key + "}", "$" + envVarName);
+            String envVarName = ENV_THEMIS_PREFIX + key.toUpperCase().replaceAll(COMMAND_SANITIZE_REGEX, "_");
+            command = command.replace("{" + key + "}", ENV_PREFIX + envVarName);
             env.put(envVarName, value);
         }
 
         log.info("Executing shell command for execution {}: {}", executionId, command);
 
         try {
-            Process process = pb.command("/bin/sh", "-c", command).start();
+            Process process = pb.command(BIN_SH, "-c", command).start();
             // Capture output in separate threads to avoid hanging
             Thread.ofVirtual().start(() -> readStream(process.inputReader(), "STDOUT", action.id()));
             Thread.ofVirtual().start(() -> readStream(process.errorReader(), "STDERR", action.id()));
