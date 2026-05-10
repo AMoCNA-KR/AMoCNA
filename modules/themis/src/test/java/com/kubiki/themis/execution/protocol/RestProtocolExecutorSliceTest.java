@@ -59,4 +59,33 @@ class RestProtocolExecutorSliceTest {
         assertTrue(result);
         server.verify();
     }
+
+    @Test
+    @DisplayName("Should encode URI variables correctly")
+    void testUriEncoding() {
+        String urlTemplate = "http://api.test/delete?ns={ns}&pod={pod}";
+        String expectedUrl = "http://api.test/delete?ns=prod&pod=nginx%20v1";
+        
+        server.expect(requestTo(expectedUrl))
+                .andExpect(method(HttpMethod.GET))
+                .andRespond(withSuccess());
+
+        ActionData.SimpleAction action = new ActionData.SimpleAction(
+                VF.createIRI("http://moa#test-id"),
+                "DeleteAction",
+                Protocol.REST,
+                urlTemplate,
+                VF.createIRI("http://target-resource"),
+                Map.of("ns", "prod", "pod", "nginx v1"),
+                HttpMethod.GET,
+                null,
+                Collections.emptyList(),
+                Collections.emptyList()
+        );
+
+        boolean result = executor.execute(action, UUID.randomUUID());
+
+        assertTrue(result, "Action execution should return true");
+        server.verify();
+    }
 }

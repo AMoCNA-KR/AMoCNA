@@ -9,6 +9,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -36,14 +37,15 @@ public class RestProtocolExecutor implements ProtocolExecutor {
             return false;
         }
 
-        String url = hydrate(simpleAction.instruction(), simpleAction.data());
+        String urlTemplate = simpleAction.instruction();
+        Map<String, String> variables = simpleAction.data();
         HttpMethod method = simpleAction.method() != null ? simpleAction.method() : HttpMethod.GET;
-        String payload = simpleAction.payload() != null ? hydrate(simpleAction.payload(), simpleAction.data()) : null;
+        String payload = simpleAction.payload() != null ? hydrate(simpleAction.payload(), variables) : null;
 
-        log.info("Executing {} request to {} for execution {}", method, url, executionId);
+        log.info("Executing {} request to {} for execution {}", method, urlTemplate, executionId);
 
         try {
-            RestClient.RequestBodySpec request = restClient.method(method).uri(url);
+            RestClient.RequestBodySpec request = restClient.method(method).uri(urlTemplate, variables);
 
             if (payload != null && !payload.isEmpty()) {
                 request.body(payload);
@@ -57,7 +59,7 @@ public class RestProtocolExecutor implements ProtocolExecutor {
         }
     }
 
-    private String hydrate(String template, java.util.Map<String, String> data) {
+    private String hydrate(String template, Map<String, String> data) {
         if (template == null) return null;
         String result = template;
         for (var entry : data.entrySet()) {

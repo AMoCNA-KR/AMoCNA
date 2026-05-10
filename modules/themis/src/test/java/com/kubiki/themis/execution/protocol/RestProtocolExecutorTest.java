@@ -17,7 +17,7 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -67,7 +67,7 @@ class RestProtocolExecutorTest {
                 Protocol.REST,
                 "http://localhost:8080/delete?ns={ns}&pod={pod}",
                 SimpleValueFactory.getInstance().createIRI("http://cnee#pod-1"),
-                Map.of("ns", "prod", "pod", "nginx-v1"),
+                Map.of("ns", "prod", "pod", "nginx v1"),
                 HttpMethod.GET,
                 null,
                 java.util.List.of(),
@@ -76,7 +76,7 @@ class RestProtocolExecutorTest {
         UUID executionId = UUID.randomUUID();
 
         when(restClient.method(HttpMethod.GET)).thenReturn(requestBodyUriSpec);
-        when(requestBodyUriSpec.uri(anyString())).thenReturn(requestBodyUriSpec);
+        when(requestBodyUriSpec.uri(eq("http://localhost:8080/delete?ns={ns}&pod={pod}"), any(Map.class))).thenReturn(requestBodyUriSpec);
         when(requestBodyUriSpec.retrieve()).thenReturn(responseSpec);
 
         // When
@@ -84,7 +84,7 @@ class RestProtocolExecutorTest {
 
         // Then
         assertTrue(result);
-        verify(requestBodyUriSpec).uri("http://localhost:8080/delete?ns=prod&pod=nginx-v1");
+        verify(requestBodyUriSpec).uri(eq("http://localhost:8080/delete?ns={ns}&pod={pod}"), any(Map.class));
     }
 
     @Test
@@ -106,7 +106,7 @@ class RestProtocolExecutorTest {
         UUID executionId = UUID.randomUUID();
 
         when(restClient.method(HttpMethod.POST)).thenReturn(requestBodyUriSpec);
-        when(requestBodyUriSpec.uri(anyString())).thenReturn(requestBodyUriSpec);
+        when(requestBodyUriSpec.uri(eq("http://localhost:8080/scale"), any(Map.class))).thenReturn(requestBodyUriSpec);
         when(requestBodyUriSpec.body(anyString())).thenReturn(requestBodyUriSpec);
         when(requestBodyUriSpec.retrieve()).thenReturn(responseSpec);
 
@@ -115,7 +115,7 @@ class RestProtocolExecutorTest {
 
         // Then
         assertTrue(result);
-        verify(requestBodyUriSpec).uri("http://localhost:8080/scale");
+        verify(requestBodyUriSpec).uri(eq("http://localhost:8080/scale"), any(Map.class));
         verify(requestBodyUriSpec).body("{\"replicas\": 3}");
     }
 
@@ -138,7 +138,7 @@ class RestProtocolExecutorTest {
         UUID executionId = UUID.randomUUID();
 
         when(restClient.method(HttpMethod.PUT)).thenReturn(requestBodyUriSpec);
-        when(requestBodyUriSpec.uri(anyString())).thenReturn(requestBodyUriSpec);
+        when(requestBodyUriSpec.uri(eq("http://localhost:8080/config"), any(Map.class))).thenReturn(requestBodyUriSpec);
         when(requestBodyUriSpec.body(anyString())).thenReturn(requestBodyUriSpec);
         when(requestBodyUriSpec.retrieve()).thenReturn(responseSpec);
 
@@ -147,7 +147,7 @@ class RestProtocolExecutorTest {
 
         // Then
         assertTrue(result);
-        verify(requestBodyUriSpec).uri("http://localhost:8080/config");
+        verify(requestBodyUriSpec).uri(eq("http://localhost:8080/config"), any(Map.class));
         verify(requestBodyUriSpec).body("{\"key\": \"value\"}");
     }
 
@@ -170,7 +170,7 @@ class RestProtocolExecutorTest {
         UUID executionId = UUID.randomUUID();
 
         when(restClient.method(HttpMethod.DELETE)).thenReturn(requestBodyUriSpec);
-        when(requestBodyUriSpec.uri(anyString())).thenReturn(requestBodyUriSpec);
+        when(requestBodyUriSpec.uri(eq("http://localhost:8080/resource/{id}"), any(Map.class))).thenReturn(requestBodyUriSpec);
         when(requestBodyUriSpec.retrieve()).thenReturn(responseSpec);
 
         // When
@@ -178,6 +178,6 @@ class RestProtocolExecutorTest {
 
         // Then
         assertTrue(result);
-        verify(requestBodyUriSpec).uri("http://localhost:8080/resource/123");
+        verify(requestBodyUriSpec).uri(eq("http://localhost:8080/resource/{id}"), any(Map.class));
     }
 }
