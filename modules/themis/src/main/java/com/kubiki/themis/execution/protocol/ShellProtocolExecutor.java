@@ -35,7 +35,7 @@ public class ShellProtocolExecutor implements ProtocolExecutor {
             Process process = new ProcessBuilder("/bin/sh", "-c", command).start();
             // Capture output in separate threads to avoid hanging
             Thread.ofVirtual().start(() -> readStream(process.inputReader(), "STDOUT", action.id()));
-            Thread.ofVirtual().start(() -> readStream(process.inputReader(), "STDERR", action.id()));
+            Thread.ofVirtual().start(() -> readStream(process.errorReader(), "STDERR", action.id()));
 
             int exitCode = process.waitFor();
             log.info("Shell command {} exited with code {}", action.id(), exitCode);
