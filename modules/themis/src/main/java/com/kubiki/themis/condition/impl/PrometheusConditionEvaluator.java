@@ -33,6 +33,10 @@ public class PrometheusConditionEvaluator implements ConditionEvaluator {
     private static final String ERROR_EVALUATE = "Error evaluating Prometheus condition: ";
     private static final String ERROR_NOT_CONFIGURED = "Prometheus RestClient is not configured. Check 'themis.prometheus.url' property.";
 
+    private static final String ERROR_MISSING_STATUS = "Missing 'status' field in Prometheus response";
+    private static final String ERROR_MISSING_DATA = "Missing 'data' field in Prometheus response";
+    private static final String ERROR_MISSING_RESULT = "Missing 'result' field in Prometheus response";
+
     private final RestClient restClient;
     private final ThemisProperties properties;
     private final ObjectMapper objectMapper;
@@ -72,11 +76,23 @@ public class PrometheusConditionEvaluator implements ConditionEvaluator {
             }
 
             JsonNode response = objectMapper.readTree(responseBody);
-            if (!RESPONSE_STATUS_SUCCESS.equals(response.get(FIELD_STATUS).asText())) {
+            JsonNode statusNode = response.get(FIELD_STATUS);
+            if (statusNode == null) {
+                throw new ConditionEvaluationException(ERROR_MISSING_STATUS);
+            }
+            if (!RESPONSE_STATUS_SUCCESS.equals(statusNode.asText())) {
                 throw new ConditionEvaluationException(ERROR_NOT_SUCCESSFUL);
             }
 
-            JsonNode result = response.get(FIELD_DATA).get(FIELD_RESULT);
+            JsonNode dataNode = response.get(FIELD_DATA);
+            if (dataNode == null) {
+                throw new ConditionEvaluationException(ERROR_MISSING_DATA);
+            }
+
+            JsonNode result = dataNode.get(FIELD_RESULT);
+            if (result == null) {
+                throw new ConditionEvaluationException(ERROR_MISSING_RESULT);
+            }
             return result.isArray() && !result.isEmpty();
         } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
             throw new ConditionEvaluationException(ERROR_PARSE + e.getMessage(), e);
