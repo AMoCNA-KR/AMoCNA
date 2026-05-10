@@ -27,4 +27,4 @@ This directory contains the Docker Compose configuration to run a local GraphDB 
 
 ## Configuration for Themis
 
-Themis is already configured in `application-dev.yml` to connect to `http://localhost:7200` with the repository ID `moamont`.
+Themis is already configured in `application.yml` to connect to `http://localhost:7200` with the repository ID `moamont`.
