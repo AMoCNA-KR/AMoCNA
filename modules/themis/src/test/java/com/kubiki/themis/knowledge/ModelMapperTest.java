@@ -50,6 +50,7 @@ class ModelMapperTest {
         bs1.addBinding("intent", vf.createIRI("http://example.org/SimpleAction"));
         bs1.addBinding("protocol", vf.createIRI("http://example.org/REST"));
         bs1.addBinding("target", vf.createIRI("http://example.org/target1"));
+        bs1.addBinding("instruction", vf.createLiteral("Do something"));
         bs1.addBinding("preId", vf.createIRI("http://example.org/pre1"));
         bs1.addBinding("preType", vf.createIRI("http://example.org/PreType"));
         bs1.addBinding("prePolicy", vf.createLiteral("prePolicy1"));
@@ -88,6 +89,7 @@ class ModelMapperTest {
         sbs.addBinding("intent", vf.createIRI("http://example.org/SimpleAction"));
         sbs.addBinding("protocol", vf.createIRI("http://example.org/REST"));
         sbs.addBinding("target", vf.createIRI("http://example.org/target1"));
+        sbs.addBinding("instruction", vf.createLiteral("Do something"));
 
         Map<IRI, List<BindingSet>> allBindings = Map.of(
                 workflowId, List.of(wbs),
@@ -125,5 +127,20 @@ class ModelMapperTest {
 
         assertThat(result.isSuccess()).isFalse();
         assertThat(result.error()).contains("Missing or invalid IRI binding: target");
+    }
+
+    @Test
+    void shouldReturnFailureWhenInstructionIsMissingInSimpleAction() {
+        IRI actionId = vf.createIRI("http://example.org/action1");
+        MapBindingSet bs = new MapBindingSet();
+        bs.addBinding("action", actionId);
+        bs.addBinding("intent", vf.createIRI("http://example.org/SimpleAction"));
+        bs.addBinding("target", vf.createIRI("http://example.org/target1"));
+        bs.addBinding("protocol", vf.createIRI("http://example.org/REST"));
+
+        Result<ActionData> result = mapper.mapAction(actionId, Map.of(actionId, List.of(bs)));
+
+        assertThat(result.isSuccess()).isFalse();
+        assertThat(result.error()).contains("Missing binding: instruction");
     }
 }

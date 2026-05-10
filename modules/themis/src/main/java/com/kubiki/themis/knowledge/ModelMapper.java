@@ -55,8 +55,9 @@ public class ModelMapper {
 
         Result<Protocol> protocolResult = getProtocol(first);
         Result<IRI> targetResult = getIRI(first, BINDING_TARGET);
+        Result<String> instructionResult = getString(first, BINDING_INSTRUCTION);
 
-        return Result.combine(protocolResult, targetResult, (protocol, target) -> {
+        return Result.combine(protocolResult, targetResult, instructionResult, (protocol, target, instruction) -> {
             List<ActionData.ConditionData> pre = extractConditions(bindings, BINDING_PRE_ID, BINDING_PRE_TYPE, BINDING_PRE_POLICY);
             List<ActionData.ConditionData> post = extractConditions(bindings, BINDING_POST_ID, BINDING_POST_TYPE, BINDING_POST_POLICY);
 
@@ -65,14 +66,18 @@ public class ModelMapper {
                 .functionalIntent(intent)
                 .protocol(protocol)
                 .targetIri(target)
-                .instruction(getString(first, BINDING_INSTRUCTION).value())
+                .instruction(instruction)
                 .method(getHttpMethod(first).value())
-                .payload(getString(first, BINDING_PAYLOAD).value())
+                .payload(getOptionalString(first, BINDING_PAYLOAD))
                 .data(new HashMap<>())
                 .preConditions(pre)
                 .postConditions(post)
                 .build();
         });
+    }
+
+    private String getOptionalString(BindingSet bs, String name) {
+        return getString(bs, name).value();
     }
 
     private Result<ActionData> mapComplexWorkflow(
