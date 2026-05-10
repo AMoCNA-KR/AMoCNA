@@ -2,6 +2,7 @@ SELECT ?action ?intent ?target ?protocol ?instruction ?method ?payload
        ?preId ?preType ?prePolicy 
        ?postId ?postType ?postPolicy 
        ?step ?compensation WHERE { 
+  VALUES ?action { ${actionIri} }
   ?action a ?intent . 
   OPTIONAL { ?action moam:targetsEntity ?target } . 
   OPTIONAL { ?action moam:hasExecutionProtocol ?protocol } . 

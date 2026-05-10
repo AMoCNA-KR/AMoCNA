@@ -23,6 +23,7 @@ public class GraphDBGateway {
     private static final String TEMPLATE_FETCH_ACTION_STRUCTURE = "fetch-action-structure";
     private static final String TEMPLATE_FIND_ACTIONS_FOR_RESOURCE = "find-actions-for-resource";
     private static final String VAR_ACTION = "action";
+    private static final String VAR_ACTION_IRI = "actionIri";
     private static final String VAR_RESOURCE_IRI = "resourceIri";
 
     private final SparqlClient sparqlClient;
@@ -58,6 +59,7 @@ public class GraphDBGateway {
     public ActionData fetchActionStructure(IRI actionId) {
         String sparql = sparqlQueryBuilder.builder()
                 .template(TEMPLATE_FETCH_ACTION_STRUCTURE)
+                .variable(VAR_ACTION_IRI, actionId)
                 .build();
 
         return sparqlClient.executeQuery(sparql, stream -> {
