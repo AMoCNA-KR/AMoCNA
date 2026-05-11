@@ -1,0 +1,23 @@
+SELECT ?action ?intent ?target ?protocol ?instruction ?method ?payload 
+       ?preId ?preType ?prePolicy 
+       ?postId ?postType ?postPolicy 
+WHERE { 
+  ?action moam:targetsEntity ${resourceIri} . 
+  BIND(${resourceIri} AS ?target)
+  ?action a ?intent . 
+  OPTIONAL { ?action moam:hasExecutionProtocol ?protocol } . 
+  OPTIONAL { ?action moam:hasExecutionInstruction ?instruction } . 
+  OPTIONAL { ?action moam:hasHttpMethod ?method } . 
+  OPTIONAL { ?action moam:hasExecutionPayload ?payload } . 
+  OPTIONAL { 
+    ?action moam:hasPreCondition ?preId . 
+    ?preId a ?preType . 
+    ?preId moam:policyQueryString ?prePolicy . 
+  } . 
+  OPTIONAL { 
+    ?action moam:hasPostCondition ?postId . 
+    ?postId a ?postType . 
+    ?postId moam:policyQueryString ?postPolicy . 
+  } . 
+  FILTER(?intent != moam:AutonomicAction && ?intent != moam:SimpleAction) 
+}

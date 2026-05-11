@@ -1,0 +1,18 @@
+spring:
+  threads:
+    virtual:
+      enabled: true
+  profiles:
+    active: dev
+
+grpc:
+  server:
+    port: 50051
+
+themis:
+  graphdb:
+    url: "http://graphdb:7200"
+    repositoryId: "amocna"
+    timeoutMs: 5000
+  ontology:
+    moamNamespace: "http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#"

@@ -1,0 +1,28 @@
+SELECT ?action ?intent ?target ?protocol ?instruction ?method ?payload 
+       ?preId ?preType ?prePolicy 
+       ?postId ?postType ?postPolicy 
+       ?step ?compensation WHERE { 
+  VALUES ?root { ${actionIri} }
+  ?root (moam:isDecomposedInto|moam:hasCompensation)* ?action .
+  ?action a ?intent . 
+  OPTIONAL { ?action moam:targetsEntity ?target } . 
+  OPTIONAL { ?action moam:hasExecutionProtocol ?protocol } . 
+  OPTIONAL { ?action moam:hasExecutionInstruction ?instruction } . 
+  OPTIONAL { ?action moam:hasHttpMethod ?method } . 
+  OPTIONAL { ?action moam:hasExecutionPayload ?payload } . 
+  OPTIONAL { 
+    ?action moam:hasPreCondition ?preId . 
+    ?preId a ?preType . 
+    ?preId moam:policyQueryString ?prePolicy . 
+  } . 
+  OPTIONAL { 
+    ?action moam:hasPostCondition ?postId . 
+    ?postId a ?postType . 
+    ?postId moam:policyQueryString ?postPolicy . 
+  } . 
+  OPTIONAL { 
+    ?action moam:isDecomposedInto ?step . 
+    OPTIONAL { ?step moam:hasCompensation ?compensation } . 
+  } . 
+  FILTER(?intent != moam:AutonomicAction && ?intent != moam:SimpleAction) 
+}

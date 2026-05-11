@@ -38,6 +38,9 @@
         <Class IRI="#ExecutionCost"/>
     </Declaration>
     <Declaration>
+        <Class IRI="#ExecutionState"/>
+    </Declaration>
+    <Declaration>
         <Class IRI="#FunctionalIntent"/>
     </Declaration>
     <Declaration>
@@ -119,6 +122,9 @@
         <ObjectProperty IRI="#hasCondition"/>
     </Declaration>
     <Declaration>
+        <ObjectProperty IRI="#hasCurrentState"/>
+    </Declaration>
+    <Declaration>
         <ObjectProperty IRI="#hasExecutionCost"/>
     </Declaration>
     <Declaration>
@@ -144,6 +150,30 @@
     </Declaration>
     <Declaration>
         <DataProperty IRI="#hasActionID"/>
+    </Declaration>
+    <Declaration>
+        <DataProperty IRI="#hasAuthMechanism"/>
+    </Declaration>
+    <Declaration>
+        <DataProperty IRI="#hasExecutionInstruction"/>
+    </Declaration>
+    <Declaration>
+        <DataProperty IRI="#hasExecutionPayload"/>
+    </Declaration>
+    <Declaration>
+        <DataProperty IRI="#hasExecutionProtocol"/>
+    </Declaration>
+    <Declaration>
+        <DataProperty IRI="#hasExecutionStatus"/>
+    </Declaration>
+    <Declaration>
+        <DataProperty IRI="#hasExpectedStatusCode"/>
+    </Declaration>
+    <Declaration>
+        <DataProperty IRI="#hasHttpMethod"/>
+    </Declaration>
+    <Declaration>
+        <DataProperty IRI="#hasLastTransitionTimestamp"/>
     </Declaration>
     <Declaration>
         <DataProperty IRI="#isIdempotent"/>
@@ -200,6 +230,20 @@
         </DataExactCardinality>
     </SubClassOf>
     <SubClassOf>
+        <Class IRI="#AutonomicAction"/>
+        <DataMaxCardinality cardinality="1">
+            <DataProperty IRI="#hasExecutionStatus"/>
+            <Datatype abbreviatedIRI="xsd:string"/>
+        </DataMaxCardinality>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="#AutonomicAction"/>
+        <DataMaxCardinality cardinality="1">
+            <DataProperty IRI="#hasLastTransitionTimestamp"/>
+            <Datatype abbreviatedIRI="xsd:dateTime"/>
+        </DataMaxCardinality>
+    </SubClassOf>
+    <SubClassOf>
         <Class IRI="#CircuitBreakAction"/>
         <Class IRI="#TrafficRoutingAction"/>
     </SubClassOf>
@@ -213,6 +257,13 @@
             <ObjectProperty IRI="#isDecomposedInto"/>
             <Class IRI="#AutonomicAction"/>
         </ObjectMinCardinality>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="#ComplexWorkflow"/>
+        <ObjectExactCardinality cardinality="1">
+            <ObjectProperty IRI="#hasCurrentState"/>
+            <Class IRI="#ExecutionState"/>
+        </ObjectExactCardinality>
     </SubClassOf>
     <SubClassOf>
         <Class IRI="#ConfigurationAction"/>
@@ -297,6 +348,34 @@
     <SubClassOf>
         <Class IRI="#SimpleAction"/>
         <DataExactCardinality cardinality="1">
+            <DataProperty IRI="#hasAuthMechanism"/>
+            <Datatype abbreviatedIRI="xsd:string"/>
+        </DataExactCardinality>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="#SimpleAction"/>
+        <DataExactCardinality cardinality="1">
+            <DataProperty IRI="#hasExecutionInstruction"/>
+            <Datatype abbreviatedIRI="xsd:string"/>
+        </DataExactCardinality>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="#SimpleAction"/>
+        <DataExactCardinality cardinality="1">
+            <DataProperty IRI="#hasExecutionProtocol"/>
+            <Datatype abbreviatedIRI="xsd:string"/>
+        </DataExactCardinality>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="#SimpleAction"/>
+        <DataExactCardinality cardinality="1">
+            <DataProperty IRI="#hasExpectedStatusCode"/>
+            <Datatype abbreviatedIRI="xsd:int"/>
+        </DataExactCardinality>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="#SimpleAction"/>
+        <DataExactCardinality cardinality="1">
             <DataProperty IRI="#isIdempotent"/>
             <Datatype abbreviatedIRI="xsd:boolean"/>
         </DataExactCardinality>
@@ -307,6 +386,20 @@
             <DataProperty IRI="#maxRetries"/>
             <Datatype abbreviatedIRI="xsd:int"/>
         </DataExactCardinality>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="#SimpleAction"/>
+        <DataMaxCardinality cardinality="1">
+            <DataProperty IRI="#hasExecutionPayload"/>
+            <Datatype abbreviatedIRI="xsd:string"/>
+        </DataMaxCardinality>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="#SimpleAction"/>
+        <DataMaxCardinality cardinality="1">
+            <DataProperty IRI="#hasHttpMethod"/>
+            <Datatype abbreviatedIRI="xsd:string"/>
+        </DataMaxCardinality>
     </SubClassOf>
     <SubClassOf>
         <Class IRI="#StartAction"/>
@@ -352,6 +445,7 @@
         <Class IRI="#AutonomicAction"/>
         <Class IRI="#ExecutionCondition"/>
         <Class IRI="#ExecutionCost"/>
+        <Class IRI="#ExecutionState"/>
         <Class IRI="#FunctionalIntent"/>
         <Class IRI="#LayerBoundary"/>
         <Class IRI="#TargetResource"/>
@@ -409,6 +503,9 @@
         <ObjectProperty IRI="#hasCompensation"/>
     </FunctionalObjectProperty>
     <FunctionalObjectProperty>
+        <ObjectProperty IRI="#hasCurrentState"/>
+    </FunctionalObjectProperty>
+    <FunctionalObjectProperty>
         <ObjectProperty IRI="#hasExecutionCost"/>
     </FunctionalObjectProperty>
     <FunctionalObjectProperty>
@@ -437,6 +534,10 @@
     <ObjectPropertyDomain>
         <ObjectProperty IRI="#hasCondition"/>
         <Class IRI="#AutonomicAction"/>
+    </ObjectPropertyDomain>
+    <ObjectPropertyDomain>
+        <ObjectProperty IRI="#hasCurrentState"/>
+        <Class IRI="#ComplexWorkflow"/>
     </ObjectPropertyDomain>
     <ObjectPropertyDomain>
         <ObjectProperty IRI="#hasExecutionCost"/>
@@ -479,6 +580,10 @@
         <Class IRI="#ExecutionCondition"/>
     </ObjectPropertyRange>
     <ObjectPropertyRange>
+        <ObjectProperty IRI="#hasCurrentState"/>
+        <Class IRI="#ExecutionState"/>
+    </ObjectPropertyRange>
+    <ObjectPropertyRange>
         <ObjectProperty IRI="#hasExecutionCost"/>
         <Class IRI="#ExecutionCost"/>
     </ObjectPropertyRange>
@@ -519,6 +624,38 @@
         <Class IRI="#AutonomicAction"/>
     </DataPropertyDomain>
     <DataPropertyDomain>
+        <DataProperty IRI="#hasAuthMechanism"/>
+        <Class IRI="#SimpleAction"/>
+    </DataPropertyDomain>
+    <DataPropertyDomain>
+        <DataProperty IRI="#hasExecutionInstruction"/>
+        <Class IRI="#SimpleAction"/>
+    </DataPropertyDomain>
+    <DataPropertyDomain>
+        <DataProperty IRI="#hasExecutionPayload"/>
+        <Class IRI="#SimpleAction"/>
+    </DataPropertyDomain>
+    <DataPropertyDomain>
+        <DataProperty IRI="#hasExecutionProtocol"/>
+        <Class IRI="#SimpleAction"/>
+    </DataPropertyDomain>
+    <DataPropertyDomain>
+        <DataProperty IRI="#hasExecutionStatus"/>
+        <Class IRI="#AutonomicAction"/>
+    </DataPropertyDomain>
+    <DataPropertyDomain>
+        <DataProperty IRI="#hasExpectedStatusCode"/>
+        <Class IRI="#SimpleAction"/>
+    </DataPropertyDomain>
+    <DataPropertyDomain>
+        <DataProperty IRI="#hasHttpMethod"/>
+        <Class IRI="#SimpleAction"/>
+    </DataPropertyDomain>
+    <DataPropertyDomain>
+        <DataProperty IRI="#hasLastTransitionTimestamp"/>
+        <Class IRI="#AutonomicAction"/>
+    </DataPropertyDomain>
+    <DataPropertyDomain>
         <DataProperty IRI="#isIdempotent"/>
         <Class IRI="#SimpleAction"/>
     </DataPropertyDomain>
@@ -543,6 +680,38 @@
         <Datatype abbreviatedIRI="xsd:string"/>
     </DataPropertyRange>
     <DataPropertyRange>
+        <DataProperty IRI="#hasAuthMechanism"/>
+        <Datatype abbreviatedIRI="xsd:string"/>
+    </DataPropertyRange>
+    <DataPropertyRange>
+        <DataProperty IRI="#hasExecutionInstruction"/>
+        <Datatype abbreviatedIRI="xsd:string"/>
+    </DataPropertyRange>
+    <DataPropertyRange>
+        <DataProperty IRI="#hasExecutionPayload"/>
+        <Datatype abbreviatedIRI="xsd:string"/>
+    </DataPropertyRange>
+    <DataPropertyRange>
+        <DataProperty IRI="#hasExecutionProtocol"/>
+        <Datatype abbreviatedIRI="xsd:string"/>
+    </DataPropertyRange>
+    <DataPropertyRange>
+        <DataProperty IRI="#hasExecutionStatus"/>
+        <Datatype abbreviatedIRI="xsd:string"/>
+    </DataPropertyRange>
+    <DataPropertyRange>
+        <DataProperty IRI="#hasExpectedStatusCode"/>
+        <Datatype abbreviatedIRI="xsd:int"/>
+    </DataPropertyRange>
+    <DataPropertyRange>
+        <DataProperty IRI="#hasHttpMethod"/>
+        <Datatype abbreviatedIRI="xsd:string"/>
+    </DataPropertyRange>
+    <DataPropertyRange>
+        <DataProperty IRI="#hasLastTransitionTimestamp"/>
+        <Datatype abbreviatedIRI="xsd:dateTime"/>
+    </DataPropertyRange>
+    <DataPropertyRange>
         <DataProperty IRI="#isIdempotent"/>
         <Datatype abbreviatedIRI="xsd:boolean"/>
     </DataPropertyRange>
@@ -558,6 +727,11 @@
         <DataProperty IRI="#timeoutSeconds"/>
         <Datatype abbreviatedIRI="xsd:int"/>
     </DataPropertyRange>
+    <AnnotationAssertion>
+        <AnnotationProperty abbreviatedIRI="rdfs:comment"/>
+        <IRI>#hasExecutionStatus</IRI>
+        <Literal>{&quot;PENDING&quot;, &quot;COMPLETED&quot;, &quot;FAILED_POSTCONDITION&quot;, &quot;FAILED_HTTP&quot;, &quot;ROLLED_BACK&quot;}</Literal>
+    </AnnotationAssertion>
 </Ontology>
 
 
