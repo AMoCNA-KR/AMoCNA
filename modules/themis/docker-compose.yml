@@ -1,0 +1,49 @@
+services:
+  themis:
+    build:
+      context: ../..
+      dockerfile: modules/themis/Dockerfile
+    ports:
+      - "8080:8080"
+      - "50051:50051"
+    environment:
+      - SPRING_RABBITMQ_HOST=rabbitmq
+      - THEMIS_GRAPHDB_URL=http://graphdb:7200
+      - THEMIS_PROMETHEUS_URL=http://prometheus:9090
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      graphdb:
+        condition: service_started
+
+  rabbitmq:
+    build:
+      context: .
+      dockerfile: Dockerfile.rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "check_running"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  graphdb:
+    image: ontotext/graphdb:11.3.3
+    ports:
+      - "7200:7200"
+    environment:
+      - GDB_HEAP_SIZE=1G
+    volumes:
+      - graphdb-data:/opt/graphdb/home
+
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+
+volumes:
+  graphdb-data:
