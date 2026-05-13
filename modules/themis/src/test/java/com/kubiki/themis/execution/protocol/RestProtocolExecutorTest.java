@@ -1,6 +1,7 @@
 package com.kubiki.themis.execution.protocol;
 
 import com.kubiki.themis.model.ActionData;
+import com.kubiki.themis.model.ExecutionResult;
 import com.kubiki.themis.model.Protocol;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.junit.jupiter.api.BeforeEach;
@@ -10,13 +11,14 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestClient;
 
 import java.util.Map;
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -43,7 +45,7 @@ class RestProtocolExecutorTest {
     private RestClient.ResponseSpec responseSpec;
 
     @Mock
-    private org.springframework.http.ResponseEntity<Void> responseEntity;
+    private ResponseEntity<Void> responseEntity;
 
     @BeforeEach
     void setUp() {
@@ -72,19 +74,22 @@ class RestProtocolExecutorTest {
                 HttpMethod.GET,
                 null,
                 java.util.List.of(),
-                java.util.List.of()
+                java.util.List.of(), 200
         );
         UUID executionId = UUID.randomUUID();
 
         when(restClient.method(HttpMethod.GET)).thenReturn(requestBodyUriSpec);
         when(requestBodyUriSpec.uri(eq("http://localhost:8080/delete?ns={ns}&pod={pod}"), any(Map.class))).thenReturn(requestBodyUriSpec);
         when(requestBodyUriSpec.retrieve()).thenReturn(responseSpec);
+        when(responseSpec.toBodilessEntity()).thenReturn(responseEntity);
+        when(responseEntity.getStatusCode()).thenReturn(HttpStatus.OK);
 
         // When
-        boolean result = restProtocolExecutor.execute(action, executionId);
+        ExecutionResult result = restProtocolExecutor.execute(action, executionId);
 
         // Then
-        assertTrue(result);
+        assertTrue(result.success());
+        assertEquals(200, result.observedStatusCode());
         verify(requestBodyUriSpec).uri(eq("http://localhost:8080/delete?ns={ns}&pod={pod}"), any(Map.class));
     }
 
@@ -102,7 +107,7 @@ class RestProtocolExecutorTest {
                 HttpMethod.POST,
                 "{\"replicas\": {replicas}}",
                 java.util.List.of(),
-                java.util.List.of()
+                java.util.List.of(), 200
         );
         UUID executionId = UUID.randomUUID();
 
@@ -110,12 +115,14 @@ class RestProtocolExecutorTest {
         when(requestBodyUriSpec.uri(eq("http://localhost:8080/scale"), any(Map.class))).thenReturn(requestBodyUriSpec);
         when(requestBodyUriSpec.body(anyString())).thenReturn(requestBodyUriSpec);
         when(requestBodyUriSpec.retrieve()).thenReturn(responseSpec);
+        when(responseSpec.toBodilessEntity()).thenReturn(responseEntity);
+        when(responseEntity.getStatusCode()).thenReturn(HttpStatus.OK);
 
         // When
-        boolean result = restProtocolExecutor.execute(action, executionId);
+        ExecutionResult result = restProtocolExecutor.execute(action, executionId);
 
         // Then
-        assertTrue(result);
+        assertTrue(result.success());
         verify(requestBodyUriSpec).uri(eq("http://localhost:8080/scale"), any(Map.class));
         verify(requestBodyUriSpec).body("{\"replicas\": 3}");
     }
@@ -134,7 +141,7 @@ class RestProtocolExecutorTest {
                 HttpMethod.PUT,
                 "{\"key\": \"value\"}",
                 java.util.List.of(),
-                java.util.List.of()
+                java.util.List.of(), 200
         );
         UUID executionId = UUID.randomUUID();
 
@@ -142,12 +149,14 @@ class RestProtocolExecutorTest {
         when(requestBodyUriSpec.uri(eq("http://localhost:8080/config"), any(Map.class))).thenReturn(requestBodyUriSpec);
         when(requestBodyUriSpec.body(anyString())).thenReturn(requestBodyUriSpec);
         when(requestBodyUriSpec.retrieve()).thenReturn(responseSpec);
+        when(responseSpec.toBodilessEntity()).thenReturn(responseEntity);
+        when(responseEntity.getStatusCode()).thenReturn(HttpStatus.OK);
 
         // When
-        boolean result = restProtocolExecutor.execute(action, executionId);
+        ExecutionResult result = restProtocolExecutor.execute(action, executionId);
 
         // Then
-        assertTrue(result);
+        assertTrue(result.success());
         verify(requestBodyUriSpec).uri(eq("http://localhost:8080/config"), any(Map.class));
         verify(requestBodyUriSpec).body("{\"key\": \"value\"}");
     }
@@ -166,19 +175,21 @@ class RestProtocolExecutorTest {
                 HttpMethod.DELETE,
                 null,
                 java.util.List.of(),
-                java.util.List.of()
+                java.util.List.of(), 200
         );
         UUID executionId = UUID.randomUUID();
 
         when(restClient.method(HttpMethod.DELETE)).thenReturn(requestBodyUriSpec);
         when(requestBodyUriSpec.uri(eq("http://localhost:8080/resource/{id}"), any(Map.class))).thenReturn(requestBodyUriSpec);
         when(requestBodyUriSpec.retrieve()).thenReturn(responseSpec);
+        when(responseSpec.toBodilessEntity()).thenReturn(responseEntity);
+        when(responseEntity.getStatusCode()).thenReturn(HttpStatus.OK);
 
         // When
-        boolean result = restProtocolExecutor.execute(action, executionId);
+        ExecutionResult result = restProtocolExecutor.execute(action, executionId);
 
         // Then
-        assertTrue(result);
+        assertTrue(result.success());
         verify(requestBodyUriSpec).uri(eq("http://localhost:8080/resource/{id}"), any(Map.class));
     }
 
@@ -204,12 +215,15 @@ class RestProtocolExecutorTest {
         when(requestBodyUriSpec.uri(eq("http://localhost:8080/stateless"), any(Map.class))).thenReturn(requestBodyUriSpec);
         when(requestBodyUriSpec.body(anyString())).thenReturn(requestBodyUriSpec);
         when(requestBodyUriSpec.retrieve()).thenReturn(responseSpec);
+        when(responseSpec.toBodilessEntity()).thenReturn(responseEntity);
+        when(responseEntity.getStatusCode()).thenReturn(HttpStatus.OK);
 
         // When
-        boolean result = restProtocolExecutor.executeStateless(action);
+        ExecutionResult result = restProtocolExecutor.executeStateless(action);
 
         // Then
-        assertTrue(result);
+        assertTrue(result.success());
+        assertEquals(200, result.observedStatusCode());
         verify(requestBodyUriSpec).body("{\"key\": \"data\"}");
     }
 }

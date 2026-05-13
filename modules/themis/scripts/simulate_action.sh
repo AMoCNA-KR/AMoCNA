@@ -6,28 +6,50 @@ RABBIT_PORT=${RABBIT_PORT:-15672}
 RABBIT_USER=${RABBIT_USER:-guest}
 RABBIT_PASS=${RABBIT_PASS:-guest}
 
+PROTOCOL=${1:-REST}
+EXPECTED_STATUS=${2:-200}
+
 # Generate a random ID
 ACTION_ID=$(cat /proc/sys/kernel/random/uuid 2>/dev/null || echo "test-action-$(date +%s)")
 
 echo "---------------------------------------------------"
 echo "Simulating Action for Themis"
 echo "Action ID: $ACTION_ID"
+echo "Protocol:  $PROTOCOL"
+echo "Expected:  $EXPECTED_STATUS"
 echo "---------------------------------------------------"
 
-# ActionMessage JSON
-PAYLOAD='{
-  "actionId": "'$ACTION_ID'",
-  "protocol": "REST",
-  "instruction": "http://themis:8080/actuator/health",
-  "method": "GET",
-  "payload": null,
-  "data": {},
-  "authMechanism": "NONE",
-  "timeoutSeconds": 10,
-  "isIdempotent": true,
-  "maxRetries": 3,
-  "expectedStatusCode": 200
-}'
+if [ "$PROTOCOL" == "SHELL" ]; then
+  # Shell Example
+  PAYLOAD='{
+    "actionId": "'$ACTION_ID'",
+    "protocol": "SHELL",
+    "instruction": "echo \"Hello Themis\"; exit '$EXPECTED_STATUS'",
+    "method": null,
+    "payload": null,
+    "data": {"name": "Themis"},
+    "authMechanism": "NONE",
+    "timeoutSeconds": 10,
+    "isIdempotent": true,
+    "maxRetries": 3,
+    "expectedStatusCode": '$EXPECTED_STATUS'
+  }'
+else
+  # REST Example
+  PAYLOAD='{
+    "actionId": "'$ACTION_ID'",
+    "protocol": "REST",
+    "instruction": "http://themis:8080/actuator/health",
+    "method": "GET",
+    "payload": null,
+    "data": {},
+    "authMechanism": "NONE",
+    "timeoutSeconds": 10,
+    "isIdempotent": true,
+    "maxRetries": 3,
+    "expectedStatusCode": '$EXPECTED_STATUS'
+  }'
+fi
 
 ESCAPED_PAYLOAD=$(printf '%s' "$PAYLOAD" | jq -Rs .)
 

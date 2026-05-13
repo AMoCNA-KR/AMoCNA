@@ -2,6 +2,7 @@ package com.kubiki.themis.execution;
 
 import com.kubiki.themis.model.ActionMessage;
 import com.kubiki.themis.model.ActionStatusUpdate;
+import com.kubiki.themis.model.ExecutionResult;
 import com.kubiki.themis.model.ExecutionStatus;
 import com.kubiki.themis.model.Protocol;
 import org.junit.jupiter.api.BeforeEach;
@@ -36,7 +37,7 @@ class ActionQueueListenerTest {
             Collections.emptyMap(), null, 30, true, 3, 200
         );
         when(executor.supports(Protocol.REST)).thenReturn(true);
-        when(executor.executeStateless(message)).thenReturn(true);
+        when(executor.executeStateless(message)).thenReturn(ExecutionResult.success(200));
 
         listener.receiveAction(message);
 
@@ -75,7 +76,7 @@ class ActionQueueListenerTest {
             Collections.emptyMap(), null, 30, true, 3, 201
         );
         when(executor.supports(Protocol.REST)).thenReturn(true);
-        when(executor.executeStateless(message)).thenReturn(false);
+        when(executor.executeStateless(message)).thenReturn(ExecutionResult.failure(500, "Execution failed"));
 
         listener.receiveAction(message);
 

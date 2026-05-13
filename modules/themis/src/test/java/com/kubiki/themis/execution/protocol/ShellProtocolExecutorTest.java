@@ -1,6 +1,7 @@
 package com.kubiki.themis.execution.protocol;
 
 import com.kubiki.themis.model.ActionData;
+import com.kubiki.themis.model.ExecutionResult;
 import com.kubiki.themis.model.Protocol;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.junit.jupiter.api.BeforeEach;
@@ -45,15 +46,16 @@ class ShellProtocolExecutorTest {
                 null,
                 null,
                 Collections.emptyList(),
-                Collections.emptyList()
+                Collections.emptyList(), 0
         );
         UUID executionId = UUID.randomUUID();
 
         // When
-        boolean result = shellProtocolExecutor.execute(action, executionId);
+        ExecutionResult result = shellProtocolExecutor.execute(action, executionId);
 
         // Then
-        assertTrue(result);
+        assertTrue(result.success());
+        assertEquals(0, result.observedStatusCode());
     }
 
     @Test
@@ -70,15 +72,15 @@ class ShellProtocolExecutorTest {
                 null,
                 null,
                 Collections.emptyList(),
-                Collections.emptyList()
+                Collections.emptyList(), 0
         );
         UUID executionId = UUID.randomUUID();
 
         // When
-        boolean result = shellProtocolExecutor.execute(action, executionId);
+        ExecutionResult result = shellProtocolExecutor.execute(action, executionId);
 
         // Then
-        assertFalse(result);
+        assertFalse(result.success());
     }
 
     @Test
@@ -95,15 +97,15 @@ class ShellProtocolExecutorTest {
                 null,
                 null,
                 Collections.emptyList(),
-                Collections.emptyList()
+                Collections.emptyList(), 0
         );
         UUID executionId = UUID.randomUUID();
 
         // When
-        boolean result = shellProtocolExecutor.execute(action, executionId);
+        ExecutionResult result = shellProtocolExecutor.execute(action, executionId);
 
         // Then
-        assertFalse(result);
+        assertFalse(result.success());
     }
 
     @Test
@@ -120,15 +122,15 @@ class ShellProtocolExecutorTest {
                 null,
                 null,
                 Collections.emptyList(),
-                Collections.emptyList()
+                Collections.emptyList(), 0
         );
         UUID executionId = UUID.randomUUID();
 
         // When
-        boolean result = shellProtocolExecutor.execute(action, executionId);
+        ExecutionResult result = shellProtocolExecutor.execute(action, executionId);
 
         // Then
-        assertFalse(result);
+        assertFalse(result.success());
     }
 
     @Test
@@ -147,7 +149,7 @@ class ShellProtocolExecutorTest {
                 null,
                 null,
                 Collections.emptyList(),
-                Collections.emptyList()
+                Collections.emptyList(), 0
         );
         UUID executionId = UUID.randomUUID();
 
@@ -190,13 +192,14 @@ class ShellProtocolExecutorTest {
                 30,
                 true,
                 3,
-                200
+                0
         );
 
         // When
-        boolean result = shellProtocolExecutor.executeStateless(action);
+        ExecutionResult result = shellProtocolExecutor.executeStateless(action);
 
         // Then
-        assertTrue(result);
+        assertTrue(result.success());
+        assertEquals(0, result.observedStatusCode());
     }
 }

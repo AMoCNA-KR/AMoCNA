@@ -3,6 +3,7 @@ package com.kubiki.themis.execution;
 import com.kubiki.themis.config.RabbitMQConfig;
 import com.kubiki.themis.model.ActionMessage;
 import com.kubiki.themis.model.ActionStatusUpdate;
+import com.kubiki.themis.model.ExecutionResult;
 import com.kubiki.themis.model.ExecutionStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,13 +38,13 @@ public class ActionQueueListener {
             return;
         }
 
-        boolean success = executor.executeStateless(message);
+        ExecutionResult result = executor.executeStateless(message);
         
         ActionStatusUpdate status = new ActionStatusUpdate(
             message.actionId(),
-            success ? ExecutionStatus.SUCCESS : ExecutionStatus.FAILED,
-            success ? null : "Execution failed",
-            success ? message.expectedStatusCode() : 500 // Simplified
+            result.success() ? ExecutionStatus.SUCCESS : ExecutionStatus.FAILED,
+            result.success() ? null : result.errorMessage(),
+            result.observedStatusCode()
         );
         
         statusProducer.sendUpdate(status);

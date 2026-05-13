@@ -1,9 +1,7 @@
 package com.kubiki.themis.execution.protocol;
 
 import com.kubiki.themis.execution.ProtocolExecutor;
-import com.kubiki.themis.model.ActionData;
-import com.kubiki.themis.model.ActionMessage;
-import com.kubiki.themis.model.Protocol;
+import com.kubiki.themis.model.*;
 import org.eclipse.rdf4j.model.IRI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,23 +26,23 @@ public class ShellProtocolExecutor implements ProtocolExecutor {
     }
 
     @Override
-    public boolean execute(ActionData action, UUID executionId) {
+    public ExecutionResult execute(ActionData action, UUID executionId) {
         if (!(action instanceof ActionData.SimpleAction simpleAction)) {
             log.error("Action {} is not a SimpleAction", action.id());
-            return false;
+            return ExecutionResult.failure(1, "Not a SimpleAction");
         }
-        return executeCommand(simpleAction.instruction(), simpleAction.data(), action.id().toString(), executionId.toString());
+        return executeCommand(simpleAction.instruction(), simpleAction.data(), action.id().toString(), executionId.toString(), simpleAction.expectedStatusCode());
     }
 
     @Override
-    public boolean executeStateless(ActionMessage action) {
-        return executeCommand(action.instruction(), action.data(), action.actionId(), "stateless");
+    public ExecutionResult executeStateless(ActionMessage action) {
+        return executeCommand(action.instruction(), action.data(), action.actionId(), "stateless", action.expectedStatusCode());
     }
 
-    private boolean executeCommand(String template, Map<String, String> data, String actionId, String logContextId) {
+    private ExecutionResult executeCommand(String template, Map<String, String> data, String actionId, String logContextId, int expectedStatusCode) {
         if (template == null || template.isBlank()) {
             log.error("Instruction is null or blank for action {} in context {}", actionId, logContextId);
-            return false;
+            return ExecutionResult.failure(1, "Blank instruction");
         }
 
         ProcessBuilder pb = new ProcessBuilder();
@@ -73,10 +71,10 @@ public class ShellProtocolExecutor implements ProtocolExecutor {
             int exitCode = process.waitFor();
             log.info("Shell command {} exited with code {}", actionId, exitCode);
 
-            return exitCode == SUCCESS_EXIT_CODE;
+            return new ExecutionResult(exitCode, exitCode == expectedStatusCode, exitCode == expectedStatusCode ? null : "Command failed with exit code " + exitCode);
         } catch (Exception e) {
             log.error("Failed to execute shell action {}: {}", actionId, e.getMessage());
-            return false;
+            return ExecutionResult.failure(1, e.getMessage());
         }
     }
 

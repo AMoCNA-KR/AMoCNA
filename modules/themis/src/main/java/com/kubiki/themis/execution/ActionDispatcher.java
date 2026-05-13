@@ -2,6 +2,7 @@ package com.kubiki.themis.execution;
 
 import com.kubiki.themis.condition.ConditionEvaluator;
 import com.kubiki.themis.model.ActionData;
+import com.kubiki.themis.model.ExecutionResult;
 import com.kubiki.themis.saga.SagaEngine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -67,7 +68,8 @@ public class ActionDispatcher {
             return false;
         }
 
-        boolean executionSuccess = executor.execute(action, executionId);
+        ExecutionResult result = executor.execute(action, executionId);
+        boolean executionSuccess = result.success();
 
         if (executionSuccess) {
             if (evaluateConditions(action.postConditions())) {
