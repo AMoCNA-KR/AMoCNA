@@ -174,4 +174,29 @@ class ShellProtocolExecutorTest {
                 () -> assertFalse(injectedFileExists, "Command injection was successful! 'injected' file was created.")
         );
     }
+
+    @Test
+    @DisplayName("Should execute stateless command successfully")
+    void shouldExecuteStatelessCommand() {
+        // Given
+        com.kubiki.themis.model.ActionMessage action = new com.kubiki.themis.model.ActionMessage(
+                "stateless-1",
+                Protocol.SHELL,
+                "echo \"Hello {name}\"",
+                null,
+                null,
+                Map.of("name", "Themis"),
+                null,
+                30,
+                true,
+                3,
+                200
+        );
+
+        // When
+        boolean result = shellProtocolExecutor.executeStateless(action);
+
+        // Then
+        assertTrue(result);
+    }
 }
