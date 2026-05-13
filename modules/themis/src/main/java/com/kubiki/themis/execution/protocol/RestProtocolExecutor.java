@@ -2,6 +2,7 @@ package com.kubiki.themis.execution.protocol;
 
 import com.kubiki.themis.execution.ProtocolExecutor;
 import com.kubiki.themis.model.ActionData;
+import com.kubiki.themis.model.ActionMessage;
 import com.kubiki.themis.model.Protocol;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,6 +56,28 @@ public class RestProtocolExecutor implements ProtocolExecutor {
             return true;
         } catch (Exception e) {
             log.error("Failed to execute REST action {}: {}", action.id(), e.getMessage());
+            return false;
+        }
+    }
+
+    @Override
+    public boolean executeStateless(ActionMessage action) {
+        String urlTemplate = action.instruction();
+        Map<String, String> variables = action.data() != null ? action.data() : Map.of();
+        HttpMethod method = action.method() != null ? action.method() : HttpMethod.GET;
+        String payload = action.payload() != null ? hydrate(action.payload(), variables) : null;
+
+        log.info("Executing stateless REST {} request to {}", method, urlTemplate);
+
+        try {
+            RestClient.RequestBodySpec request = restClient.method(method).uri(urlTemplate, variables);
+            if (payload != null && !payload.isEmpty()) {
+                request.body(payload);
+            }
+            request.retrieve().toBodilessEntity();
+            return true;
+        } catch (Exception e) {
+            log.error("Failed to execute stateless REST action {}: {}", action.actionId(), e.getMessage());
             return false;
         }
     }
