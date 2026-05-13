@@ -3,8 +3,8 @@
 # Configuration
 RABBIT_HOST=${RABBIT_HOST:-localhost}
 RABBIT_PORT=${RABBIT_PORT:-15672}
-USER=${USER:-guest}
-PASS=${PASS:-guest}
+RABBIT_USER=${RABBIT_USER:-guest}
+RABBIT_PASS=${RABBIT_PASS:-guest}
 
 # Generate a random ID
 ACTION_ID=$(cat /proc/sys/kernel/random/uuid 2>/dev/null || echo "test-action-$(date +%s)")
@@ -15,7 +15,6 @@ echo "Action ID: $ACTION_ID"
 echo "---------------------------------------------------"
 
 # ActionMessage JSON
-# We point to Themis's own health check as a test target
 PAYLOAD='{
   "actionId": "'$ACTION_ID'",
   "protocol": "REST",
@@ -30,11 +29,9 @@ PAYLOAD='{
   "expectedStatusCode": 200
 }'
 
-# Escape payload for curl
 ESCAPED_PAYLOAD=$(echo $PAYLOAD | sed 's/"/\\"/g')
 
-# Publish to RabbitMQ via Management API
-curl -s -u $USER:$PASS -X POST http://$RABBIT_HOST:$RABBIT_PORT/api/exchanges/%2f/amocna.direct.exchange/publish \
+curl -s -u $RABBIT_USER:$RABBIT_PASS -X POST http://$RABBIT_HOST:$RABBIT_PORT/api/exchanges/%2f/amocna.direct.exchange/publish \
   -H "content-type:application/json" \
   -d '{
     "properties": {},
@@ -44,7 +41,7 @@ curl -s -u $USER:$PASS -X POST http://$RABBIT_HOST:$RABBIT_PORT/api/exchanges/%2
   }' | grep -q "routed\":true"
 
 if [ $? -eq 0 ]; then
-    echo "SUCCESS: Action published to amocna.action.queue"
+  echo "SUCCESS: Action published to amocna.action.queue"
 else
-    echo "ERROR: Failed to publish action. Is RabbitMQ up at $RABBIT_HOST:$RABBIT_PORT?"
+  echo "ERROR: Failed to publish action. Is RabbitMQ up at $RABBIT_HOST:$RABBIT_PORT?"
 fi
