@@ -5,12 +5,15 @@ WORKDIR /app
 # Copy the schema directory (required for gRPC stubs)
 COPY schema/ schema/
 
-# Copy the themis module
+# Copy the themis module structure
 COPY modules/themis/pom.xml modules/themis/
 WORKDIR /app/modules/themis
 RUN mvn dependency:go-offline
 
-COPY src ./src
+# Copy the source code using the correct path from project root
+# Note: Context is the project root (AMoCNA/)
+COPY modules/themis/src ./src
+
 RUN mvn clean package -DskipTests
 
 # Runtime stage
