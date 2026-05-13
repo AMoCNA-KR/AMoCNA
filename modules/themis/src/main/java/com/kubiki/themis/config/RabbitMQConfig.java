@@ -12,6 +12,8 @@ public class RabbitMQConfig {
     public static final String ACTION_QUEUE = "amocna.action.queue";
     public static final String STATUS_QUEUE = "amocna.status.queue";
     public static final String EXCHANGE = "amocna.direct.exchange";
+    public static final String ACTION_ROUTING_KEY = "action";
+    public static final String STATUS_ROUTING_KEY = "status";
 
     @Bean
     public Queue actionQueue() {
@@ -30,12 +32,12 @@ public class RabbitMQConfig {
 
     @Bean
     public Binding actionBinding(Queue actionQueue, DirectExchange exchange) {
-        return BindingBuilder.bind(actionQueue).to(exchange).with("action");
+        return BindingBuilder.bind(actionQueue).to(exchange).with(ACTION_ROUTING_KEY);
     }
 
     @Bean
     public Binding statusBinding(Queue statusQueue, DirectExchange exchange) {
-        return BindingBuilder.bind(statusQueue).to(exchange).with("status");
+        return BindingBuilder.bind(statusQueue).to(exchange).with(STATUS_ROUTING_KEY);
     }
 
     @Bean

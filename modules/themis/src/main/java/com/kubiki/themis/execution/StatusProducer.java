@@ -14,6 +14,6 @@ public class StatusProducer {
     }
 
     public void sendUpdate(ActionStatusUpdate update) {
-        rabbitTemplate.convertAndSend(RabbitMQConfig.EXCHANGE, "status", update);
+        rabbitTemplate.convertAndSend(RabbitMQConfig.EXCHANGE, RabbitMQConfig.STATUS_ROUTING_KEY, update);
     }
 }
