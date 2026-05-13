@@ -30,6 +30,22 @@ This will:
 - **GraphDB Workbench:** `7200`
 - **Prometheus:** `9090`
 
+### Testing and Simulation
+
+You can use the provided scripts in the `scripts/` directory to simulate actions and observe the feedback loop.
+
+1. **Start the observer** in one terminal to watch for status updates:
+   ```bash
+   ./scripts/observe_status.sh
+   ```
+
+2. **Send a test action** from another terminal:
+   ```bash
+   ./scripts/simulate_action.sh
+   ```
+
+The `simulate_action.sh` script sends a REST request targeting Themis's own health check. You should see Themis process the action in its logs and then see a `SUCCESS` update in the observer terminal.
+
 ## Queue Configuration
 
 Themis listens on the `amocna.action.queue` and sends status updates to `amocna.status.queue`. All messages are JSON formatted.
