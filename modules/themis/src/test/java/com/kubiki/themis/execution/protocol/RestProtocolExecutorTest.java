@@ -181,4 +181,35 @@ class RestProtocolExecutorTest {
         assertTrue(result);
         verify(requestBodyUriSpec).uri(eq("http://localhost:8080/resource/{id}"), any(Map.class));
     }
+
+    @Test
+    @DisplayName("Should execute stateless request successfully")
+    void shouldExecuteStatelessRequest() {
+        // Given
+        com.kubiki.themis.model.ActionMessage action = new com.kubiki.themis.model.ActionMessage(
+                "stateless-1",
+                Protocol.REST,
+                "http://localhost:8080/stateless",
+                HttpMethod.POST,
+                "{\"key\": \"{val}\"}",
+                Map.of("val", "data"),
+                null,
+                30,
+                true,
+                3,
+                200
+        );
+
+        when(restClient.method(HttpMethod.POST)).thenReturn(requestBodyUriSpec);
+        when(requestBodyUriSpec.uri(eq("http://localhost:8080/stateless"), any(Map.class))).thenReturn(requestBodyUriSpec);
+        when(requestBodyUriSpec.body(anyString())).thenReturn(requestBodyUriSpec);
+        when(requestBodyUriSpec.retrieve()).thenReturn(responseSpec);
+
+        // When
+        boolean result = restProtocolExecutor.executeStateless(action);
+
+        // Then
+        assertTrue(result);
+        verify(requestBodyUriSpec).body("{\"key\": \"data\"}");
+    }
 }

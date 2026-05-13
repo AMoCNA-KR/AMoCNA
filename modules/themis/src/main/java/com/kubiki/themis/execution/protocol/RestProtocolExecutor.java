@@ -37,47 +37,32 @@ public class RestProtocolExecutor implements ProtocolExecutor {
             log.error("Action {} is not a SimpleAction", action.id());
             return false;
         }
-
-        String urlTemplate = simpleAction.instruction();
-        Map<String, String> variables = simpleAction.data();
-        HttpMethod method = simpleAction.method() != null ? simpleAction.method() : HttpMethod.GET;
-        String payload = simpleAction.payload() != null ? hydrate(simpleAction.payload(), variables) : null;
-
-        log.info("Executing {} request to {} for execution {}", method, urlTemplate, executionId);
-
-        try {
-            RestClient.RequestBodySpec request = restClient.method(method).uri(urlTemplate, variables);
-
-            if (payload != null && !payload.isEmpty()) {
-                request.body(payload);
-            }
-
-            request.retrieve().toBodilessEntity();
-            return true;
-        } catch (Exception e) {
-            log.error("Failed to execute REST action {}: {}", action.id(), e.getMessage());
-            return false;
-        }
+        return doExecute(simpleAction.instruction(), simpleAction.data(), simpleAction.method(), simpleAction.payload(), action.id().toString(), executionId.toString());
     }
 
     @Override
     public boolean executeStateless(ActionMessage action) {
-        String urlTemplate = action.instruction();
-        Map<String, String> variables = action.data() != null ? action.data() : Map.of();
-        HttpMethod method = action.method() != null ? action.method() : HttpMethod.GET;
-        String payload = action.payload() != null ? hydrate(action.payload(), variables) : null;
+        return doExecute(action.instruction(), action.data(), action.method(), action.payload(), action.actionId(), "stateless");
+    }
 
-        log.info("Executing stateless REST {} request to {}", method, urlTemplate);
+    private boolean doExecute(String urlTemplate, Map<String, String> variables, HttpMethod method, String rawPayload, String actionId, String logContextId) {
+        variables = variables != null ? variables : Map.of();
+        HttpMethod httpMethod = method != null ? method : HttpMethod.GET;
+        String payload = rawPayload != null ? hydrate(rawPayload, variables) : null;
+
+        log.info("Executing REST {} request to {} for {}", httpMethod, urlTemplate, logContextId);
 
         try {
-            RestClient.RequestBodySpec request = restClient.method(method).uri(urlTemplate, variables);
+            RestClient.RequestBodySpec request = restClient.method(httpMethod).uri(urlTemplate, variables);
+
             if (payload != null && !payload.isEmpty()) {
                 request.body(payload);
             }
+
             request.retrieve().toBodilessEntity();
             return true;
         } catch (Exception e) {
-            log.error("Failed to execute stateless REST action {}: {}", action.actionId(), e.getMessage());
+            log.error("Failed to execute REST action {} (context {}): {}", actionId, logContextId, e.getMessage());
             return false;
         }
     }
