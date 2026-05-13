@@ -2,9 +2,9 @@
 set -e
 
 # Automatically find project root
-PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 IMAGE_NAME="themis"
-DOCKERFILE_PATH="modules/themis/Dockerfile"
+DOCKERFILE_PATH="modules/themis/deployment/Dockerfile"
 
 # Default registry if not set
 REGISTRY="${REGISTRY:-sglomski}"

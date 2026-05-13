@@ -12,7 +12,7 @@ You can launch Themis along with its dependencies (RabbitMQ, GraphDB, Prometheus
 
 ### Launching the Environment
 
-Navigate to the `modules/themis` directory and run:
+Navigate to the `modules/themis/deployment` directory and run:
 
 ```bash
 docker-compose up --build
