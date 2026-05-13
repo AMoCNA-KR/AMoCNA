@@ -29,16 +29,19 @@ PAYLOAD='{
   "expectedStatusCode": 200
 }'
 
-ESCAPED_PAYLOAD=$(echo $PAYLOAD | sed 's/"/\\"/g')
+ESCAPED_PAYLOAD=$(printf '%s' "$PAYLOAD" | jq -Rs .)
 
-curl -s -u $RABBIT_USER:$RABBIT_PASS -X POST http://$RABBIT_HOST:$RABBIT_PORT/api/exchanges/%2f/amocna.direct.exchange/publish \
+curl -s -u "$RABBIT_USER:$RABBIT_PASS" -X POST "http://$RABBIT_HOST:$RABBIT_PORT/api/exchanges/%2f/amocna.direct.exchange/publish" \
   -H "content-type:application/json" \
-  -d '{
-    "properties": {},
-    "routing_key": "action",
-    "payload": "'"$ESCAPED_PAYLOAD"'",
-    "payload_encoding": "string"
-  }' | grep -q "routed\":true"
+  -d "$(cat <<EOF
+{
+  "properties": {},
+  "routing_key": "action",
+  "payload": ${ESCAPED_PAYLOAD},
+  "payload_encoding": "string"
+}
+EOF
+)" | grep -q "routed\":true"
 
 if [ $? -eq 0 ]; then
   echo "SUCCESS: Action published to amocna.action.queue"
