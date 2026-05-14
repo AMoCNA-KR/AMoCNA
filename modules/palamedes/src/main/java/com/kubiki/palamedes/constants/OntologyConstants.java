@@ -1,4 +1,4 @@
-package com.kubiki.themis.constants;
+package com.kubiki.palamedes.constants;
 
 public final class OntologyConstants {
     private OntologyConstants() {}

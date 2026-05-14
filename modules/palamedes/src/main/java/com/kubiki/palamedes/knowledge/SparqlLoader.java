@@ -1,4 +1,4 @@
-package com.kubiki.themis.knowledge;
+package com.kubiki.palamedes.knowledge;
 
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;

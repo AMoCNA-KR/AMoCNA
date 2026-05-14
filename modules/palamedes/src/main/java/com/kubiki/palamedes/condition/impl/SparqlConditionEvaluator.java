@@ -1,14 +1,14 @@
-package com.kubiki.themis.condition.impl;
+package com.kubiki.palamedes.condition.impl;
 
-import com.kubiki.themis.condition.ConditionEvaluator;
-import com.kubiki.themis.config.ThemisProperties;
-import com.kubiki.themis.constants.OntologyConstants;
-import com.kubiki.themis.knowledge.GraphDBGateway;
-import com.kubiki.themis.model.ActionData;
+import com.kubiki.palamedes.condition.ConditionEvaluator;
+import com.kubiki.palamedes.config.ThemisProperties;
+import com.kubiki.palamedes.constants.OntologyConstants;
+import com.kubiki.palamedes.knowledge.GraphDBGateway;
+import com.kubiki.palamedes.model.ActionData;
 import org.eclipse.rdf4j.model.IRI;
 import org.springframework.stereotype.Component;
 
-import static com.kubiki.themis.constants.OntologyConstants.*;
+import static com.kubiki.palamedes.constants.OntologyConstants.*;
 
 @Component
 public class SparqlConditionEvaluator implements ConditionEvaluator {

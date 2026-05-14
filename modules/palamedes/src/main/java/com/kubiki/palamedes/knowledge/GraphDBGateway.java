@@ -1,8 +1,8 @@
-package com.kubiki.themis.knowledge;
+package com.kubiki.palamedes.knowledge;
 
-import com.kubiki.themis.constants.OntologyConstants;
-import com.kubiki.themis.model.ActionData;
-import com.kubiki.themis.model.ExecutionStatus;
+import com.kubiki.palamedes.constants.OntologyConstants;
+import com.kubiki.palamedes.model.ActionData;
+import com.kubiki.palamedes.model.ExecutionStatus;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.ValueFactory;

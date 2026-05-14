@@ -1,7 +1,7 @@
-package com.kubiki.themis.knowledge;
+package com.kubiki.palamedes.knowledge;
 
-import com.kubiki.themis.model.ActionData;
-import com.kubiki.themis.model.Protocol;
+import com.kubiki.palamedes.model.ActionData;
+import com.kubiki.palamedes.model.Protocol;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.query.BindingSet;

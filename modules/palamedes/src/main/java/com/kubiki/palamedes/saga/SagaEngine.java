@@ -1,9 +1,9 @@
-package com.kubiki.themis.saga;
+package com.kubiki.palamedes.saga;
 
-import com.kubiki.themis.execution.ActionDispatcher;
-import com.kubiki.themis.knowledge.GraphDBGateway;
-import com.kubiki.themis.model.ActionData;
-import com.kubiki.themis.model.ExecutionStatus;
+import com.kubiki.palamedes.execution.ActionDispatcher;
+import com.kubiki.palamedes.knowledge.GraphDBGateway;
+import com.kubiki.palamedes.model.ActionData;
+import com.kubiki.palamedes.model.ExecutionStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;

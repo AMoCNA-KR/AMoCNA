@@ -1,6 +1,6 @@
-package com.kubiki.themis.condition;
+package com.kubiki.palamedes.condition;
 
-import com.kubiki.themis.model.ActionData;
+import com.kubiki.palamedes.model.ActionData;
 import org.eclipse.rdf4j.model.IRI;
 
 public interface ConditionEvaluator {

@@ -1,4 +1,4 @@
-package com.kubiki.themis.knowledge;
+package com.kubiki.palamedes.knowledge;
 
 import java.util.function.BiFunction;
 import java.util.function.Function;

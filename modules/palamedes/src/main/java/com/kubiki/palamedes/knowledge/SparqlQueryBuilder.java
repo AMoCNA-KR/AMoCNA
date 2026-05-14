@@ -1,4 +1,4 @@
-package com.kubiki.themis.knowledge;
+package com.kubiki.palamedes.knowledge;
 
 import org.eclipse.rdf4j.model.IRI;
 import org.springframework.stereotype.Component;

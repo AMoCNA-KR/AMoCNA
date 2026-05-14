@@ -1,6 +1,6 @@
-package com.kubiki.themis.knowledge;
+package com.kubiki.palamedes.knowledge;
 
-import com.kubiki.themis.config.ThemisProperties;
+import com.kubiki.palamedes.config.ThemisProperties;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;

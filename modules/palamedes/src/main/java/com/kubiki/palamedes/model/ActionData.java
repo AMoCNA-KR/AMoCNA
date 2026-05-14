@@ -1,4 +1,4 @@
-package com.kubiki.themis.model;
+package com.kubiki.palamedes.model;
 
 import lombok.Builder;
 import org.eclipse.rdf4j.model.IRI;

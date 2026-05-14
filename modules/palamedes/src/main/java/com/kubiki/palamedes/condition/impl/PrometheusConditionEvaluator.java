@@ -1,12 +1,12 @@
-package com.kubiki.themis.condition.impl;
+package com.kubiki.palamedes.condition.impl;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.kubiki.themis.condition.ConditionEvaluator;
-import com.kubiki.themis.config.ThemisProperties;
-import com.kubiki.themis.constants.OntologyConstants;
-import com.kubiki.themis.exception.ConditionEvaluationException;
-import com.kubiki.themis.model.ActionData;
+import com.kubiki.palamedes.condition.ConditionEvaluator;
+import com.kubiki.palamedes.config.ThemisProperties;
+import com.kubiki.palamedes.constants.OntologyConstants;
+import com.kubiki.palamedes.exception.ConditionEvaluationException;
+import com.kubiki.palamedes.model.ActionData;
 import org.eclipse.rdf4j.model.IRI;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatusCode;
@@ -14,7 +14,7 @@ import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
-import static com.kubiki.themis.constants.OntologyConstants.CLASS_PROMETHEUS_CONDITION;
+import static com.kubiki.palamedes.constants.OntologyConstants.CLASS_PROMETHEUS_CONDITION;
 
 @Component
 public class PrometheusConditionEvaluator implements ConditionEvaluator {
