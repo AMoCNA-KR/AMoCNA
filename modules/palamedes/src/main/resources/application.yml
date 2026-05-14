@@ -1,0 +1,18 @@
+spring:
+  threads:
+    virtual:
+      enabled: true
+  profiles:
+    active: dev
+  rabbitmq:
+    host: localhost
+
+grpc:
+  server:
+    port: 50051
+
+palamedes:
+  graphdb:
+    url: "http://graphdb:7200"
+    repositoryId: "amocna"
+    timeoutMs: 5000
