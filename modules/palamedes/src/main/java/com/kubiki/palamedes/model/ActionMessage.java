@@ -1,4 +1,4 @@
-package com.kubiki.themis.model;
+package com.kubiki.palamedes.model;
 
 import org.springframework.http.HttpMethod;
 

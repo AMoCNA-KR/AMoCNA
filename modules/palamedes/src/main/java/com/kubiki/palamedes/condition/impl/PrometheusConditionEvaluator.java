@@ -3,7 +3,7 @@ package com.kubiki.palamedes.condition.impl;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kubiki.palamedes.condition.ConditionEvaluator;
-import com.kubiki.palamedes.config.ThemisProperties;
+import com.kubiki.palamedes.config.PalamedesProperties;
 import com.kubiki.palamedes.constants.OntologyConstants;
 import com.kubiki.palamedes.exception.ConditionEvaluationException;
 import com.kubiki.palamedes.model.ActionData;
@@ -38,11 +38,11 @@ public class PrometheusConditionEvaluator implements ConditionEvaluator {
     private static final String ERROR_MISSING_RESULT = "Missing 'result' field in Prometheus response";
 
     private final RestClient restClient;
-    private final ThemisProperties properties;
+    private final PalamedesProperties properties;
     private final ObjectMapper objectMapper;
 
     public PrometheusConditionEvaluator(@Nullable @Qualifier("prometheusRestClient") RestClient restClient,
-                                        ThemisProperties properties,
+                                        PalamedesProperties properties,
                                         ObjectMapper objectMapper) {
         this.restClient = restClient;
         this.properties = properties;

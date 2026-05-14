@@ -11,12 +11,9 @@ import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.RestClient;
 
-import java.util.Map;
-import java.util.UUID;
-
 /**
  * Generic REST Protocol Interpreter.
- * Ingests URL templates from GraphDB and executes them.
+ * Executes hydrated REST requests.
  */
 @Component
 public class RestProtocolExecutor implements ProtocolExecutor {
@@ -33,28 +30,18 @@ public class RestProtocolExecutor implements ProtocolExecutor {
     }
 
     @Override
-    public ExecutionResult execute(ActionData action, UUID executionId) {
-        if (!(action instanceof ActionData.SimpleAction simpleAction)) {
-            log.error("Action {} is not a SimpleAction", action.id());
-            return ExecutionResult.failure(500, "Not a SimpleAction");
-        }
-        return doExecute(simpleAction.instruction(), simpleAction.data(), simpleAction.method(), simpleAction.payload(), action.id().toString(), executionId.toString(), simpleAction.expectedStatusCode());
-    }
-
-    @Override
     public ExecutionResult executeStateless(ActionMessage action) {
-        return doExecute(action.instruction(), action.data(), action.method(), action.payload(), action.actionId(), "stateless", action.expectedStatusCode());
+        return doExecute(action.instruction(), action.method(), action.payload(), action.actionId(), "stateless", action.expectedStatusCode());
     }
 
-    private ExecutionResult doExecute(String urlTemplate, Map<String, String> variables, HttpMethod method, String rawPayload, String actionId, String logContextId, int expectedStatusCode) {
-        variables = variables != null ? variables : Map.of();
+    private ExecutionResult doExecute(String url, HttpMethod method, String rawPayload, String actionId, String logContextId, int expectedStatusCode) {
         HttpMethod httpMethod = method != null ? method : HttpMethod.GET;
-        String payload = rawPayload != null ? hydrate(rawPayload, variables) : null;
+        String payload = rawPayload;
 
-        log.info("Executing REST {} request to {} for {}", httpMethod, urlTemplate, logContextId);
+        log.info("Executing REST {} request to {} for {}", httpMethod, url, logContextId);
 
         try {
-            RestClient.RequestBodySpec request = restClient.method(httpMethod).uri(urlTemplate, variables);
+            RestClient.RequestBodySpec request = restClient.method(httpMethod).uri(url);
 
             if (payload != null && !payload.isEmpty()) {
                 request.body(payload);
@@ -72,14 +59,4 @@ public class RestProtocolExecutor implements ProtocolExecutor {
             return ExecutionResult.failure(500, e.getMessage());
         }
     }
-
-    private String hydrate(String template, Map<String, String> data) {
-        if (template == null) return null;
-        String result = template;
-        for (var entry : data.entrySet()) {
-            result = result.replace("{" + entry.getKey() + "}", entry.getValue());
-        }
-        return result;
-    }
 }
-

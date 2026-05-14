@@ -1,9 +1,9 @@
 package com.kubiki.palamedes.saga;
 
-import com.kubiki.palamedes.execution.ActionDispatcher;
 import com.kubiki.palamedes.knowledge.GraphDBGateway;
 import com.kubiki.palamedes.model.ActionData;
 import com.kubiki.palamedes.model.ExecutionStatus;
+import com.kubiki.palamedes.dispatcher.DispatcherService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -11,7 +11,6 @@ import org.springframework.stereotype.Service;
 import jakarta.annotation.PreDestroy;
 import java.util.Stack;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -32,62 +31,16 @@ public class SagaEngine {
         executor.shutdown();
     }
 
-    public boolean execute(ActionData action, UUID executionId, ActionDispatcher dispatcher) {
-        return CompletableFuture.supplyAsync(() -> {
-            try {
-                return executeInternal(action, executionId, dispatcher);
-            } catch (Exception e) {
-                log.error("Saga execution failed exceptionally", e);
-                return false;
-            }
-        }, executor).join();
+    public void handleFeedback(com.kubiki.palamedes.model.ActionStatusUpdate update) {
+        log.info("Handling feedback for action {}: {}", update.actionId(), update.status());
+        // TODO: Implement Saga state machine logic
+        // If SUCCESS and part of workflow, dispatch next step
+        // If FAILURE, trigger compensation
     }
 
-    private boolean executeInternal(ActionData action, UUID executionId, ActionDispatcher dispatcher) {
-        gateway.updateActionState(action.id(), ExecutionStatus.IN_PROGRESS);
-
-        if (action instanceof ActionData.SimpleAction simple) {
-            boolean success = dispatcher.dispatchSimple(simple, executionId);
-            gateway.updateActionState(action.id(), success ? ExecutionStatus.SUCCESS : ExecutionStatus.FAILED);
-            return success;
-        } else if (action instanceof ActionData.ComplexWorkflow workflow) {
-            Stack<ActionData> executedSteps = new Stack<>();
-
-            for (ActionData step : workflow.steps()) {
-                boolean stepSuccess = executeInternal(step, executionId, dispatcher);
-
-                if (stepSuccess) {
-                    executedSteps.push(step);
-                } else {
-                    log.warn("Workflow {} failed at step {}", workflow.id(), step.id());
-                    gateway.updateActionState(workflow.id(), ExecutionStatus.FAILED);
-                    compensate(executedSteps, workflow, executionId, dispatcher);
-                    return false;
-                }
-            }
-
-            gateway.updateActionState(workflow.id(), ExecutionStatus.SUCCESS);
-            return true;
-        }
+    // Deprecated/Placeholder methods for compilation
+    public boolean execute(ActionData action, UUID executionId, DispatcherService dispatcher) {
+        log.warn("Blocking execution is deprecated in the async MAPE split");
         return false;
-    }
-
-    private void compensate(Stack<ActionData> executedSteps, ActionData.ComplexWorkflow workflow, UUID executionId, ActionDispatcher dispatcher) {
-        log.info("Starting compensation for workflow {}", workflow.id());
-        while (!executedSteps.isEmpty()) {
-            ActionData step = executedSteps.pop();
-            ActionData compensation = workflow.compensations().get(step.id());
-
-            if (compensation != null) {
-                log.info("Executing compensation {} for step {}", compensation.id(), step.id());
-                boolean compSuccess = executeInternal(compensation, executionId, dispatcher);
-                if (!compSuccess) {
-                    log.error("CRITICAL: Compensation {} failed for step {}!", compensation.id(), step.id());
-                    // In a real system we might alert ops, retry, etc.
-                }
-            } else {
-                log.debug("No compensation defined for step {}", step.id());
-            }
-        }
     }
 }

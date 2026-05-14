@@ -1,6 +1,6 @@
 package com.kubiki.palamedes.knowledge;
 
-import com.kubiki.palamedes.config.ThemisProperties;
+import com.kubiki.palamedes.config.PalamedesProperties;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
@@ -9,18 +9,18 @@ import org.springframework.stereotype.Component;
 @Component
 public class OntologyRegistry {
 
-    private final ThemisProperties themisProperties;
+    private final PalamedesProperties palamedesProperties;
     private final ValueFactory valueFactory = SimpleValueFactory.getInstance();
 
-    public OntologyRegistry(ThemisProperties themisProperties) {
-        this.themisProperties = themisProperties;
+    public OntologyRegistry(PalamedesProperties palamedesProperties) {
+        this.palamedesProperties = palamedesProperties;
     }
 
     public IRI moam(String fragment) {
-        return valueFactory.createIRI(themisProperties.ontology().moamNamespace(), fragment);
+        return valueFactory.createIRI(palamedesProperties.ontology().moamNamespace(), fragment);
     }
 
     public String getMoamNamespace() {
-        return themisProperties.ontology().moamNamespace();
+        return palamedesProperties.ontology().moamNamespace();
     }
 }

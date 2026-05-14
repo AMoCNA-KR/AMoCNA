@@ -1,7 +1,7 @@
 package com.kubiki.palamedes.condition.impl;
 
 import com.kubiki.palamedes.condition.ConditionEvaluator;
-import com.kubiki.palamedes.config.ThemisProperties;
+import com.kubiki.palamedes.config.PalamedesProperties;
 import com.kubiki.palamedes.constants.OntologyConstants;
 import com.kubiki.palamedes.knowledge.GraphDBGateway;
 import com.kubiki.palamedes.model.ActionData;
@@ -13,9 +13,9 @@ import static com.kubiki.palamedes.constants.OntologyConstants.*;
 @Component
 public class SparqlConditionEvaluator implements ConditionEvaluator {
     private final GraphDBGateway graphDBGateway;
-    private final ThemisProperties properties;
+    private final PalamedesProperties properties;
 
-    public SparqlConditionEvaluator(GraphDBGateway graphDBGateway, ThemisProperties properties) {
+    public SparqlConditionEvaluator(GraphDBGateway graphDBGateway, PalamedesProperties properties) {
         this.graphDBGateway = graphDBGateway;
         this.properties = properties;
     }
