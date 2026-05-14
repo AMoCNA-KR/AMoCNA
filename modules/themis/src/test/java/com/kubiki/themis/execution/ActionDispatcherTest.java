@@ -2,6 +2,7 @@ package com.kubiki.themis.execution;
 
 import com.kubiki.themis.condition.ConditionEvaluator;
 import com.kubiki.themis.model.ActionData;
+import com.kubiki.themis.model.ExecutionResult;
 import com.kubiki.themis.model.Protocol;
 import com.kubiki.themis.saga.SagaEngine;
 import org.eclipse.rdf4j.model.IRI;
@@ -26,7 +27,7 @@ class ActionDispatcherTest {
     void shouldSucceedWhenPreAndPostConditionsAreMet() {
         ProtocolExecutor executor = mock(ProtocolExecutor.class);
         when(executor.supports(Protocol.REST)).thenReturn(true);
-        when(executor.execute(any(), any())).thenReturn(true);
+        when(executor.execute(any(), any())).thenReturn(ExecutionResult.success(200));
 
         IRI typeA = VF.createIRI("http://moam#TypeA");
         ConditionEvaluator evaluator = mock(ConditionEvaluator.class);
@@ -59,6 +60,7 @@ class ActionDispatcherTest {
                 .method(HttpMethod.GET)
                 .preConditions(List.of(pre))
                 .postConditions(List.of(post))
+                .expectedStatusCode(200)
                 .build();
 
         boolean result = dispatcher.dispatch(action, UUID.randomUUID());
@@ -103,6 +105,7 @@ class ActionDispatcherTest {
                 .targetIri(VF.createIRI("http://target"))
                 .method(HttpMethod.GET)
                 .preConditions(List.of(pre))
+                .expectedStatusCode(200)
                 .build();
 
         boolean result = dispatcher.dispatch(action, UUID.randomUUID());
@@ -118,7 +121,7 @@ class ActionDispatcherTest {
     void shouldSucceedWhenConditionsAreNullOrEmpty() {
         ProtocolExecutor executor = mock(ProtocolExecutor.class);
         when(executor.supports(Protocol.REST)).thenReturn(true);
-        when(executor.execute(any(), any())).thenReturn(true);
+        when(executor.execute(any(), any())).thenReturn(ExecutionResult.success(200));
 
         SagaEngine sagaEngine = mock(SagaEngine.class);
         when(sagaEngine.execute(any(), any(), any())).thenAnswer(invocation -> {
@@ -139,6 +142,7 @@ class ActionDispatcherTest {
                 .method(HttpMethod.GET)
                 .preConditions(null)
                 .postConditions(null)
+                .expectedStatusCode(200)
                 .build();
 
         // Test empty
@@ -150,6 +154,7 @@ class ActionDispatcherTest {
                 .instruction("u")
                 .targetIri(VF.createIRI("http://target"))
                 .method(HttpMethod.GET)
+                .expectedStatusCode(200)
                 .build();
 
         assertAll("Empty/Null Conditions Validation",
@@ -180,6 +185,7 @@ class ActionDispatcherTest {
                 .targetIri(VF.createIRI("http://target"))
                 .method(HttpMethod.GET)
                 .preConditions(List.of(pre))
+                .expectedStatusCode(200)
                 .build();
 
         assertFalse(dispatcher.dispatch(action, UUID.randomUUID()), "Should fail when evaluator is missing");
@@ -204,6 +210,7 @@ class ActionDispatcherTest {
                 .instruction("u")
                 .targetIri(VF.createIRI("http://target"))
                 .method(HttpMethod.GET)
+                .expectedStatusCode(200)
                 .build();
 
         assertFalse(dispatcher.dispatch(action, UUID.randomUUID()), "Should fail when executor is missing");

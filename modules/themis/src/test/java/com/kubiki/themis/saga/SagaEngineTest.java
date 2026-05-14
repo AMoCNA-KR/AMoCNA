@@ -52,6 +52,7 @@ class SagaEngineTest {
                 .payload(null)
                 .preConditions(List.of())
                 .postConditions(List.of())
+                .expectedStatusCode(200)
                 .build();
 
         UUID executionId = UUID.randomUUID();
@@ -80,6 +81,7 @@ class SagaEngineTest {
                 .payload(null)
                 .preConditions(List.of())
                 .postConditions(List.of())
+                .expectedStatusCode(200)
                 .build();
 
         ActionData.SimpleAction step2 = ActionData.SimpleAction
@@ -94,6 +96,7 @@ class SagaEngineTest {
                 .payload(null)
                 .preConditions(List.of())
                 .postConditions(List.of())
+                .expectedStatusCode(200)
                 .build();
 
         ActionData.SimpleAction comp1 = ActionData.SimpleAction
@@ -108,6 +111,7 @@ class SagaEngineTest {
                 .payload(null)
                 .preConditions(List.of())
                 .postConditions(List.of())
+                .expectedStatusCode(200)
                 .build();
 
         ActionData.ComplexWorkflow workflow = new ActionData.ComplexWorkflow(

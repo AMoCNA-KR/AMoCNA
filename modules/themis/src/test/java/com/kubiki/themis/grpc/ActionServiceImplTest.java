@@ -66,7 +66,7 @@ class ActionServiceImplTest {
                 HttpMethod.GET,
                 null,
                 List.of(),
-                List.of()
+                List.of(), 200
         );
         when(graphDBGateway.findActionsForResource(SimpleValueFactory.getInstance().createIRI(resourceId))).thenReturn(List.of(mockAction));
 
@@ -118,7 +118,7 @@ class ActionServiceImplTest {
                 HttpMethod.GET,
                 null,
                 List.of(),
-                List.of()
+                List.of(), 200
         );
         when(graphDBGateway.fetchActionStructure(SimpleValueFactory.getInstance().createIRI("http://moa#action-1"))).thenReturn(mockAction);
         when(actionDispatcher.dispatch(any(ActionData.class), any(UUID.class))).thenReturn(true);

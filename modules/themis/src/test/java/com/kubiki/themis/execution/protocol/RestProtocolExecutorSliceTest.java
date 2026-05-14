@@ -1,6 +1,7 @@
 package com.kubiki.themis.execution.protocol;
 
 import com.kubiki.themis.model.ActionData;
+import com.kubiki.themis.model.ExecutionResult;
 import com.kubiki.themis.model.Protocol;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.junit.jupiter.api.BeforeEach;
@@ -51,12 +52,12 @@ class RestProtocolExecutorSliceTest {
                 HttpMethod.POST,
                 "{}",
                 Collections.emptyList(),
-                Collections.emptyList()
+                Collections.emptyList(), 200
         );
 
-        boolean result = executor.execute(action, UUID.randomUUID());
+        ExecutionResult result = executor.execute(action, UUID.randomUUID());
 
-        assertTrue(result);
+        assertTrue(result.success());
         server.verify();
     }
 
@@ -80,12 +81,12 @@ class RestProtocolExecutorSliceTest {
                 HttpMethod.GET,
                 null,
                 Collections.emptyList(),
-                Collections.emptyList()
+                Collections.emptyList(), 200
         );
 
-        boolean result = executor.execute(action, UUID.randomUUID());
+        ExecutionResult result = executor.execute(action, UUID.randomUUID());
 
-        assertTrue(result, "Action execution should return true");
+        assertTrue(result.success(), "Action execution should return true");
         server.verify();
     }
 }

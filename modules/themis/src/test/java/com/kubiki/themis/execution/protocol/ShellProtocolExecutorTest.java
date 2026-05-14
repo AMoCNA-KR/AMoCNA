@@ -1,6 +1,7 @@
 package com.kubiki.themis.execution.protocol;
 
 import com.kubiki.themis.model.ActionData;
+import com.kubiki.themis.model.ExecutionResult;
 import com.kubiki.themis.model.Protocol;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.junit.jupiter.api.BeforeEach;
@@ -45,15 +46,16 @@ class ShellProtocolExecutorTest {
                 null,
                 null,
                 Collections.emptyList(),
-                Collections.emptyList()
+                Collections.emptyList(), 0
         );
         UUID executionId = UUID.randomUUID();
 
         // When
-        boolean result = shellProtocolExecutor.execute(action, executionId);
+        ExecutionResult result = shellProtocolExecutor.execute(action, executionId);
 
         // Then
-        assertTrue(result);
+        assertTrue(result.success());
+        assertEquals(0, result.observedStatusCode());
     }
 
     @Test
@@ -70,15 +72,15 @@ class ShellProtocolExecutorTest {
                 null,
                 null,
                 Collections.emptyList(),
-                Collections.emptyList()
+                Collections.emptyList(), 0
         );
         UUID executionId = UUID.randomUUID();
 
         // When
-        boolean result = shellProtocolExecutor.execute(action, executionId);
+        ExecutionResult result = shellProtocolExecutor.execute(action, executionId);
 
         // Then
-        assertFalse(result);
+        assertFalse(result.success());
     }
 
     @Test
@@ -95,15 +97,15 @@ class ShellProtocolExecutorTest {
                 null,
                 null,
                 Collections.emptyList(),
-                Collections.emptyList()
+                Collections.emptyList(), 0
         );
         UUID executionId = UUID.randomUUID();
 
         // When
-        boolean result = shellProtocolExecutor.execute(action, executionId);
+        ExecutionResult result = shellProtocolExecutor.execute(action, executionId);
 
         // Then
-        assertFalse(result);
+        assertFalse(result.success());
     }
 
     @Test
@@ -120,15 +122,15 @@ class ShellProtocolExecutorTest {
                 null,
                 null,
                 Collections.emptyList(),
-                Collections.emptyList()
+                Collections.emptyList(), 0
         );
         UUID executionId = UUID.randomUUID();
 
         // When
-        boolean result = shellProtocolExecutor.execute(action, executionId);
+        ExecutionResult result = shellProtocolExecutor.execute(action, executionId);
 
         // Then
-        assertFalse(result);
+        assertFalse(result.success());
     }
 
     @Test
@@ -147,7 +149,7 @@ class ShellProtocolExecutorTest {
                 null,
                 null,
                 Collections.emptyList(),
-                Collections.emptyList()
+                Collections.emptyList(), 0
         );
         UUID executionId = UUID.randomUUID();
 
@@ -173,5 +175,31 @@ class ShellProtocolExecutorTest {
                 () -> assertTrue(safeFileExists, "Safe file should have been created"),
                 () -> assertFalse(injectedFileExists, "Command injection was successful! 'injected' file was created.")
         );
+    }
+
+    @Test
+    @DisplayName("Should execute stateless command successfully")
+    void shouldExecuteStatelessCommand() {
+        // Given
+        com.kubiki.themis.model.ActionMessage action = new com.kubiki.themis.model.ActionMessage(
+                "stateless-1",
+                Protocol.SHELL,
+                "echo \"Hello {name}\"",
+                null,
+                null,
+                Map.of("name", "Themis"),
+                null,
+                30,
+                true,
+                3,
+                0
+        );
+
+        // When
+        ExecutionResult result = shellProtocolExecutor.executeStateless(action);
+
+        // Then
+        assertTrue(result.success());
+        assertEquals(0, result.observedStatusCode());
     }
 }
