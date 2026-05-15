@@ -2,8 +2,6 @@
 FROM maven:3.9-eclipse-temurin-25 AS builder
 WORKDIR /app
 
-# Copy the schema directory (required for gRPC stubs)
-COPY schema/ schema/
 
 # Copy the palamedes module structure
 COPY modules/palamedes/pom.xml modules/palamedes/
