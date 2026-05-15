@@ -19,8 +19,19 @@ palamedes:
     moam-namespace: ${ONTOLOGY_MOAM:http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#}
     cnee-namespace: ${ONTOLOGY_CNEE:http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/}
     bridge-namespace: ${ONTOLOGY_BRIDGE:http://www.semanticweb.org/patryk/ontologies/2026/4/BridgeOnt#}
+    states:
+      initial: "State_Initial"
+      planned: "State_Planned"
+      validated: "State_Validated"
+      in-progress: "State_InProgress"
+      succeeded: "State_Succeeded"
+      failed: "State_Failed"
+      compensating: "State_Compensating"
   prometheus:
     url: ${PROMETHEUS_URL:http://localhost:9090}
+  engine:
+    pipeline-rate-ms: 5000
+    default-idempotency-seconds: 300
 
 management:
   endpoints:

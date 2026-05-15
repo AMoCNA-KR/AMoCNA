@@ -2,6 +2,7 @@ package com.kubiki.palamedes.config;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
+import java.util.Map;
 
 /**
  * Root configuration class for Palamedes, following the "Configuration Properties at Scale" pattern.
@@ -11,14 +12,18 @@ import org.springframework.boot.context.properties.NestedConfigurationProperty;
 public record PalamedesProperties(
         @NestedConfigurationProperty GraphDB graphdb,
         @NestedConfigurationProperty Ontology ontology,
-        @NestedConfigurationProperty Prometheus prometheus
+        @NestedConfigurationProperty Prometheus prometheus,
+        @NestedConfigurationProperty Engine engine
 ) {
     public record GraphDB(String url, String repositoryId, int timeoutMs) {
     }
 
-    public record Ontology(String moamNamespace, String cneeNamespace, String bridgeNamespace) {
+    public record Ontology(String moamNamespace, String cneeNamespace, String bridgeNamespace, Map<String, String> states) {
     }
 
     public record Prometheus(String url) {
+    }
+
+    public record Engine(long pipelineRateMs, int defaultIdempotencySeconds) {
     }
 }
