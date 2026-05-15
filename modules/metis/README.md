@@ -292,6 +292,85 @@ service SensorIngestionService {
 
 ---
 
+## Kubernetes Sensor Layer
+
+Metis includes a built-in sensor layer that watches a Kubernetes cluster and automatically feeds events into the ingestion pipeline. It runs inside the same JVM — no separate process or network hop.
+
+### How it works
+
+1. On startup, `SensorOrchestrator` starts all `KubernetesSensor` beans (if `metis.sensor.enabled=true`).
+2. Each sensor creates a Fabric8 `SharedIndexInformer` for its resource type. Informers reconnect automatically on failure.
+3. Callbacks translate Kubernetes events into `SensorEvent` protos and hand them to `SensorEventPublisher`.
+4. `SensorEventPublisher` buffers events and flushes them as a `SensorBatch` directly to `SensorEventProcessor` — in-process, no gRPC overhead.
+
+### Built-in sensors
+
+| Sensor | Watches | Emits |
+|---|---|---|
+| `PodSensor` | Pods | `EntityDiscovered`, `StateChanged`, `EntityDeleted` |
+| `ServiceSensor` | Services | `EntityDiscovered`, `EntityDeleted` |
+| `NodeSensor` | Nodes (cluster-scoped) | `EntityDiscovered`, `EntityDeleted` |
+| `BindingSensor` | Pods + Services | `RelationshipAsserted` (pod↔service `cnee:contains`, pod↔node `cnee:isHostedOn`) |
+
+### Configuration
+
+```yaml
+metis:
+  sensor:
+    enabled: true
+    namespaces: []          # empty = all namespaces; e.g. [default, production]
+    batch-size: 50          # max events per flush
+    flush-interval-ms: 500  # flush every 500ms even if batch isn't full
+```
+
+Kubernetes credentials are resolved automatically by Fabric8:
+1. In-cluster service account (`/var/run/secrets/kubernetes.io/serviceaccount`)
+2. `KUBECONFIG` environment variable
+3. `~/.kube/config`
+
+When `metis.sensor.enabled=false` (the default in the test profile), no Kubernetes client is created — Metis runs fine without cluster access.
+
+### Adding a new sensor
+
+1. Create a class in `com.kubiki.metis.sensor.kubernetes` (or any sub-package).
+2. Implement `KubernetesSensor` (or extend `AbstractNamespacedSensor` for namespaced resources).
+3. Annotate with `@Component` and `@ConditionalOnProperty(name = "metis.sensor.enabled", havingValue = "true")`.
+4. Inject `SensorEventPublisher` and call `publisher.publish(...)` from your informer callbacks.
+
+That's it — `SensorOrchestrator` picks it up automatically. No other wiring needed.
+
+```java
+@Component
+@ConditionalOnProperty(name = "metis.sensor.enabled", havingValue = "true")
+public class DeploymentSensor extends AbstractNamespacedSensor {
+
+    private final SensorEventPublisher publisher;
+    private final IriFactory iriFactory;
+
+    public DeploymentSensor(KubernetesClient client, MetisProperties props,
+                            SensorEventPublisher publisher, IriFactory iriFactory) {
+        super(client, props);
+        this.publisher = publisher;
+        this.iriFactory = iriFactory;
+    }
+
+    @Override public String name() { return "DeploymentSensor"; }
+
+    @Override
+    protected SharedIndexInformer<Deployment> createInformer(KubernetesClient client, String namespace) {
+        var op = namespace != null ? client.apps().deployments().inNamespace(namespace)
+                                   : client.apps().deployments().inAnyNamespace();
+        return op.inform(new ResourceEventHandler<>() {
+            @Override public void onAdd(Deployment d) { /* publish EntityDiscoveredEvent */ }
+            @Override public void onUpdate(Deployment o, Deployment n) { }
+            @Override public void onDelete(Deployment d, boolean u) { /* publish EntityDeletedEvent */ }
+        });
+    }
+}
+```
+
+---
+
 ## Package Structure
 
 ```
@@ -300,7 +379,8 @@ com.kubiki.metis
 ├── config/
 │   ├── MetisProperties.java        # @ConfigurationProperties(prefix = "metis")
 │   ├── GraphDBConfig.java          # RDF4J HTTPRepository bean
-│   └── GrpcClientConfig.java       # Palamedes ManagedChannel + blocking stub beans
+│   ├── GrpcClientConfig.java       # Palamedes ManagedChannel + blocking stub beans
+│   └── KubernetesClientConfig.java # Fabric8 KubernetesClient bean (conditional on sensor.enabled)
 ├── grpc/
 │   └── SensorIngestionGrpcService.java   # @GrpcService entry point
 ├── ingestion/
@@ -319,6 +399,17 @@ com.kubiki.metis
 │   ├── KnowledgeBaseWriter.java    # Builds and executes SPARQL updates
 │   ├── KnowledgeBaseException.java # Checked exception for GraphDB failures
 │   └── OntologyRegistry.java       # CNEEOnt IRI factory
-└── notification/
-    └── PalamedesNotifier.java      # Fire-and-forget TriggerUpdate gRPC call
+├── notification/
+│   └── PalamedesNotifier.java      # Fire-and-forget TriggerUpdate gRPC call
+└── sensor/
+    ├── KubernetesSensor.java        # Extension point interface — implement to add a sensor
+    ├── SensorOrchestrator.java      # Starts/stops all KubernetesSensor beans on app lifecycle
+    ├── SensorEventPublisher.java    # Buffers events and flushes batches in-process
+    ├── IriFactory.java              # CNEEOnt IRI construction from k8s resource names
+    └── kubernetes/
+        ├── AbstractNamespacedSensor.java  # Base class for namespace-aware sensors
+        ├── PodSensor.java                 # Pods → EntityDiscovered/StateChanged/EntityDeleted
+        ├── ServiceSensor.java             # Services → EntityDiscovered/EntityDeleted
+        ├── NodeSensor.java                # Nodes → EntityDiscovered/EntityDeleted
+        └── BindingSensor.java             # pod↔service contains, pod↔node isHostedOn
 ```

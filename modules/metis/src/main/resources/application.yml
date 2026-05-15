@@ -19,3 +19,8 @@ metis:
   palamedes:
     host: "palamedes"
     port: 50051
+  sensor:
+    enabled: true
+    namespaces: []          # empty = watch all namespaces; e.g. [default, production]
+    batch-size: 50
+    flush-interval-ms: 500

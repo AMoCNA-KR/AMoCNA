@@ -69,6 +69,13 @@
 			<version>${graphdb.version}</version>
 		</dependency>
 
+		<!-- Fabric8 Kubernetes client — used by the built-in sensor layer -->
+		<dependency>
+			<groupId>io.fabric8</groupId>
+			<artifactId>kubernetes-client</artifactId>
+			<version>7.0.0</version>
+		</dependency>
+
 		<dependency>
 			<groupId>org.projectlombok</groupId>
 			<artifactId>lombok</artifactId>

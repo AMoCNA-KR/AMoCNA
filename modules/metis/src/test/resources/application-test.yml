@@ -8,3 +8,5 @@ metis:
   palamedes:
     host: "localhost"
     port: ${wiremock.grpc.port}
+  sensor:
+    enabled: false

@@ -71,7 +71,7 @@ class SymmetricPropertyTest {
         MetisProperties props = new MetisProperties(
                 new MetisProperties.GraphDB("http://localhost:7200", "test", 5000),
                 new MetisProperties.Ontology(CNEE),
-                new MetisProperties.Palamedes("localhost", 50051)
+                new MetisProperties.Palamedes("localhost", 50051), null
         );
         OntologyRegistry ontologyRegistry = new OntologyRegistry(props);
         KnowledgeBaseWriter writer = new KnowledgeBaseWriter(capturingRepo, ontologyRegistry);
