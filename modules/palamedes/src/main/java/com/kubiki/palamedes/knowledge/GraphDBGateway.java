@@ -200,6 +200,17 @@ public class GraphDBGateway {
         return sparqlClient.executeBooleanQuery(query);
     }
 
+    public List<IRI> findDependents(IRI actionIri) {
+        String sparql = sparqlQueryBuilder.builder()
+                .template("find-dependents")
+                .variable("actionIri", actionIri)
+                .build();
+
+        return sparqlClient.executeQuery(sparql, stream -> stream
+                .map(bs -> (IRI) bs.getValue("dependent"))
+                .collect(Collectors.toList()));
+    }
+
     public record ActiveActionSummary(IRI actionIri, IRI typeIri, IRI resourceIri, String resourceName, String stateFragment) {}
     public record AnomalyTarget(IRI resourceIri, String resourceName, IRI intentIri) {}
 }

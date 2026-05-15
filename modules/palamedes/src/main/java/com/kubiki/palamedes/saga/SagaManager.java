@@ -2,27 +2,33 @@ package com.kubiki.palamedes.saga;
 
 import com.kubiki.palamedes.knowledge.GraphDBGateway;
 import com.kubiki.palamedes.knowledge.OntologyRegistry;
+import com.kubiki.palamedes.knowledge.StateRepository;
 import com.kubiki.palamedes.model.ActionStatusUpdate;
 import com.kubiki.palamedes.model.ExecutionStatus;
+import com.kubiki.palamedes.model.WorkflowState;
 import org.eclipse.rdf4j.model.IRI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.UUID;
 
 /**
  * SagaManager (MAPE-Monitor/Analyze):
  * Handles execution feedback from Themis and manages workflow state/compensations.
+ * Uses atomic transitions to ensure transactional integrity.
  */
 @Service
 public class SagaManager {
     private static final Logger log = LoggerFactory.getLogger(SagaManager.class);
     private final GraphDBGateway gateway;
+    private final StateRepository stateRepository;
     private final OntologyRegistry ontologyRegistry;
 
-    public SagaManager(GraphDBGateway gateway, OntologyRegistry ontologyRegistry) {
+    public SagaManager(GraphDBGateway gateway, StateRepository stateRepository, OntologyRegistry ontologyRegistry) {
         this.gateway = gateway;
+        this.stateRepository = stateRepository;
         this.ontologyRegistry = ontologyRegistry;
     }
 
@@ -33,31 +39,47 @@ public class SagaManager {
         
         if (update.status() == ExecutionStatus.COMPLETED) {
             log.info("SagaManager: Action {} succeeded", update.actionId());
-            gateway.transitionState(actionIri, "State_Succeeded");
-            // TODO: If part of a complex workflow, trigger next step
+            boolean transitioned = stateRepository.transition(actionIri, WorkflowState.IN_PROGRESS, WorkflowState.SUCCEEDED);
+            
+            if (transitioned) {
+                unlockNextSteps(actionIri);
+            }
         } else {
             log.error("SagaManager: Action {} failed with status {}", update.actionId(), update.status());
-            gateway.transitionState(actionIri, "State_Failed");
+            boolean transitioned = stateRepository.transition(actionIri, WorkflowState.IN_PROGRESS, WorkflowState.FAILED);
             
-            // Trigger Compensation (Rollback)
-            IRI compensationIri = gateway.findCompensation(actionIri);
-            if (compensationIri != null) {
-                log.info("SagaManager: Triggering compensation {} for action {}", compensationIri, update.actionId());
-                
-                String compId = "comp-" + UUID.randomUUID().toString().substring(0, 8);
-                // In a real system, we'd copy target/resource info from the failed action
-                // For now, we transition the graph state of the compensation individual if it exists
-                // or create a new one. Let's assume we create a new one linked to the same resource.
-                
-                // Fetch the original resource for the failed action
-                var originalAction = gateway.fetchActionStructure(actionIri);
-                if (originalAction != null) {
-                    gateway.createActionWorkflow(originalAction.target(), compensationIri, compId);
-                    log.info("SagaManager: Compensation workflow {} created in State_Initial", compId);
-                }
-            } else {
-                log.warn("SagaManager: No compensation defined for action {}", update.actionId());
+            if (transitioned) {
+                triggerCompensation(actionIri, update.actionId());
             }
+        }
+    }
+
+    private void unlockNextSteps(IRI finishedActionIri) {
+        log.info("SagaManager: Looking for steps dependent on {}", finishedActionIri);
+        List<IRI> dependents = gateway.findDependents(finishedActionIri);
+        
+        for (IRI dependent : dependents) {
+            log.info("SagaManager: Unlocking dependent step {}", dependent);
+            // Move to INITIAL so the HTN pipeline picks it up
+            gateway.transitionState(dependent, WorkflowState.INITIAL.getFragment());
+        }
+    }
+
+    private void triggerCompensation(IRI failedActionIri, String actionId) {
+        IRI compensationIri = gateway.findCompensation(failedActionIri);
+        if (compensationIri != null) {
+            log.info("SagaManager: Triggering compensation {} for action {}", compensationIri, actionId);
+            
+            String compId = "comp-" + UUID.randomUUID().toString().substring(0, 8);
+            
+            // Fetch original action data to get the target
+            var originalAction = gateway.fetchActionStructure(failedActionIri);
+            if (originalAction != null) {
+                gateway.createActionWorkflow(originalAction.target(), compensationIri, compId);
+                log.info("SagaManager: Compensation workflow {} created in State_Initial", compId);
+            }
+        } else {
+            log.warn("SagaManager: No compensation defined for action {}", actionId);
         }
     }
 }
