@@ -14,9 +14,7 @@ import org.springframework.stereotype.Service;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 @Service
 public class GraphDBGateway {
@@ -154,17 +152,17 @@ public class GraphDBGateway {
         )).collect(Collectors.toList()));
     }
 
-    public List<ActionSummary> findActionsByState(String stateFragment) {
+    public List<ActiveActionSummary> findActiveActions() {
         String sparql = sparqlQueryBuilder.builder()
-                .template("find-actions-by-state")
-                .variable("stateFragment", stateFragment)
+                .template("find-active-actions")
                 .build();
 
-        return sparqlClient.executeQuery(sparql, stream -> stream.map(bs -> new ActionSummary(
+        return sparqlClient.executeQuery(sparql, stream -> stream.map(bs -> new ActiveActionSummary(
                 (IRI) bs.getValue("action"),
                 (IRI) bs.getValue("type"),
                 (IRI) bs.getValue("resource"),
-                bs.getValue("resourceName").stringValue()
+                bs.getValue("resourceName").stringValue(),
+                bs.getValue("state").stringValue()
         )).collect(Collectors.toList()));
     }
 
@@ -202,6 +200,6 @@ public class GraphDBGateway {
         return sparqlClient.executeBooleanQuery(query);
     }
 
-    public record ActionSummary(IRI actionIri, IRI typeIri, IRI resourceIri, String resourceName) {}
+    public record ActiveActionSummary(IRI actionIri, IRI typeIri, IRI resourceIri, String resourceName, String stateFragment) {}
     public record AnomalyTarget(IRI resourceIri, String resourceName, IRI intentIri) {}
 }
