@@ -185,6 +185,9 @@
         <DataProperty IRI="#hasPriority"/>
     </Declaration>
     <Declaration>
+        <DataProperty IRI="#idempotencyWindowSeconds"/>
+    </Declaration>
+    <Declaration>
         <DataProperty IRI="#isIdempotent"/>
     </Declaration>
     <Declaration>
@@ -195,6 +198,24 @@
     </Declaration>
     <Declaration>
         <DataProperty IRI="#timeoutSeconds"/>
+    </Declaration>
+    <Declaration>
+        <NamedIndividual IRI="#State_Compensating"/>
+    </Declaration>
+    <Declaration>
+        <NamedIndividual IRI="#State_Failed"/>
+    </Declaration>
+    <Declaration>
+        <NamedIndividual IRI="#State_InProgress"/>
+    </Declaration>
+    <Declaration>
+        <NamedIndividual IRI="#State_Planned"/>
+    </Declaration>
+    <Declaration>
+        <NamedIndividual IRI="#State_Succeeded"/>
+    </Declaration>
+    <Declaration>
+        <NamedIndividual IRI="#State_Validated"/>
     </Declaration>
     <SubClassOf>
         <Class IRI="#AutonomicAction"/>
@@ -270,6 +291,13 @@
         <Class IRI="#AutonomicAction"/>
         <DataMaxCardinality cardinality="1">
             <DataProperty IRI="#hasPriority"/>
+            <Datatype abbreviatedIRI="xsd:int"/>
+        </DataMaxCardinality>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="#AutonomicAction"/>
+        <DataMaxCardinality cardinality="1">
+            <DataProperty IRI="#idempotencyWindowSeconds"/>
             <Datatype abbreviatedIRI="xsd:int"/>
         </DataMaxCardinality>
     </SubClassOf>
@@ -521,6 +549,38 @@
         <Class IRI="#StopAction"/>
         <Class IRI="#TerminateAction"/>
     </DisjointClasses>
+    <ClassAssertion>
+        <Class IRI="#ExecutionState"/>
+        <NamedIndividual IRI="#State_Compensating"/>
+    </ClassAssertion>
+    <ClassAssertion>
+        <Class IRI="#ExecutionState"/>
+        <NamedIndividual IRI="#State_Failed"/>
+    </ClassAssertion>
+    <ClassAssertion>
+        <Class IRI="#ExecutionState"/>
+        <NamedIndividual IRI="#State_InProgress"/>
+    </ClassAssertion>
+    <ClassAssertion>
+        <Class IRI="#ExecutionState"/>
+        <NamedIndividual IRI="#State_Planned"/>
+    </ClassAssertion>
+    <ClassAssertion>
+        <Class IRI="#ExecutionState"/>
+        <NamedIndividual IRI="#State_Succeeded"/>
+    </ClassAssertion>
+    <ClassAssertion>
+        <Class IRI="#ExecutionState"/>
+        <NamedIndividual IRI="#State_Validated"/>
+    </ClassAssertion>
+    <DifferentIndividuals>
+        <NamedIndividual IRI="#State_Compensating"/>
+        <NamedIndividual IRI="#State_Failed"/>
+        <NamedIndividual IRI="#State_InProgress"/>
+        <NamedIndividual IRI="#State_Planned"/>
+        <NamedIndividual IRI="#State_Succeeded"/>
+        <NamedIndividual IRI="#State_Validated"/>
+    </DifferentIndividuals>
     <SubObjectPropertyOf>
         <ObjectProperty IRI="#hasPostCondition"/>
         <ObjectProperty IRI="#hasCondition"/>
@@ -654,6 +714,9 @@
     <FunctionalDataProperty>
         <DataProperty IRI="#hasPriority"/>
     </FunctionalDataProperty>
+    <FunctionalDataProperty>
+        <DataProperty IRI="#idempotencyWindowSeconds"/>
+    </FunctionalDataProperty>
     <DataPropertyDomain>
         <DataProperty IRI="#costValue"/>
         <Class IRI="#ExecutionCost"/>
@@ -704,6 +767,10 @@
     </DataPropertyDomain>
     <DataPropertyDomain>
         <DataProperty IRI="#hasPriority"/>
+        <Class IRI="#AutonomicAction"/>
+    </DataPropertyDomain>
+    <DataPropertyDomain>
+        <DataProperty IRI="#idempotencyWindowSeconds"/>
         <Class IRI="#AutonomicAction"/>
     </DataPropertyDomain>
     <DataPropertyDomain>
@@ -772,6 +839,10 @@
     </DataPropertyRange>
     <DataPropertyRange>
         <DataProperty IRI="#hasPriority"/>
+        <Datatype abbreviatedIRI="xsd:int"/>
+    </DataPropertyRange>
+    <DataPropertyRange>
+        <DataProperty IRI="#idempotencyWindowSeconds"/>
         <Datatype abbreviatedIRI="xsd:int"/>
     </DataPropertyRange>
     <DataPropertyRange>
@@ -956,6 +1027,11 @@ before patching).</Literal>
         <AnnotationProperty abbreviatedIRI="rdfs:comment"/>
         <IRI>#hasPriority</IRI>
         <Literal>Defines the execution urgency, enabling the reasoning engine to sequence actions in the message broker</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty abbreviatedIRI="rdfs:comment"/>
+        <IRI>#idempotencyWindowSeconds</IRI>
+        <Literal>Defines the explicit time window (in seconds) during which identical alerts are deduplicated, preventing autonomic thrashing</Literal>
     </AnnotationAssertion>
     <AnnotationAssertion>
         <AnnotationProperty abbreviatedIRI="rdfs:comment"/>
