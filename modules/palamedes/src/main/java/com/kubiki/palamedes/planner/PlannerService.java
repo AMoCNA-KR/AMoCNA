@@ -1,5 +1,6 @@
 package com.kubiki.palamedes.planner;
 
+import com.kubiki.palamedes.model.ActionData;
 import com.kubiki.palamedes.model.ActionMessage;
 import com.kubiki.palamedes.model.Protocol;
 import org.slf4j.Logger;
@@ -24,26 +25,24 @@ public class PlannerService {
         return result;
     }
 
-    // Placeholder for blueprint loading logic
-    public ActionMessage buildActionMessage(String resourceName, String intentIri) {
-        log.info("Planning action for resource {} with intent {}", resourceName, intentIri);
+    public ActionMessage buildActionMessage(ActionData.SimpleAction action, Map<String, String> contextData) {
+        log.info("Planning message for action {} (protocol: {})", action.id(), action.protocol());
         
-        // In a real implementation, this would load MoaMont blueprint from GraphDB
-        // and hydrate it. For now, we return a mock message based on the blueprint requirements.
-        
-        String actionId = UUID.randomUUID().toString();
+        // Hydrate instruction and payload
+        String instruction = hydrate(action.instruction(), contextData);
+        String payload = hydrate(action.payload(), contextData);
         
         return new ActionMessage(
-            actionId,
-            Protocol.REST,
-            hydrate("https://kubernetes.default.svc/api/v1/namespaces/default/pods/{resourceName}/restart", Map.of("resourceName", resourceName)),
-            HttpMethod.POST,
-            null,
-            "BearerToken",
-            30,
-            true,
-            3,
-            200
+            action.id().toString(),
+            action.protocol(),
+            instruction,
+            action.method(),
+            payload,
+            action.authMechanism(),
+            action.timeoutSeconds(),
+            action.isIdempotent(),
+            action.maxRetries(),
+            action.expectedStatusCode()
         );
     }
 }
