@@ -35,7 +35,7 @@ public class PlannerService {
             action.id().toString(),
             action.protocol(),
             instruction,
-            action.method(),
+            action.method() != null ? action.method().name() : null,
             payload,
             action.authMechanism(),
             action.timeoutSeconds(),

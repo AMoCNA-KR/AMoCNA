@@ -45,12 +45,12 @@ while true; do
 
   # Fetch and format with simple column logic (using curl + awk or jq if available)
   # For industrial reliability, we use curl and a simple table output
-  
+
   curl -s -H "Accept: application/sparql-results+json" \
     --data-urlencode "query=$SPARQL_QUERY" \
-    "$GRAPHDB_URL/repositories/$REPOSITORY_ID" | \
-    jq -r '.results.bindings[] | [.action.value, .state.value, .resource.value, .timestamp.value] | @tsv' | \
-    sed 's|http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#||g' | \
+    "$GRAPHDB_URL/repositories/$REPOSITORY_ID" |
+    jq -r '.results.bindings[] | [.action.value, .state.value, .resource.value, .timestamp.value] | @tsv' |
+    sed 's|http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#||g' |
     column -t -s $'\t'
 
   echo "---------------------------------------------------"

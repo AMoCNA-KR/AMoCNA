@@ -39,7 +39,7 @@ public class RestProtocolExecutor implements ProtocolExecutor {
     }
 
     private ExecutionResult doExecute(ActionMessage action) {
-        HttpMethod httpMethod = action.method() != null ? action.method() : HttpMethod.GET;
+        HttpMethod httpMethod = action.method() != null ? HttpMethod.valueOf(action.method().toUpperCase()) : HttpMethod.GET;
         String url = action.instruction();
         String payload = action.payload();
         int expectedStatusCode = action.expectedStatusCode();

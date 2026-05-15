@@ -15,6 +15,8 @@ services:
         condition: service_healthy
       graphdb:
         condition: service_started
+      graphdb-provisioner:
+        condition: service_completed_successfully
 
   rabbitmq:
     build:
@@ -44,6 +46,22 @@ services:
       - "9090:9090"
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml
+
+  graphdb-provisioner:
+    image: alpine:latest
+    container_name: graphdb-provisioner
+    volumes:
+      - ./provision-graphdb.sh:/provision-graphdb.sh
+      - ./amocna-repo-config.ttl:/config/amocna-repo-config.ttl
+      - ./restart-action-blueprint.ttl:/config/restart-action-blueprint.ttl
+      - ../../../ontology:/ontology
+    environment:
+      - GRAPHDB_URL=http://graphdb:7200
+      - REPOSITORY_ID=amocna
+    depends_on:
+      - graphdb
+    entrypoint:
+      ["/bin/sh", "-c", "apk add --no-cache curl && /provision-graphdb.sh"]
 
 volumes:
   graphdb-data:

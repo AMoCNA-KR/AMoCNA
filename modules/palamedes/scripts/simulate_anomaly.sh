@@ -3,14 +3,15 @@ set -e
 
 # Configuration
 GRAPHDB_URL=${GRAPHDB_URL:-http://localhost:7200}
-REPOSITORY_ID=${GRAPHDB_REPO:-amocna}
+REPOSITORY_ID=${REPOSITORY_ID:-amocna}
 
 # Namespaces (matching application.yml defaults)
 MOAM_NS="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#"
 CNEE_NS="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/"
 
+# Use ContainerDead as default because it is mapped in BridgeOnt
 RESOURCE_NAME=${1:-pod1}
-ANOMALY_TYPE=${2:-CPUSaturatedState}
+ANOMALY_TYPE=${2:-ContainerDead}
 
 echo "---------------------------------------------------"
 echo "Simulating Anomaly for Palamedes"
@@ -41,21 +42,22 @@ WHERE {
 
 INSERT DATA {
   <${CNEE_NS}${RESOURCE_NAME}> rdf:type cnee:CloudNativeEntity ;
-                                cnee:resourceName \"$RESOURCE_NAME\" ;
-                                cnee:hasCurrentState <${CNEE_NS}${RESOURCE_NAME}_state> .
+                                 cnee:resourceName \"$RESOURCE_NAME\" ;
+                                 cnee:hasCurrentState <${CNEE_NS}${RESOURCE_NAME}_state> .
   <${CNEE_NS}${RESOURCE_NAME}_state> rdf:type cnee:$ANOMALY_TYPE .
 }
 "
 
 echo "Executing SPARQL Update..."
-RESPONSE=$(curl -s -X POST "$GRAPHDB_URL/repositories/$REPOSITORY_ID/statements" \
+# Use -f to fail on HTTP errors and -w to get status
+STATUS=$(curl -s -f -o /dev/null -w "%{http_code}" -X POST "$GRAPHDB_URL/repositories/$REPOSITORY_ID/statements" \
      -H "Content-Type: application/sparql-update" \
      --data-binary "$SPARQL_UPDATE")
 
-if [ $? -eq 0 ]; then
+if [ "$STATUS" = "204" ] || [ "$STATUS" = "200" ]; then
   echo "SUCCESS: Anomaly injected into GraphDB."
   echo "Palamedes AnomalyAgent should detect it within 5 seconds."
 else
-  echo "ERROR: Failed to inject anomaly. Is GraphDB up at $GRAPHDB_URL?"
-  echo "Response: $RESPONSE"
+  echo "ERROR: Failed to inject anomaly. (Status: $STATUS)"
+  echo "Is GraphDB up at $GRAPHDB_URL and does repository '$REPOSITORY_ID' exist?"
 fi

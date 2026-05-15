@@ -59,8 +59,9 @@ public class ModelMapper {
 
     private IRI selectBestIntent(List<BindingSet> bindings) {
         List<IRI> intents = bindings.stream()
-                .map(bs -> (IRI) bs.getValue(BINDING_INTENT))
-                .filter(Objects::nonNull)
+                .map(bs -> bs.getValue(BINDING_INTENT))
+                .filter(v -> v instanceof IRI)
+                .map(v -> (IRI) v)
                 .toList();
 
         return intents.stream()
@@ -72,19 +73,17 @@ public class ModelMapper {
     }
 
     private boolean isComplexWorkflow(String intent) {
-        return intent.endsWith(INTENT_SUFFIX_COMPLEX);
+        return intent != null && intent.endsWith(INTENT_SUFFIX_COMPLEX);
     }
 
     private Result<ActionData> mapSimpleAction(IRI actionId, List<BindingSet> bindings) {
-        BindingSet first = bindings.get(0);
+        Result<Protocol> protocolResult = getProtocol(bindings);
+        Result<String> instructionResult = getString(bindings, BINDING_INSTRUCTION);
 
-        Result<Protocol> protocolResult = getProtocol(first);
-        Result<String> instructionResult = getString(first, BINDING_INSTRUCTION);
-
-        IRI target = (IRI) first.getValue(BINDING_TARGET);
-        IRI functionalIntent = (IRI) first.getValue(BINDING_FUNCTIONAL_INTENT);
-        IRI layerBoundary = (IRI) first.getValue(BINDING_LAYER_BOUNDARY);
-        float cost = getOptionalFloat(first, BINDING_COST_VALUE, 1.0f);
+        IRI target = getIRI(bindings, BINDING_TARGET).value();
+        IRI functionalIntent = getIRI(bindings, BINDING_FUNCTIONAL_INTENT).value();
+        IRI layerBoundary = getIRI(bindings, BINDING_LAYER_BOUNDARY).value();
+        float cost = getOptionalFloat(bindings, BINDING_COST_VALUE, 1.0f);
 
         return Result.combine(protocolResult, instructionResult, (protocol, instruction) -> {
             List<ActionData.Condition> pre = extractConditions(bindings, BINDING_PRE_ID, BINDING_PRE_TYPE, BINDING_PRE_POLICY);
@@ -98,22 +97,22 @@ public class ModelMapper {
                 .protocol(protocol)
                 .target(target)
                 .instruction(instruction)
-                .method(getHttpMethod(first).value())
-                .payload(getOptionalString(first, BINDING_PAYLOAD))
+                .method(getHttpMethod(bindings).value())
+                .payload(getOptionalString(bindings, BINDING_PAYLOAD))
                 .data(new HashMap<>())
                 .preConditions(pre)
                 .postConditions(post)
-                .expectedStatusCode(getExpectedStatusCode(first, protocol))
-                .authMechanism(getOptionalString(first, BINDING_AUTH_MECHANISM))
-                .timeoutSeconds(getOptionalInt(first, BINDING_TIMEOUT, 30))
-                .isIdempotent(getOptionalBoolean(first, BINDING_IS_IDEMPOTENT, true))
-                .maxRetries(getOptionalInt(first, BINDING_MAX_RETRIES, 3))
+                .expectedStatusCode(getExpectedStatusCode(bindings, protocol))
+                .authMechanism(getOptionalString(bindings, BINDING_AUTH_MECHANISM))
+                .timeoutSeconds(getOptionalInt(bindings, BINDING_TIMEOUT, 30))
+                .isIdempotent(getOptionalBoolean(bindings, BINDING_IS_IDEMPOTENT, true))
+                .maxRetries(getOptionalInt(bindings, BINDING_MAX_RETRIES, 3))
                 .build();
         });
     }
 
-    private int getExpectedStatusCode(BindingSet bs, Protocol protocol) {
-        String val = getOptionalString(bs, BINDING_EXPECTED_STATUS);
+    private int getExpectedStatusCode(List<BindingSet> bindings, Protocol protocol) {
+        String val = getOptionalString(bindings, BINDING_EXPECTED_STATUS);
         if (val != null) {
             try {
                 return Integer.parseInt(val);
@@ -123,13 +122,18 @@ public class ModelMapper {
         return protocol == Protocol.SHELL ? 0 : 200;
     }
 
-    private String getOptionalString(BindingSet bs, String name) {
-        Value val = bs.getValue(name);
-        return val != null ? val.stringValue() : null;
+    private String getOptionalString(List<BindingSet> bindings, String name) {
+        for (BindingSet bs : bindings) {
+            Value val = bs.getValue(name);
+            if (val != null) {
+                return val.stringValue();
+            }
+        }
+        return null;
     }
 
-    private int getOptionalInt(BindingSet bs, String name, int defaultValue) {
-        String val = getOptionalString(bs, name);
+    private int getOptionalInt(List<BindingSet> bindings, String name, int defaultValue) {
+        String val = getOptionalString(bindings, name);
         if (val != null) {
             try {
                 return Integer.parseInt(val);
@@ -139,16 +143,18 @@ public class ModelMapper {
         return defaultValue;
     }
 
-    private float getOptionalFloat(BindingSet bs, String name, float defaultValue) {
-        Value val = bs.getValue(name);
-        if (val instanceof Literal l) {
-            return l.floatValue();
+    private float getOptionalFloat(List<BindingSet> bindings, String name, float defaultValue) {
+        for (BindingSet bs : bindings) {
+            Value val = bs.getValue(name);
+            if (val instanceof Literal l) {
+                return l.floatValue();
+            }
         }
         return defaultValue;
     }
 
-    private boolean getOptionalBoolean(BindingSet bs, String name, boolean defaultValue) {
-        String val = getOptionalString(bs, name);
+    private boolean getOptionalBoolean(List<BindingSet> bindings, String name, boolean defaultValue) {
+        String val = getOptionalString(bindings, name);
         if (val != null) {
             return Boolean.parseBoolean(val);
         }
@@ -163,11 +169,10 @@ public class ModelMapper {
         List<ActionData> steps = new ArrayList<>();
         Map<IRI, ActionData> compensations = new HashMap<>();
         
-        BindingSet first = bindings.get(0);
-        IRI target = (IRI) first.getValue(BINDING_TARGET);
-        IRI functionalIntent = (IRI) first.getValue(BINDING_FUNCTIONAL_INTENT);
-        IRI layerBoundary = (IRI) first.getValue(BINDING_LAYER_BOUNDARY);
-        float cost = getOptionalFloat(first, BINDING_COST_VALUE, 1.0f);
+        IRI target = getIRI(bindings, BINDING_TARGET).value();
+        IRI functionalIntent = getIRI(bindings, BINDING_FUNCTIONAL_INTENT).value();
+        IRI layerBoundary = getIRI(bindings, BINDING_LAYER_BOUNDARY).value();
+        float cost = getOptionalFloat(bindings, BINDING_COST_VALUE, 1.0f);
 
         for (BindingSet bs : bindings) {
             Result<IRI> stepIdResult = getIRI(bs, BINDING_STEP);
@@ -230,12 +235,32 @@ public class ModelMapper {
         return List.copyOf(conditions.values());
     }
 
+    private Result<IRI> getIRI(List<BindingSet> bindings, String name) {
+        for (BindingSet bs : bindings) {
+            Value val = bs.getValue(name);
+            if (val instanceof IRI iri) {
+                return Result.success(iri);
+            }
+        }
+        return Result.failure("Missing or invalid IRI binding: " + name);
+    }
+
     private Result<IRI> getIRI(BindingSet bs, String name) {
         Value val = bs.getValue(name);
         if (val instanceof IRI iri) {
             return Result.success(iri);
         }
         return Result.failure("Missing or invalid IRI binding: " + name);
+    }
+
+    private Result<String> getString(List<BindingSet> bindings, String name) {
+        for (BindingSet bs : bindings) {
+            Value val = bs.getValue(name);
+            if (val != null) {
+                return Result.success(val.stringValue());
+            }
+        }
+        return Result.failure("Missing binding: " + name);
     }
 
     private Result<String> getString(BindingSet bs, String name) {
@@ -246,8 +271,8 @@ public class ModelMapper {
         return Result.failure("Missing binding: " + name);
     }
 
-    private Result<Protocol> getProtocol(BindingSet bs) {
-        Result<String> protocolStrResult = getString(bs, BINDING_PROTOCOL);
+    private Result<Protocol> getProtocol(List<BindingSet> bindings) {
+        Result<String> protocolStrResult = getString(bindings, BINDING_PROTOCOL);
         if (!protocolStrResult.isSuccess()) {
             return Result.success(Protocol.REST); // Default
         }
@@ -268,8 +293,8 @@ public class ModelMapper {
         }
     }
 
-    private Result<HttpMethod> getHttpMethod(BindingSet bs) {
-        Result<String> methodStrResult = getString(bs, BINDING_METHOD);
+    private Result<HttpMethod> getHttpMethod(List<BindingSet> bindings) {
+        Result<String> methodStrResult = getString(bindings, BINDING_METHOD);
         if (!methodStrResult.isSuccess()) {
             return Result.success(null);
         }

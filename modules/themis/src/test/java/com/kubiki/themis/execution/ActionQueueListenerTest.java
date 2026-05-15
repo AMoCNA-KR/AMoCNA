@@ -32,7 +32,7 @@ class ActionQueueListenerTest {
     @Test
     void shouldExecuteActionSuccessfully() {
         ActionMessage message = new ActionMessage(
-            "action1", Protocol.REST, "instruction", HttpMethod.GET, null,
+            "action1", Protocol.REST, "instruction", "GET", null,
             null, 30, true, 3, 200
         );
         when(executor.supports(Protocol.REST)).thenReturn(true);
@@ -76,7 +76,7 @@ class ActionQueueListenerTest {
     @Test
     void shouldHandleExecutionFailure() {
         ActionMessage message = new ActionMessage(
-            "action1", Protocol.REST, "instruction", HttpMethod.POST, null,
+            "action1", Protocol.REST, "instruction", "POST", null,
             null, 30, true, 3, 201
         );
         when(executor.supports(Protocol.REST)).thenReturn(true);
@@ -96,7 +96,7 @@ class ActionQueueListenerTest {
     @Test
     void shouldRetryOnRetryableFailure() {
         ActionMessage message = new ActionMessage(
-            "action-retry", Protocol.REST, "instruction", HttpMethod.GET, null,
+            "action-retry", Protocol.REST, "instruction", "GET", null,
             null, 10, true, 1, 200 // 1 retry
         );
         when(executor.supports(Protocol.REST)).thenReturn(true);
