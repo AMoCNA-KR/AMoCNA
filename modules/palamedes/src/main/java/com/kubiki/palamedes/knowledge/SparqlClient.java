@@ -4,14 +4,17 @@ import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.query.TupleQueryResult;
 import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
 @Component
 public class SparqlClient {
-
+    private static final Logger log = LoggerFactory.getLogger(SparqlClient.class);
     private final Repository repository;
 
     public SparqlClient(Repository repository) {
@@ -19,22 +22,19 @@ public class SparqlClient {
     }
 
     public <T> T executeQuery(String sparql, Function<Stream<BindingSet>, T> streamProcessor) {
+        log.debug("Executing SPARQL:\n{}", sparql);
         try (RepositoryConnection connection = repository.getConnection()) {
             try (TupleQueryResult result = connection.prepareTupleQuery(sparql).evaluate()) {
-                return streamProcessor.apply(result.stream());
+                List<BindingSet> list = result.stream().toList();
+                log.debug("Query returned {} rows", list.size());
+                return streamProcessor.apply(list.stream());
             }
         }
     }
 
-    public void executeUpdate(String sparql) {
-        try (RepositoryConnection connection = repository.getConnection()) {
-            connection.begin();
-            connection.prepareUpdate(sparql).execute();
-            connection.commit();
-        }
-    }
 
     public boolean executeUpdateWithSuccess(String sparql) {
+        log.debug("Executing ATOMIC SPARQL UPDATE:\n{}", sparql);
         try (RepositoryConnection connection = repository.getConnection()) {
             connection.begin();
             String upper = sparql.toUpperCase();
@@ -54,11 +54,15 @@ public class SparqlClient {
                 String prefixes = (firstOpIndex != -1) ? sparql.substring(0, firstOpIndex) : "";
                 String whereClause = sparql.substring(whereIndex);
                 String askQuery = prefixes + " ASK " + whereClause;
+                log.debug("Checking precondition with ASK:\n{}", askQuery);
                 success = connection.prepareBooleanQuery(askQuery).evaluate();
             }
 
             if (success) {
                 connection.prepareUpdate(sparql).execute();
+                log.debug("Update applied successfully");
+            } else {
+                log.warn("Update precondition failed (WHERE clause did not match)");
             }
             connection.commit();
             return success;
@@ -66,6 +70,7 @@ public class SparqlClient {
     }
 
     public boolean executeBooleanQuery(String sparql) {
+        log.debug("Executing BOOLEAN SPARQL:\n{}", sparql);
         try (RepositoryConnection connection = repository.getConnection()) {
             return connection.prepareBooleanQuery(sparql).evaluate();
         }
@@ -83,4 +88,3 @@ public class SparqlClient {
         }
     }
 }
-

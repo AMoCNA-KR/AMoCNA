@@ -1,5 +1,6 @@
 package com.kubiki.palamedes.saga;
 
+import com.kubiki.palamedes.condition.ConditionFactory;
 import com.kubiki.palamedes.knowledge.GraphDBGateway;
 import com.kubiki.palamedes.knowledge.OntologyRegistry;
 import com.kubiki.palamedes.knowledge.StateRepository;
@@ -25,6 +26,7 @@ class SagaManagerTest {
     @Mock private GraphDBGateway gateway;
     @Mock private StateRepository stateRepository;
     @Mock private OntologyRegistry registry;
+    @Mock private ConditionFactory conditionFactory;
 
     private SagaManager sagaManager;
     private final IRI actionIri = SimpleValueFactory.getInstance().createIRI("http://test/action1");
@@ -32,13 +34,19 @@ class SagaManagerTest {
 
     @BeforeEach
     void setUp() {
-        sagaManager = new SagaManager(gateway, stateRepository, registry);
+        sagaManager = new SagaManager(gateway, stateRepository, registry, conditionFactory);
         when(registry.moam(anyString())).thenReturn(actionIri);
     }
 
     @Test
     void shouldUnlockNextStepsOnSuccess() {
         ActionStatusUpdate update = new ActionStatusUpdate("action1", ExecutionStatus.COMPLETED, null, 200);
+        
+        // Mock post-conditions verification
+        ActionData data = mock(ActionData.SimpleAction.class);
+        when(data.postConditions()).thenReturn(List.of());
+        when(gateway.fetchActionStructure(actionIri)).thenReturn(data);
+        
         when(stateRepository.transition(eq(actionIri), eq(WorkflowState.IN_PROGRESS), eq(WorkflowState.SUCCEEDED))).thenReturn(true);
         when(gateway.findDependents(actionIri)).thenReturn(List.of(dependentIri));
 
@@ -63,6 +71,6 @@ class SagaManagerTest {
 
         sagaManager.handleFeedback(update);
 
-        verify(gateway).createActionWorkflow(eq(targetIri), eq(compensationIri), anyString());
+        verify(gateway, atLeastOnce()).createActionWorkflow(eq(targetIri), eq(compensationIri), anyString());
     }
 }

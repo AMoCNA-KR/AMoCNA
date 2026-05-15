@@ -3,6 +3,7 @@ package com.kubiki.palamedes.knowledge;
 import com.kubiki.palamedes.model.ActionData;
 import com.kubiki.palamedes.model.Protocol;
 import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.query.BindingSet;
 import org.springframework.http.HttpMethod;
@@ -29,6 +30,10 @@ public class ModelMapper {
     private static final String BINDING_IS_IDEMPOTENT = "isIdempotent";
     private static final String BINDING_MAX_RETRIES = "maxRetries";
 
+    private static final String BINDING_FUNCTIONAL_INTENT = "functionalIntent";
+    private static final String BINDING_LAYER_BOUNDARY = "layerBoundary";
+    private static final String BINDING_COST_VALUE = "costValue";
+
     private static final String BINDING_PRE_ID = "preId";
     private static final String BINDING_PRE_TYPE = "preType";
     private static final String BINDING_PRE_POLICY = "prePolicy";
@@ -42,27 +47,44 @@ public class ModelMapper {
             return Result.failure("No bindings found for action: " + actionId);
         }
 
-        return getIRI(bindings.get(0), BINDING_INTENT).flatMap(intent -> {
-            String intentStr = intent.stringValue();
-            if (isComplexWorkflow(intentStr)) {
-                return mapComplexWorkflow(actionId, intentStr, bindings, allBindings);
-            }
-            return mapSimpleAction(actionId, intentStr, bindings);
-        });
+        // Industrial Rule: Select the most specific Intent
+        IRI intent = selectBestIntent(bindings);
+        String intentStr = intent.stringValue();
+        
+        if (isComplexWorkflow(intentStr)) {
+            return mapComplexWorkflow(actionId, bindings, allBindings);
+        }
+        return mapSimpleAction(actionId, bindings);
+    }
+
+    private IRI selectBestIntent(List<BindingSet> bindings) {
+        List<IRI> intents = bindings.stream()
+                .map(bs -> (IRI) bs.getValue(BINDING_INTENT))
+                .filter(Objects::nonNull)
+                .toList();
+
+        return intents.stream()
+                .filter(i -> !i.getLocalName().equals("AutonomicAction") 
+                         && !i.getLocalName().equals("SimpleAction") 
+                         && !i.getLocalName().equals("ComplexWorkflow"))
+                .findFirst()
+                .orElse(intents.isEmpty() ? null : intents.get(0));
     }
 
     private boolean isComplexWorkflow(String intent) {
         return intent.endsWith(INTENT_SUFFIX_COMPLEX);
     }
 
-    private Result<ActionData> mapSimpleAction(IRI actionId, String intent, List<BindingSet> bindings) {
+    private Result<ActionData> mapSimpleAction(IRI actionId, List<BindingSet> bindings) {
         BindingSet first = bindings.get(0);
 
         Result<Protocol> protocolResult = getProtocol(first);
         Result<String> instructionResult = getString(first, BINDING_INSTRUCTION);
 
-        // Industrial Rule: Target is optional for blueprints (will be hydrated at runtime)
         IRI target = (IRI) first.getValue(BINDING_TARGET);
+        IRI functionalIntent = (IRI) first.getValue(BINDING_FUNCTIONAL_INTENT);
+        IRI layerBoundary = (IRI) first.getValue(BINDING_LAYER_BOUNDARY);
+        float cost = getOptionalFloat(first, BINDING_COST_VALUE, 1.0f);
 
         return Result.combine(protocolResult, instructionResult, (protocol, instruction) -> {
             List<ActionData.Condition> pre = extractConditions(bindings, BINDING_PRE_ID, BINDING_PRE_TYPE, BINDING_PRE_POLICY);
@@ -70,7 +92,9 @@ public class ModelMapper {
 
             return ActionData.SimpleAction.builder()
                 .id(actionId)
-                .functionalIntent(intent)
+                .functionalIntent(functionalIntent)
+                .layerBoundary(layerBoundary)
+                .executionCost(cost)
                 .protocol(protocol)
                 .target(target)
                 .instruction(instruction)
@@ -94,7 +118,6 @@ public class ModelMapper {
             try {
                 return Integer.parseInt(val);
             } catch (NumberFormatException e) {
-                // fallback to default
             }
         }
         return protocol == Protocol.SHELL ? 0 : 200;
@@ -111,8 +134,15 @@ public class ModelMapper {
             try {
                 return Integer.parseInt(val);
             } catch (NumberFormatException e) {
-                // fallback
             }
+        }
+        return defaultValue;
+    }
+
+    private float getOptionalFloat(BindingSet bs, String name, float defaultValue) {
+        Value val = bs.getValue(name);
+        if (val instanceof Literal l) {
+            return l.floatValue();
         }
         return defaultValue;
     }
@@ -127,14 +157,17 @@ public class ModelMapper {
 
     private Result<ActionData> mapComplexWorkflow(
         IRI actionId,
-        String intent,
         List<BindingSet> bindings,
         Map<IRI, List<BindingSet>> allBindings
     ) {
         List<ActionData> steps = new ArrayList<>();
         Map<IRI, ActionData> compensations = new HashMap<>();
         
-        IRI target = (IRI) bindings.get(0).getValue(BINDING_TARGET);
+        BindingSet first = bindings.get(0);
+        IRI target = (IRI) first.getValue(BINDING_TARGET);
+        IRI functionalIntent = (IRI) first.getValue(BINDING_FUNCTIONAL_INTENT);
+        IRI layerBoundary = (IRI) first.getValue(BINDING_LAYER_BOUNDARY);
+        float cost = getOptionalFloat(first, BINDING_COST_VALUE, 1.0f);
 
         for (BindingSet bs : bindings) {
             Result<IRI> stepIdResult = getIRI(bs, BINDING_STEP);
@@ -149,7 +182,6 @@ public class ModelMapper {
 
             Result<ActionData> stepResult = mapAction(stepId, allBindings);
             if (!stepResult.isSuccess()) {
-                // log.warn("Failed to map step {}: {}", stepId, stepResult.error());
                 continue;
             }
 
@@ -166,10 +198,10 @@ public class ModelMapper {
             }
         }
 
-        // De-duplicate steps (Sparql might return multiple rows for the same step due to multiple types)
+        // De-duplicate steps
         List<ActionData> distinctSteps = steps.stream().distinct().toList();
 
-        return Result.success(new ActionData.ComplexWorkflow(actionId, intent, target, distinctSteps, compensations));
+        return Result.success(new ActionData.ComplexWorkflow(actionId, functionalIntent, layerBoundary, cost, target, distinctSteps, compensations));
     }
 
     private List<ActionData.Condition> extractConditions(

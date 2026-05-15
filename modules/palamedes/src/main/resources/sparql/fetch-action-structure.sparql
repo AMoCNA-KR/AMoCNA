@@ -1,28 +1,39 @@
 SELECT DISTINCT ?action ?intent ?target ?protocol ?instruction ?method ?payload ?expectedStatusCode
        ?preId ?preType ?prePolicy 
        ?postId ?postType ?postPolicy 
-       ?step ?compensation WHERE { 
+       ?step ?compensation 
+       ?functionalIntent ?layerBoundary ?costValue WHERE { 
   VALUES ?root { ${actionIri} }
   
-  # Find all actions in the hierarchy (starting from instance OR its intent blueprint)
-  {
-    BIND(?root AS ?action)
-  }
-  UNION
-  {
-    ?root (moam:isDecomposedInto|moam:hasCompensation)+ ?action .
-  }
-  UNION
-  {
-    ?root a ?rootIntent .
-    ?rootIntent (moam:isDecomposedInto|moam:hasCompensation)+ ?action .
-  }
+  # 1. Discover all action nodes in the hierarchy.
+  ?root (moam:isDecomposedInto|moam:hasCompensation|a/(moam:isDecomposedInto|moam:hasCompensation))* ?action .
   
-  ?action a ?intent . 
+  # 2. Identify all types (intents) for each node.
+  ?action a ?intent .
   
+  # 3. Resolve properties with Blueprint Inheritance.
   OPTIONAL { ?action moam:targetsEntity ?target } . 
   
-  # Fetch properties from action instance OR its intent blueprint
+  # Action Classification
+  OPTIONAL { ?action moam:hasFunctionalIntent ?f1 } .
+  OPTIONAL { ?intent moam:hasFunctionalIntent ?f2 } .
+  BIND(COALESCE(?f1, ?f2) AS ?functionalIntent) .
+
+  OPTIONAL { ?action moam:hasLayerBoundary ?l1 } .
+  OPTIONAL { ?intent moam:hasLayerBoundary ?l2 } .
+  BIND(COALESCE(?l1, ?l2) AS ?layerBoundary) .
+
+  OPTIONAL { 
+    ?action moam:hasExecutionCost ?c1 .
+    ?c1 moam:costValue ?v1 .
+  } .
+  OPTIONAL {
+    ?intent moam:hasExecutionCost ?c2 .
+    ?c2 moam:costValue ?v2 .
+  } .
+  BIND(COALESCE(?v1, ?v2) AS ?costValue) .
+
+  # Protocol Details
   OPTIONAL { ?action moam:hasExecutionProtocol ?p1 } .
   OPTIONAL { ?intent moam:hasExecutionProtocol ?p2 } .
   BIND(COALESCE(?p1, ?p2) AS ?protocol) .
@@ -39,7 +50,7 @@ SELECT DISTINCT ?action ?intent ?target ?protocol ?instruction ?method ?payload 
   OPTIONAL { ?intent moam:hasExpectedStatusCode ?s2 } .
   BIND(COALESCE(?s1, ?s2) AS ?expectedStatusCode) .
 
-  # Conditions
+  # 4. Conditions
   OPTIONAL { 
     ?action moam:hasPreCondition ?preId . 
     ?preId a ?preType . 
@@ -51,11 +62,10 @@ SELECT DISTINCT ?action ?intent ?target ?protocol ?instruction ?method ?payload 
     ?postId moam:policyQueryString ?postPolicy . 
   } . 
   
-  # HTN Decomposition links
-  OPTIONAL { 
-    { ?action moam:isDecomposedInto ?step . }
-    UNION
-    { ?intent moam:isDecomposedInto ?step . }
-    OPTIONAL { ?step moam:hasCompensation ?compensation } . 
-  } . 
+  # 5. Decomposition Links
+  OPTIONAL { ?action moam:isDecomposedInto ?s1 } .
+  OPTIONAL { ?intent moam:isDecomposedInto ?s2 } .
+  BIND(COALESCE(?s1, ?s2) AS ?step) .
+  
+  OPTIONAL { ?step moam:hasCompensation ?compensation } . 
 }

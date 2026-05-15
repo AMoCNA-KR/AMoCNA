@@ -25,14 +25,6 @@ public record Result<T>(T value, String error) {
         }
     }
 
-    public <U> Result<U> flatMap(Function<T, Result<U>> mapper) {
-        if (isSuccess()) {
-            return mapper.apply(value);
-        } else {
-            return Result.failure(error);
-        }
-    }
-
     public interface TriFunction<T1, T2, T3, R> {
         R apply(T1 t1, T2 t2, T3 t3);
     }

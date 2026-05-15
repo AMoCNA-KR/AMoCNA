@@ -3,14 +3,18 @@ package com.kubiki.palamedes.knowledge;
 import com.kubiki.palamedes.constants.OntologyConstants;
 import com.kubiki.palamedes.model.ActionData;
 import com.kubiki.palamedes.model.ExecutionStatus;
+import com.kubiki.palamedes.model.WorkflowState;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.ValueFactory;
+import org.eclipse.rdf4j.model.vocabulary.RDF;
+import org.eclipse.rdf4j.model.vocabulary.XSD;
 import org.eclipse.rdf4j.query.BindingSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+import java.time.OffsetDateTime;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -41,10 +45,6 @@ public class GraphDBGateway {
         this.ontologyRegistry = ontologyRegistry;
     }
 
-    /**
-     * Updates the current state of an autonomic action in the GraphDB.
-     * Uses the Petri Net abstraction individuals (e.g., State_Initial, State_InProgress).
-     */
     public void transitionState(IRI actionId, String stateFragment) {
         IRI hasCurrentState = ontologyRegistry.moam("hasCurrentState");
         IRI newState = ontologyRegistry.moam(stateFragment);
@@ -53,30 +53,84 @@ public class GraphDBGateway {
         sparqlClient.executeWithConnection(conn -> {
             ValueFactory vf = conn.getValueFactory();
             conn.begin();
-            // Remove old state and timestamp
             conn.remove(actionId, hasCurrentState, null);
             conn.remove(actionId, hasLastTransitionTimestamp, null);
-            
-            // Add new state and current timestamp
             conn.add(actionId, hasCurrentState, newState);
-            conn.add(actionId, hasLastTransitionTimestamp, vf.createLiteral(java.time.OffsetDateTime.now().toString(), org.eclipse.rdf4j.model.vocabulary.XSD.DATETIME));
+            conn.add(actionId, hasLastTransitionTimestamp, vf.createLiteral(OffsetDateTime.now().toString(), XSD.DATETIME));
             conn.commit();
             log.info("Transitioned action {} to {}", actionId, stateFragment);
         });
     }
 
-    /**
-     * Legacy update method for ExecutionStatus (string based).
-     */
-    public void updateExecutionStatus(IRI actionId, ExecutionStatus status) {
-        IRI hasExecutionStatus = ontologyRegistry.moam(OntologyConstants.PROP_HAS_EXECUTION_STATUS);
+    public void createActionWorkflow(IRI resourceIri, IRI intentIri, String actionId) {
+        IRI actionIri = ontologyRegistry.moam(actionId);
+        IRI hasCurrentState = ontologyRegistry.moam("hasCurrentState");
+        IRI stateInitial = ontologyRegistry.moam("State_Initial");
+        IRI targetsEntity = ontologyRegistry.moam("targetsEntity");
+        IRI hasActionID = ontologyRegistry.moam("hasActionID");
+        IRI hasLastTransitionTimestamp = ontologyRegistry.moam("hasLastTransitionTimestamp");
+
         sparqlClient.executeWithConnection(conn -> {
             ValueFactory vf = conn.getValueFactory();
             conn.begin();
-            conn.remove(actionId, hasExecutionStatus, null);
-            conn.add(actionId, hasExecutionStatus, vf.createLiteral(status.name()));
+            conn.add(actionIri, RDF.TYPE, intentIri);
+            conn.add(actionIri, RDF.TYPE, ontologyRegistry.moam("AutonomicAction"));
+            conn.add(actionIri, hasCurrentState, stateInitial);
+            conn.add(actionIri, targetsEntity, resourceIri);
+            conn.add(actionIri, hasActionID, vf.createLiteral(actionId));
+            conn.add(actionIri, hasLastTransitionTimestamp, vf.createLiteral(OffsetDateTime.now().toString(), XSD.DATETIME));
             conn.commit();
-            log.info("Updated execution status of {} to {}", actionId, status);
+            log.info("Created new action workflow {} for resource {} with intent {}", actionIri, resourceIri, intentIri);
+        });
+    }
+
+    public void materializeActionInstance(IRI actionIri, ActionData template, IRI target, IRI parentIri) {
+        IRI targetsEntity = ontologyRegistry.moam("targetsEntity");
+        IRI hasActionID = ontologyRegistry.moam("hasActionID");
+        IRI isDecomposedInto = ontologyRegistry.moam("isDecomposedInto");
+        
+        sparqlClient.executeWithConnection(conn -> {
+            ValueFactory vf = conn.getValueFactory();
+            conn.begin();
+            conn.add(parentIri, isDecomposedInto, actionIri);
+            conn.add(actionIri, RDF.TYPE, template.id()); 
+            conn.add(actionIri, RDF.TYPE, ontologyRegistry.moam(template instanceof ActionData.ComplexWorkflow ? "ComplexWorkflow" : "SimpleAction"));
+            conn.add(actionIri, targetsEntity, target);
+            conn.add(actionIri, hasActionID, vf.createLiteral(actionIri.getLocalName()));
+
+            if (template instanceof ActionData.SimpleAction sa) {
+                conn.add(actionIri, ontologyRegistry.moam("hasExecutionProtocol"), vf.createLiteral(sa.protocol().name()));
+                conn.add(actionIri, ontologyRegistry.moam("hasExecutionInstruction"), vf.createLiteral(sa.instruction()));
+                if (sa.method() != null) {
+                    conn.add(actionIri, ontologyRegistry.moam("hasHttpMethod"), vf.createLiteral(sa.method().name()));
+                }
+                conn.add(actionIri, ontologyRegistry.moam("hasExpectedStatusCode"), vf.createLiteral(String.valueOf(sa.expectedStatusCode()), XSD.INTEGER));
+            }
+            
+            conn.commit();
+            log.info("Materialized action instance {} under parent {}", actionIri, parentIri);
+        });
+    }
+
+    public WorkflowState getState(IRI actionIri) {
+        IRI hasCurrentState = ontologyRegistry.moam("hasCurrentState");
+        return sparqlClient.executeWithConnection(conn -> {
+            var statements = conn.getStatements(actionIri, hasCurrentState, null);
+            if (statements.hasNext()) {
+                IRI stateIri = (IRI) statements.next().getObject();
+                return WorkflowState.fromFragment(stateIri.getLocalName());
+            }
+            return null;
+        });
+    }
+
+    public void linkDependent(IRI dependent, IRI dependency) {
+        IRI dependsOn = ontologyRegistry.moam("dependsOn");
+        sparqlClient.executeWithConnection(conn -> {
+            conn.begin();
+            conn.add(dependent, dependsOn, dependency);
+            conn.commit();
+            log.info("Linked {} to depend on {}", dependent, dependency);
         });
     }
 
@@ -98,93 +152,6 @@ public class GraphDBGateway {
                 return null;
             }
         });
-    }
-
-    public List<ActionData.SimpleAction> findActionsForResource(IRI resourceIri) {
-        String sparql = sparqlQueryBuilder.builder()
-                .template(TEMPLATE_FIND_ACTIONS_FOR_RESOURCE)
-                .variable(VAR_RESOURCE_IRI, resourceIri)
-                .build();
-
-        return sparqlClient.executeQuery(sparql, stream -> stream
-                .collect(Collectors.groupingBy(bs -> (IRI) bs.getValue(VAR_ACTION)))
-                .entrySet().stream()
-                .map(entry -> modelMapper.mapAction(entry.getKey(), Map.of(entry.getKey(), entry.getValue())))
-                .filter(Result::isSuccess)
-                .map(Result::value)
-                .filter(ad -> ad instanceof ActionData.SimpleAction)
-                .map(ad -> (ActionData.SimpleAction) ad)
-                .toList()
-        );
-    }
-
-    public void createActionWorkflow(IRI resourceIri, IRI intentIri, String actionId) {
-        IRI actionIri = ontologyRegistry.moam(actionId);
-        IRI hasCurrentState = ontologyRegistry.moam("hasCurrentState");
-        IRI stateInitial = ontologyRegistry.moam("State_Initial");
-        IRI targetsEntity = ontologyRegistry.moam("targetsEntity");
-        IRI hasActionID = ontologyRegistry.moam("hasActionID");
-        IRI hasLastTransitionTimestamp = ontologyRegistry.moam("hasLastTransitionTimestamp");
-
-        sparqlClient.executeWithConnection(conn -> {
-            ValueFactory vf = conn.getValueFactory();
-            conn.begin();
-            conn.add(actionIri, org.eclipse.rdf4j.model.vocabulary.RDF.TYPE, intentIri);
-            conn.add(actionIri, org.eclipse.rdf4j.model.vocabulary.RDF.TYPE, ontologyRegistry.moam("AutonomicAction"));
-            conn.add(actionIri, hasCurrentState, stateInitial);
-            conn.add(actionIri, targetsEntity, resourceIri);
-            conn.add(actionIri, hasActionID, vf.createLiteral(actionId));
-            conn.add(actionIri, hasLastTransitionTimestamp, vf.createLiteral(java.time.OffsetDateTime.now().toString(), org.eclipse.rdf4j.model.vocabulary.XSD.DATETIME));
-            conn.commit();
-            log.info("Created new action workflow {} for resource {} with intent {}", actionIri, resourceIri, intentIri);
-        });
-    }
-
-    public void materializeSimpleAction(IRI actionIri, ActionData.SimpleAction template, IRI target) {
-        IRI targetsEntity = ontologyRegistry.moam("targetsEntity");
-        IRI hasActionID = ontologyRegistry.moam("hasActionID");
-        IRI hasProtocol = ontologyRegistry.moam("hasExecutionProtocol");
-        IRI hasInstruction = ontologyRegistry.moam("hasExecutionInstruction");
-        IRI hasMethod = ontologyRegistry.moam("hasHttpMethod");
-        IRI hasExpectedStatus = ontologyRegistry.moam("hasExpectedStatusCode");
-
-        sparqlClient.executeWithConnection(conn -> {
-            ValueFactory vf = conn.getValueFactory();
-            conn.begin();
-            conn.add(actionIri, org.eclipse.rdf4j.model.vocabulary.RDF.TYPE, ontologyRegistry.moam("SimpleAction"));
-            conn.add(actionIri, targetsEntity, target);
-            conn.add(actionIri, hasProtocol, vf.createLiteral(template.protocol().name()));
-            conn.add(actionIri, hasInstruction, vf.createLiteral(template.instruction()));
-            if (template.method() != null) {
-                conn.add(actionIri, hasMethod, vf.createLiteral(template.method().name()));
-            }
-            conn.add(actionIri, hasExpectedStatus, vf.createLiteral(String.valueOf(template.expectedStatusCode()), org.eclipse.rdf4j.model.vocabulary.XSD.INTEGER));
-            conn.add(actionIri, hasActionID, vf.createLiteral(actionIri.getLocalName()));
-            conn.commit();
-            log.info("Materialized SimpleAction instance {}", actionIri);
-        });
-    }
-
-    public void linkDependent(IRI dependent, IRI dependency) {
-        IRI dependsOn = ontologyRegistry.moam("dependsOn");
-        sparqlClient.executeWithConnection(conn -> {
-            conn.begin();
-            conn.add(dependent, dependsOn, dependency);
-            conn.commit();
-            log.info("Linked {} to depend on {}", dependent, dependency);
-        });
-    }
-
-    public List<AnomalyTarget> findAnomalies() {
-        String sparql = sparqlQueryBuilder.builder()
-                .template("find-anomalies")
-                .build();
-
-        return sparqlClient.executeQuery(sparql, stream -> stream.map(bs -> new AnomalyTarget(
-                (IRI) bs.getValue("resource"),
-                bs.getValue("resourceName").stringValue(),
-                (IRI) bs.getValue("intent")
-        )).collect(Collectors.toList()));
     }
 
     public List<ActiveActionSummary> findActiveActions() {
@@ -213,8 +180,8 @@ public class GraphDBGateway {
         if (bs.getValue("window") == null || bs.getValue("lastTransition") == null) return true;
         
         int window = ((Literal) bs.getValue("window")).intValue();
-        java.time.OffsetDateTime lastTransition = java.time.OffsetDateTime.parse(bs.getValue("lastTransition").stringValue());
-        java.time.OffsetDateTime now = java.time.OffsetDateTime.now();
+        OffsetDateTime lastTransition = OffsetDateTime.parse(bs.getValue("lastTransition").stringValue());
+        OffsetDateTime now = OffsetDateTime.now();
         
         return now.isAfter(lastTransition.plusSeconds(window));
     }
@@ -230,6 +197,18 @@ public class GraphDBGateway {
         });
     }
 
+    public List<AnomalyTarget> findAnomalies() {
+        String sparql = sparqlQueryBuilder.builder()
+                .template("find-anomalies")
+                .build();
+
+        return sparqlClient.executeQuery(sparql, stream -> stream.map(bs -> new AnomalyTarget(
+                (IRI) bs.getValue("resource"),
+                bs.getValue("resourceName").stringValue(),
+                (IRI) bs.getValue("intent")
+        )).collect(Collectors.toList()));
+    }
+
     public List<IRI> findDependents(IRI actionIri) {
         String sparql = sparqlQueryBuilder.builder()
                 .template("find-dependents")
@@ -239,6 +218,25 @@ public class GraphDBGateway {
         return sparqlClient.executeQuery(sparql, stream -> stream
                 .map(bs -> (IRI) bs.getValue("dependent"))
                 .collect(Collectors.toList()));
+    }
+
+    public IRI findParent(IRI childIri) {
+        IRI isDecomposedInto = ontologyRegistry.moam("isDecomposedInto");
+        return sparqlClient.executeWithConnection(conn -> {
+            var statements = conn.getStatements(null, isDecomposedInto, childIri);
+            if (statements.hasNext()) {
+                return (IRI) statements.next().getSubject();
+            }
+            return null;
+        });
+    }
+
+    public List<IRI> findChildren(IRI parentIri) {
+        IRI isDecomposedInto = ontologyRegistry.moam("isDecomposedInto");
+        return sparqlClient.executeWithConnection(conn -> {
+            return conn.getStatements(parentIri, isDecomposedInto, null)
+                    .stream().map(s -> (IRI) s.getObject()).toList();
+        });
     }
 
     public boolean executeConditionQuery(String query) {

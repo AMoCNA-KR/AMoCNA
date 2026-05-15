@@ -10,7 +10,9 @@ public sealed interface ActionData
     permits ActionData.SimpleAction, ActionData.ComplexWorkflow {
     
     IRI id();
-    String functionalIntent();
+    IRI functionalIntent();
+    IRI layerBoundary();
+    float executionCost();
     IRI target();
     List<Condition> preConditions();
     List<Condition> postConditions();
@@ -20,7 +22,9 @@ public sealed interface ActionData
     @Builder
     record SimpleAction(
         IRI id,
-        String functionalIntent,
+        IRI functionalIntent,
+        IRI layerBoundary,
+        float executionCost,
         Protocol protocol,
         String instruction,
         IRI target,
@@ -39,7 +43,9 @@ public sealed interface ActionData
     @Builder
     record ComplexWorkflow(
         IRI id,
-        String functionalIntent,
+        IRI functionalIntent,
+        IRI layerBoundary,
+        float executionCost,
         IRI target,
         List<ActionData> steps,
         Map<IRI, ActionData> compensations

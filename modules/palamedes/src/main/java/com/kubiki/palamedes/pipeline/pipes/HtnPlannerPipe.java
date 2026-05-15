@@ -19,6 +19,7 @@ import java.util.UUID;
  * HtnPlannerPipe (MAPE-Plan):
  * Decomposes INITIAL workflows and transitions them to PLANNED.
  * Materializes sequential steps for ComplexWorkflows in the graph.
+ * Industrial Rule: Incremental Decomposition. Only expands one level at a time.
  */
 @Component
 public class HtnPlannerPipe implements MapePipe {
@@ -35,7 +36,7 @@ public class HtnPlannerPipe implements MapePipe {
 
     @Override
     public boolean process(WorkflowContext context) {
-        if (!"State_Initial".equals(context.metadata().get("currentState"))) {
+        if (!WorkflowState.INITIAL.getFragment().equals(context.metadata().get("currentState"))) {
             return true;
         }
 
@@ -62,22 +63,15 @@ public class HtnPlannerPipe implements MapePipe {
             String stepId = "step-" + UUID.randomUUID().toString().substring(0, 8);
             IRI stepIri = ontologyRegistry.moam(stepId);
 
-            if (step instanceof ActionData.SimpleAction sa) {
-                graphDBGateway.materializeSimpleAction(stepIri, sa, workflow.target());
-            } else if (step instanceof ActionData.ComplexWorkflow cw) {
-                // Recursively handle nested workflows
-                // Note: This would require a more complex materialization in GraphDBGateway
-                // For simplicity in Phase 1, we focus on workflows of simple actions
-                log.warn("Nested ComplexWorkflows not fully implemented in decomposition pipe");
-            }
+            // Materialize the child node (Simple or Complex)
+            graphDBGateway.materializeActionInstance(stepIri, step, workflow.target(), parentIri);
 
-            // Link to parent (optional, but good for traceability)
-            // graphDBGateway.linkToParent(stepIri, parentIri);
-
+            // Sequential Locking (Option A: Sequential Saga)
             if (previousStepIri != null) {
+                // Link to depend on previous sibling
                 graphDBGateway.linkDependent(stepIri, previousStepIri);
             } else {
-                // First step starts in INITIAL state to trigger the loop
+                // The very first child starts in INITIAL state to trigger its own MAPE loop
                 graphDBGateway.transitionState(stepIri, WorkflowState.INITIAL.getFragment());
             }
 

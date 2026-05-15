@@ -103,16 +103,25 @@ class PalamedesMapeLoopIT {
             conn.add(restriction, org.eclipse.rdf4j.model.vocabulary.OWL.ONPROPERTY, registry.bridge("isResolvedByIntent"));
             conn.add(restriction, org.eclipse.rdf4j.model.vocabulary.OWL.SOMEVALUESFROM, intent);
             
+            // Blueprint details for mapping
             conn.add(intent, RDF.TYPE, registry.moam("SimpleAction"));
             conn.add(intent, registry.moam("hasExecutionProtocol"), vf.createLiteral("REST"));
             conn.add(intent, registry.moam("hasExecutionInstruction"), vf.createLiteral("http://restart/{resourceName}"));
             conn.add(intent, registry.moam("hasExpectedStatusCode"), vf.createLiteral("200", org.eclipse.rdf4j.model.vocabulary.XSD.INTEGER));
+            
+            // Industrial Classification Properties
+            conn.add(intent, registry.moam("hasFunctionalIntent"), vf.createIRI("http://test/Intent_Lifecycle"));
+            conn.add(intent, registry.moam("hasLayerBoundary"), vf.createIRI("http://test/Layer_Containerization"));
+            IRI cost = vf.createIRI("http://test/Cost_Low");
+            conn.add(intent, registry.moam("hasExecutionCost"), cost);
+            conn.add(cost, registry.moam("costValue"), vf.createLiteral("1.5", org.eclipse.rdf4j.model.vocabulary.XSD.FLOAT));
         }
 
         mapePipeline.run(); 
         
         List<GraphDBGateway.ActiveActionSummary> active = gateway.findActiveActions();
         assertEquals(1, active.size());
+        assertEquals("State_Planned", active.get(0).stateFragment());
         IRI actionIri = active.get(0).actionIri();
 
         mapePipeline.run();
@@ -154,32 +163,34 @@ class PalamedesMapeLoopIT {
             conn.add(intent, registry.moam("isDecomposedInto"), step1);
             conn.add(intent, registry.moam("isDecomposedInto"), step2);
             
+            // Classification for Parent
+            conn.add(intent, registry.moam("hasFunctionalIntent"), vf.createIRI("http://test/Intent_Scaling"));
+            
+            // Step 1 details
             conn.add(step1, RDF.TYPE, registry.moam("SimpleAction"));
             conn.add(step1, registry.moam("hasExecutionProtocol"), vf.createLiteral("REST"));
             conn.add(step1, registry.moam("hasExecutionInstruction"), vf.createLiteral("http://step1"));
             conn.add(step1, registry.moam("hasExpectedStatusCode"), vf.createLiteral("200", org.eclipse.rdf4j.model.vocabulary.XSD.INTEGER));
 
+            // Step 2 details
             conn.add(step2, RDF.TYPE, registry.moam("SimpleAction"));
             conn.add(step2, registry.moam("hasExecutionProtocol"), vf.createLiteral("REST"));
             conn.add(step2, registry.moam("hasExecutionInstruction"), vf.createLiteral("http://step2"));
             conn.add(step2, registry.moam("hasExpectedStatusCode"), vf.createLiteral("200", org.eclipse.rdf4j.model.vocabulary.XSD.INTEGER));
         }
 
-        // ONE TICK: Analyze + Parent Plan
         mapePipeline.run(); 
         
         List<GraphDBGateway.ActiveActionSummary> active = gateway.findActiveActions();
-
-        assertTrue(active.size() >= 2, "Should have parent and children active. Found: " + active.size());
+        assertTrue(active.size() >= 2);
         
         final List<GraphDBGateway.ActiveActionSummary> activeActionsAfterPlan = active;
         IRI child1Iri = activeActionsAfterPlan.stream()
             .filter(a -> a.stateFragment().equals("State_Initial"))
             .findFirst()
-            .orElseThrow(() -> new RuntimeException("Child 1 not found in INITIAL state in: " + activeActionsAfterPlan))
+            .orElseThrow(() -> new RuntimeException("Child 1 not found in INITIAL state"))
             .actionIri();
         
-        // Tick Child 1 to InProgress
         mapePipeline.run(); // Child 1: Planned
         mapePipeline.run(); // Child 1: Validated
         mapePipeline.run(); // Child 1: InProgress
@@ -188,10 +199,7 @@ class PalamedesMapeLoopIT {
 
         sagaManager.handleFeedback(new ActionStatusUpdate(child1Iri.getLocalName(), ExecutionStatus.COMPLETED, null, 200));
         
-        // SagaManager unlocks Step 2.
-        // Next run will see Step 2 in INITIAL and move it to PLANNED.
         mapePipeline.run();
-        
         active = gateway.findActiveActions();
         assertTrue(active.stream().anyMatch(a -> a.stateFragment().equals("State_Planned")), "Next step should have advanced to PLANNED");
     }
