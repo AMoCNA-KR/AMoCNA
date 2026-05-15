@@ -39,23 +39,25 @@ public class SparqlQueryBuilder {
             String rawTemplate = sparqlLoader.loadRaw(templateName);
             StringBuilder sb = new StringBuilder();
             
-            // Inject standard prefixes
-            sb.append("PREFIX moam: <").append(ontologyRegistry.getMoamNamespace()).append(">\n");
-            sb.append("PREFIX cnee: <").append(ontologyRegistry.getCneeNamespace()).append(">\n");
-            sb.append("PREFIX bridge: <").append(ontologyRegistry.getBridgeNamespace()).append(">\n");
+            // Standard Industrial Prefixes
+            appendPrefix(sb, "moam", ontologyRegistry.getMoamNamespace());
+            appendPrefix(sb, "cnee", ontologyRegistry.getCneeNamespace());
+            appendPrefix(sb, "bridge", ontologyRegistry.getBridgeNamespace());
+            appendPrefix(sb, "rdf", "http://www.w3.org/1999/02/22-rdf-syntax-ns#");
+            appendPrefix(sb, "rdfs", "http://www.w3.org/2000/01/rdf-schema#");
+            appendPrefix(sb, "owl", "http://www.w3.org/2002/07/owl#");
             
             String processed = rawTemplate;
             for (Map.Entry<String, Object> entry : variables.entrySet()) {
                 processed = processed.replace("${" + entry.getKey() + "}", formatValue(entry.getValue()));
             }
             
-            // Also replace namespace placeholders if they exist in the raw template
-            processed = processed.replace("${moamNamespace}", ontologyRegistry.getMoamNamespace());
-            processed = processed.replace("${cneeNamespace}", ontologyRegistry.getCneeNamespace());
-            processed = processed.replace("${bridgeNamespace}", ontologyRegistry.getBridgeNamespace());
-            
             sb.append(processed);
             return sb.toString();
+        }
+
+        private void appendPrefix(StringBuilder sb, String prefix, String namespace) {
+            sb.append("PREFIX ").append(prefix).append(": <").append(namespace).append(">\n");
         }
 
         private String formatValue(Object value) {

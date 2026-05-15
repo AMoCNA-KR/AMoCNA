@@ -1,5 +1,8 @@
 package com.kubiki.palamedes.model;
 
+import lombok.Getter;
+
+@Getter
 public enum WorkflowState {
     INITIAL("State_Initial"),
     PLANNED("State_Planned"),
@@ -11,8 +14,7 @@ public enum WorkflowState {
 
     private final String fragment;
     WorkflowState(String fragment) { this.fragment = fragment; }
-    public String getFragment() { return fragment; }
-    
+
     public static WorkflowState fromFragment(String fragment) {
         for (WorkflowState state : values()) {
             if (state.fragment.equalsIgnoreCase(fragment)) return state;

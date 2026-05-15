@@ -29,7 +29,7 @@ class MapePipelineTest {
         
         IRI actionId = SimpleValueFactory.getInstance().createIRI("http://test/action1");
         GraphDBGateway.ActiveActionSummary action = new GraphDBGateway.ActiveActionSummary(
-                actionId, null, null, "resource1", "State_Initial");
+                actionId, null, "resource1", "State_Initial");
         
         when(gateway.findActiveActions()).thenReturn(List.of(action));
         when(gateway.fetchActionStructure(actionId)).thenReturn(mock(ActionData.SimpleAction.class));

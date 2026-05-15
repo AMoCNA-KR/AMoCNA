@@ -1,6 +1,5 @@
-PREFIX moam: <${moamNamespace}>
 
-SELECT ?dependent
+SELECT DISTINCT ?dependent
 WHERE {
   ?dependent moam:dependsOn ${actionIri} .
 }

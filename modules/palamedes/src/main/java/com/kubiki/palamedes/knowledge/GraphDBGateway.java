@@ -140,6 +140,41 @@ public class GraphDBGateway {
         });
     }
 
+    public void materializeSimpleAction(IRI actionIri, ActionData.SimpleAction template, IRI target) {
+        IRI targetsEntity = ontologyRegistry.moam("targetsEntity");
+        IRI hasActionID = ontologyRegistry.moam("hasActionID");
+        IRI hasProtocol = ontologyRegistry.moam("hasExecutionProtocol");
+        IRI hasInstruction = ontologyRegistry.moam("hasExecutionInstruction");
+        IRI hasMethod = ontologyRegistry.moam("hasHttpMethod");
+        IRI hasExpectedStatus = ontologyRegistry.moam("hasExpectedStatusCode");
+
+        sparqlClient.executeWithConnection(conn -> {
+            ValueFactory vf = conn.getValueFactory();
+            conn.begin();
+            conn.add(actionIri, org.eclipse.rdf4j.model.vocabulary.RDF.TYPE, ontologyRegistry.moam("SimpleAction"));
+            conn.add(actionIri, targetsEntity, target);
+            conn.add(actionIri, hasProtocol, vf.createLiteral(template.protocol().name()));
+            conn.add(actionIri, hasInstruction, vf.createLiteral(template.instruction()));
+            if (template.method() != null) {
+                conn.add(actionIri, hasMethod, vf.createLiteral(template.method().name()));
+            }
+            conn.add(actionIri, hasExpectedStatus, vf.createLiteral(String.valueOf(template.expectedStatusCode()), org.eclipse.rdf4j.model.vocabulary.XSD.INTEGER));
+            conn.add(actionIri, hasActionID, vf.createLiteral(actionIri.getLocalName()));
+            conn.commit();
+            log.info("Materialized SimpleAction instance {}", actionIri);
+        });
+    }
+
+    public void linkDependent(IRI dependent, IRI dependency) {
+        IRI dependsOn = ontologyRegistry.moam("dependsOn");
+        sparqlClient.executeWithConnection(conn -> {
+            conn.begin();
+            conn.add(dependent, dependsOn, dependency);
+            conn.commit();
+            log.info("Linked {} to depend on {}", dependent, dependency);
+        });
+    }
+
     public List<AnomalyTarget> findAnomalies() {
         String sparql = sparqlQueryBuilder.builder()
                 .template("find-anomalies")
@@ -159,7 +194,6 @@ public class GraphDBGateway {
 
         return sparqlClient.executeQuery(sparql, stream -> stream.map(bs -> new ActiveActionSummary(
                 (IRI) bs.getValue("action"),
-                (IRI) bs.getValue("type"),
                 (IRI) bs.getValue("resource"),
                 bs.getValue("resourceName").stringValue(),
                 bs.getValue("state").stringValue()
@@ -196,10 +230,6 @@ public class GraphDBGateway {
         });
     }
 
-    public boolean executeConditionQuery(String query) {
-        return sparqlClient.executeBooleanQuery(query);
-    }
-
     public List<IRI> findDependents(IRI actionIri) {
         String sparql = sparqlQueryBuilder.builder()
                 .template("find-dependents")
@@ -211,6 +241,10 @@ public class GraphDBGateway {
                 .collect(Collectors.toList()));
     }
 
-    public record ActiveActionSummary(IRI actionIri, IRI typeIri, IRI resourceIri, String resourceName, String stateFragment) {}
+    public boolean executeConditionQuery(String query) {
+        return sparqlClient.executeBooleanQuery(query);
+    }
+
+    public record ActiveActionSummary(IRI actionIri, IRI resourceIri, String resourceName, String stateFragment) {}
     public record AnomalyTarget(IRI resourceIri, String resourceName, IRI intentIri) {}
 }

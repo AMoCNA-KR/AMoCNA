@@ -4,10 +4,6 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 import java.util.Map;
 
-/**
- * Root configuration class for Palamedes, following the "Configuration Properties at Scale" pattern.
- * Uses nested records for namespace-based discovery.
- */
 @ConfigurationProperties(prefix = "palamedes")
 public record PalamedesProperties(
         @NestedConfigurationProperty GraphDB graphdb,

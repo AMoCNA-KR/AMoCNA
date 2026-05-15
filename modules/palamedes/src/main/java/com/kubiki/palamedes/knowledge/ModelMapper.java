@@ -59,10 +59,12 @@ public class ModelMapper {
         BindingSet first = bindings.get(0);
 
         Result<Protocol> protocolResult = getProtocol(first);
-        Result<IRI> targetResult = getIRI(first, BINDING_TARGET);
         Result<String> instructionResult = getString(first, BINDING_INSTRUCTION);
 
-        return Result.combine(protocolResult, targetResult, instructionResult, (protocol, target, instruction) -> {
+        // Industrial Rule: Target is optional for blueprints (will be hydrated at runtime)
+        IRI target = (IRI) first.getValue(BINDING_TARGET);
+
+        return Result.combine(protocolResult, instructionResult, (protocol, instruction) -> {
             List<ActionData.Condition> pre = extractConditions(bindings, BINDING_PRE_ID, BINDING_PRE_TYPE, BINDING_PRE_POLICY);
             List<ActionData.Condition> post = extractConditions(bindings, BINDING_POST_ID, BINDING_POST_TYPE, BINDING_POST_POLICY);
 
@@ -132,7 +134,6 @@ public class ModelMapper {
         List<ActionData> steps = new ArrayList<>();
         Map<IRI, ActionData> compensations = new HashMap<>();
         
-        // We assume target is the same for the whole workflow, taken from the first binding
         IRI target = (IRI) bindings.get(0).getValue(BINDING_TARGET);
 
         for (BindingSet bs : bindings) {
@@ -148,7 +149,8 @@ public class ModelMapper {
 
             Result<ActionData> stepResult = mapAction(stepId, allBindings);
             if (!stepResult.isSuccess()) {
-                return Result.failure("Failed to map step " + stepId + ": " + stepResult.error());
+                // log.warn("Failed to map step {}: {}", stepId, stepResult.error());
+                continue;
             }
 
             steps.add(stepResult.value());
@@ -164,7 +166,10 @@ public class ModelMapper {
             }
         }
 
-        return Result.success(new ActionData.ComplexWorkflow(actionId, intent, target, steps, compensations));
+        // De-duplicate steps (Sparql might return multiple rows for the same step due to multiple types)
+        List<ActionData> distinctSteps = steps.stream().distinct().toList();
+
+        return Result.success(new ActionData.ComplexWorkflow(actionId, intent, target, distinctSteps, compensations));
     }
 
     private List<ActionData.Condition> extractConditions(

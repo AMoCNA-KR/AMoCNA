@@ -1,4 +1,4 @@
-SELECT ?action ?intent ?target ?protocol ?instruction ?method ?payload ?expectedStatusCode
+SELECT DISTINCT ?action ?intent ?target ?protocol ?instruction ?method ?payload ?expectedStatusCode
        ?preId ?preType ?prePolicy 
        ?postId ?postType ?postPolicy 
 WHERE { 
@@ -20,5 +20,5 @@ WHERE {
     ?postId a ?postType . 
     ?postId moam:policyQueryString ?postPolicy . 
   } . 
-  FILTER(?intent != moam:AutonomicAction && ?intent != moam:SimpleAction) 
+   
 }

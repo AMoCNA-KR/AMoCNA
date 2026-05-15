@@ -1,6 +1,5 @@
-PREFIX moam: <${moamNamespace}>
 
-SELECT ?window ?lastTransition
+SELECT DISTINCT ?window ?lastTransition
 WHERE {
   ?action moam:idempotencyWindowSeconds ?window .
   ?action moam:hasLastTransitionTimestamp ?lastTransition .

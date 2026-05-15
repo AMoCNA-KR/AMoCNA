@@ -60,7 +60,6 @@ public class SagaManager {
         
         for (IRI dependent : dependents) {
             log.info("SagaManager: Unlocking dependent step {}", dependent);
-            // Move to INITIAL so the HTN pipeline picks it up
             gateway.transitionState(dependent, WorkflowState.INITIAL.getFragment());
         }
     }

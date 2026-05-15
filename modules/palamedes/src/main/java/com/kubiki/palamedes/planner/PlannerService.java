@@ -28,7 +28,6 @@ public class PlannerService {
     public ActionMessage buildActionMessage(ActionData.SimpleAction action, Map<String, String> contextData) {
         log.info("Planning message for action {} (protocol: {})", action.id(), action.protocol());
         
-        // Hydrate instruction and payload
         String instruction = hydrate(action.instruction(), contextData);
         String payload = hydrate(action.payload(), contextData);
         

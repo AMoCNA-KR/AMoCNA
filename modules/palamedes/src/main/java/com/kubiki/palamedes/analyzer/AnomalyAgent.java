@@ -17,6 +17,7 @@ import java.util.UUID;
 @Service
 public class AnomalyAgent {
     private static final Logger log = LoggerFactory.getLogger(AnomalyAgent.class);
+    public static final String ACTION_PREFIX = "action-";
     private final GraphDBGateway gateway;
 
     public AnomalyAgent(GraphDBGateway gateway) {
@@ -32,8 +33,7 @@ public class AnomalyAgent {
         for (GraphDBGateway.AnomalyTarget anomaly : anomalies) {
             log.info("Anomaly detected: resource {} needs {}", anomaly.resourceName(), anomaly.intentIri());
             
-            // Create a unique ID for this specific remediation attempt
-            String actionId = "action-" + UUID.randomUUID().toString().substring(0, 8);
+            String actionId = ACTION_PREFIX + UUID.randomUUID().toString().substring(0, 8);
             
             gateway.createActionWorkflow(anomaly.resourceIri(), anomaly.intentIri(), actionId);
         }

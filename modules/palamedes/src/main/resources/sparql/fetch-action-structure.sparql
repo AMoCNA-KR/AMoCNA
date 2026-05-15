@@ -1,16 +1,45 @@
-SELECT ?action ?intent ?target ?protocol ?instruction ?method ?payload ?expectedStatusCode
+SELECT DISTINCT ?action ?intent ?target ?protocol ?instruction ?method ?payload ?expectedStatusCode
        ?preId ?preType ?prePolicy 
        ?postId ?postType ?postPolicy 
        ?step ?compensation WHERE { 
   VALUES ?root { ${actionIri} }
-  ?root (moam:isDecomposedInto|moam:hasCompensation)* ?action .
+  
+  # Find all actions in the hierarchy (starting from instance OR its intent blueprint)
+  {
+    BIND(?root AS ?action)
+  }
+  UNION
+  {
+    ?root (moam:isDecomposedInto|moam:hasCompensation)+ ?action .
+  }
+  UNION
+  {
+    ?root a ?rootIntent .
+    ?rootIntent (moam:isDecomposedInto|moam:hasCompensation)+ ?action .
+  }
+  
   ?action a ?intent . 
+  
   OPTIONAL { ?action moam:targetsEntity ?target } . 
-  OPTIONAL { ?action moam:hasExecutionProtocol ?protocol } . 
-  OPTIONAL { ?action moam:hasExecutionInstruction ?instruction } . 
-  OPTIONAL { ?action moam:hasHttpMethod ?method } . 
-  OPTIONAL { ?action moam:hasExecutionPayload ?payload } . 
-  OPTIONAL { ?action moam:hasExpectedStatusCode ?expectedStatusCode } . 
+  
+  # Fetch properties from action instance OR its intent blueprint
+  OPTIONAL { ?action moam:hasExecutionProtocol ?p1 } .
+  OPTIONAL { ?intent moam:hasExecutionProtocol ?p2 } .
+  BIND(COALESCE(?p1, ?p2) AS ?protocol) .
+
+  OPTIONAL { ?action moam:hasExecutionInstruction ?i1 } .
+  OPTIONAL { ?intent moam:hasExecutionInstruction ?i2 } .
+  BIND(COALESCE(?i1, ?i2) AS ?instruction) .
+
+  OPTIONAL { ?action moam:hasHttpMethod ?m1 } .
+  OPTIONAL { ?intent moam:hasHttpMethod ?m2 } .
+  BIND(COALESCE(?m1, ?m2) AS ?method) .
+
+  OPTIONAL { ?action moam:hasExpectedStatusCode ?s1 } .
+  OPTIONAL { ?intent moam:hasExpectedStatusCode ?s2 } .
+  BIND(COALESCE(?s1, ?s2) AS ?expectedStatusCode) .
+
+  # Conditions
   OPTIONAL { 
     ?action moam:hasPreCondition ?preId . 
     ?preId a ?preType . 
@@ -21,9 +50,12 @@ SELECT ?action ?intent ?target ?protocol ?instruction ?method ?payload ?expected
     ?postId a ?postType . 
     ?postId moam:policyQueryString ?postPolicy . 
   } . 
+  
+  # HTN Decomposition links
   OPTIONAL { 
-    ?action moam:isDecomposedInto ?step . 
+    { ?action moam:isDecomposedInto ?step . }
+    UNION
+    { ?intent moam:isDecomposedInto ?step . }
     OPTIONAL { ?step moam:hasCompensation ?compensation } . 
   } . 
-  FILTER(?intent != moam:AutonomicAction && ?intent != moam:SimpleAction) 
 }
