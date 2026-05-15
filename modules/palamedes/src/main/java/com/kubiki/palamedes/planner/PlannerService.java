@@ -20,7 +20,7 @@ public class PlannerService {
         if (data == null) return template;
         String result = template;
         for (var entry : data.entrySet()) {
-            result = result.replace("{" + entry.getKey() + "}", entry.getValue());
+            result = result.replace("${" + entry.getKey() + "}", entry.getValue());
         }
         return result;
     }

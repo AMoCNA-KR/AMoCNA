@@ -17,14 +17,23 @@ public class OntologyRegistry {
     }
 
     public IRI moam(String fragment) {
+        if (fragment != null && fragment.startsWith("http")) {
+            return valueFactory.createIRI(fragment);
+        }
         return valueFactory.createIRI(palamedesProperties.ontology().moamNamespace(), fragment);
     }
 
     public IRI cnee(String fragment) {
+        if (fragment != null && fragment.startsWith("http")) {
+            return valueFactory.createIRI(fragment);
+        }
         return valueFactory.createIRI(palamedesProperties.ontology().cneeNamespace(), fragment);
     }
 
     public IRI bridge(String fragment) {
+        if (fragment != null && fragment.startsWith("http")) {
+            return valueFactory.createIRI(fragment);
+        }
         return valueFactory.createIRI(palamedesProperties.ontology().bridgeNamespace(), fragment);
     }
 
