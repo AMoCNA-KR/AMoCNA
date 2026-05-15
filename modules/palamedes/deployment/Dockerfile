@@ -19,10 +19,12 @@ FROM eclipse-temurin:25-jre as runtime
 WORKDIR /app
 COPY --from=builder /app/modules/palamedes/target/palamedes-0.0.1-SNAPSHOT.jar app.jar
 
-EXPOSE 8080 50051
+EXPOSE 8081
 
 ENV SPRING_PROFILES_ACTIVE=dev
 ENV SPRING_RABBITMQ_HOST=rabbitmq
-ENV PALAMEDES_GRAPHDB_URL=http://graphdb:7200
+ENV GRAPHDB_URL=http://graphdb:7200
+ENV GRAPHDB_REPO=amocna
+ENV PROMETHEUS_URL=http://prometheus:9090
 
 ENTRYPOINT ["java", "-jar", "app.jar"]

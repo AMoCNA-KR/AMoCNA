@@ -19,8 +19,11 @@ while [[ "$#" -gt 0 ]]; do
   shift
 done
 
-echo "Building $IMAGE_NAME from $PROJECT_ROOT..."
-echo "Registry: $REGISTRY, Push: $PUSH"
+echo "---------------------------------------------------"
+echo "Building $IMAGE_NAME from $PROJECT_ROOT"
+echo "Registry: $REGISTRY"
+echo "Push:     $PUSH"
+echo "---------------------------------------------------"
 
 docker build -t "$REGISTRY/$IMAGE_NAME:latest" -f "$PROJECT_ROOT/$DOCKERFILE_PATH" "$PROJECT_ROOT"
 
@@ -29,4 +32,6 @@ if [ "$PUSH" = true ]; then
   docker push "$REGISTRY/$IMAGE_NAME:latest"
 fi
 
-echo "Success!"
+echo "---------------------------------------------------"
+echo "Build Success!"
+echo "---------------------------------------------------"
