@@ -1,18 +1,29 @@
 spring:
-  threads:
-    virtual:
-      enabled: true
-  profiles:
-    active: dev
+  application:
+    name: palamedes
   rabbitmq:
-    host: localhost
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USER:guest}
+    password: ${RABBITMQ_PASS:guest}
 
-grpc:
-  server:
-    port: 50051
+server:
+  port: ${SERVER_PORT:8081}
 
 palamedes:
   graphdb:
-    url: "http://graphdb:7200"
-    repositoryId: "amocna"
-    timeoutMs: 5000
+    url: ${GRAPHDB_URL:http://localhost:7200}
+    repository-id: ${GRAPHDB_REPO:amocna}
+    timeout-ms: ${GRAPHDB_TIMEOUT:5000}
+  ontology:
+    moam-namespace: ${ONTOLOGY_MOAM:http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#}
+    cnee-namespace: ${ONTOLOGY_CNEE:http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/}
+    bridge-namespace: ${ONTOLOGY_BRIDGE:http://www.semanticweb.org/patryk/ontologies/2026/4/BridgeOnt#}
+  prometheus:
+    url: ${PROMETHEUS_URL:http://localhost:9090}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
