@@ -1,0 +1,6 @@
+DELETE { ?action moam:hasCurrentState ${fromState} . }
+INSERT { ?action moam:hasCurrentState ${toState} . }
+WHERE { 
+  ?action moam:hasCurrentState ${fromState} .
+  FILTER(?action = ${actionId})
+}

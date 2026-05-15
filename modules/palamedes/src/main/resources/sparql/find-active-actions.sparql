@@ -1,0 +1,15 @@
+PREFIX moam: <${moamNamespace}>
+
+SELECT ?action ?type ?resource ?resourceName ?state
+WHERE {
+  ?action moam:hasCurrentState ?stateIri .
+  ?action rdf:type ?type .
+  ?action moam:targetsEntity ?resource .
+  ?resource cnee:resourceName ?resourceName .
+  
+  # Filter for non-terminal states
+  FILTER(?stateIri IN (moam:State_Initial, moam:State_Planned, moam:State_Validated, moam:State_InProgress, moam:State_Compensating))
+  FILTER(?type != moam:AutonomicAction)
+  
+  BIND(REPLACE(STR(?stateIri), "^.*#", "") AS ?state)
+}
