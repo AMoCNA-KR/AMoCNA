@@ -4,7 +4,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 /**
- * Root configuration class for Themis, following the "Configuration Properties at Scale" pattern.
+ * Root configuration class for Palamedes, following the "Configuration Properties at Scale" pattern.
  * Uses nested records for namespace-based discovery.
  */
 @ConfigurationProperties(prefix = "palamedes")
@@ -16,7 +16,7 @@ public record PalamedesProperties(
     public record GraphDB(String url, String repositoryId, int timeoutMs) {
     }
 
-    public record Ontology(String moamNamespace) {
+    public record Ontology(String moamNamespace, String cneeNamespace, String bridgeNamespace) {
     }
 
     public record Prometheus(String url) {

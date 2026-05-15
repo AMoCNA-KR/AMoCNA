@@ -56,7 +56,7 @@ public class PrometheusConditionEvaluator implements ConditionEvaluator {
     }
 
     @Override
-    public boolean evaluate(ActionData.ConditionData condition) {
+    public boolean evaluate(ActionData.Condition condition) {
         if (restClient == null) {
             throw new ConditionEvaluationException(ERROR_NOT_CONFIGURED);
         }

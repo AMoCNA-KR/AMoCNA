@@ -27,7 +27,7 @@ public class SparqlConditionEvaluator implements ConditionEvaluator {
     }
 
     @Override
-    public boolean evaluate(ActionData.ConditionData condition) {
+    public boolean evaluate(ActionData.Condition condition) {
         return graphDBGateway.executeConditionQuery(condition.policy());
     }
 }
