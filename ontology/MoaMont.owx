@@ -155,6 +155,9 @@
         <DataProperty IRI="#hasAuthMechanism"/>
     </Declaration>
     <Declaration>
+        <DataProperty IRI="#hasExecutionDelay"/>
+    </Declaration>
+    <Declaration>
         <DataProperty IRI="#hasExecutionInstruction"/>
     </Declaration>
     <Declaration>
@@ -173,7 +176,13 @@
         <DataProperty IRI="#hasHttpMethod"/>
     </Declaration>
     <Declaration>
+        <DataProperty IRI="#hasIdempotencyKey"/>
+    </Declaration>
+    <Declaration>
         <DataProperty IRI="#hasLastTransitionTimestamp"/>
+    </Declaration>
+    <Declaration>
+        <DataProperty IRI="#hasPriority"/>
     </Declaration>
     <Declaration>
         <DataProperty IRI="#isIdempotent"/>
@@ -232,7 +241,21 @@
     <SubClassOf>
         <Class IRI="#AutonomicAction"/>
         <DataMaxCardinality cardinality="1">
+            <DataProperty IRI="#hasExecutionDelay"/>
+            <Datatype abbreviatedIRI="xsd:int"/>
+        </DataMaxCardinality>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="#AutonomicAction"/>
+        <DataMaxCardinality cardinality="1">
             <DataProperty IRI="#hasExecutionStatus"/>
+            <Datatype abbreviatedIRI="xsd:string"/>
+        </DataMaxCardinality>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="#AutonomicAction"/>
+        <DataMaxCardinality cardinality="1">
+            <DataProperty IRI="#hasIdempotencyKey"/>
             <Datatype abbreviatedIRI="xsd:string"/>
         </DataMaxCardinality>
     </SubClassOf>
@@ -241,6 +264,13 @@
         <DataMaxCardinality cardinality="1">
             <DataProperty IRI="#hasLastTransitionTimestamp"/>
             <Datatype abbreviatedIRI="xsd:dateTime"/>
+        </DataMaxCardinality>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="#AutonomicAction"/>
+        <DataMaxCardinality cardinality="1">
+            <DataProperty IRI="#hasPriority"/>
+            <Datatype abbreviatedIRI="xsd:int"/>
         </DataMaxCardinality>
     </SubClassOf>
     <SubClassOf>
@@ -615,6 +645,15 @@
         <ObjectProperty IRI="#hasPostCondition"/>
         <ObjectProperty IRI="#hasPreCondition"/>
     </DisjointObjectProperties>
+    <FunctionalDataProperty>
+        <DataProperty IRI="#hasExecutionDelay"/>
+    </FunctionalDataProperty>
+    <FunctionalDataProperty>
+        <DataProperty IRI="#hasIdempotencyKey"/>
+    </FunctionalDataProperty>
+    <FunctionalDataProperty>
+        <DataProperty IRI="#hasPriority"/>
+    </FunctionalDataProperty>
     <DataPropertyDomain>
         <DataProperty IRI="#costValue"/>
         <Class IRI="#ExecutionCost"/>
@@ -626,6 +665,10 @@
     <DataPropertyDomain>
         <DataProperty IRI="#hasAuthMechanism"/>
         <Class IRI="#SimpleAction"/>
+    </DataPropertyDomain>
+    <DataPropertyDomain>
+        <DataProperty IRI="#hasExecutionDelay"/>
+        <Class IRI="#AutonomicAction"/>
     </DataPropertyDomain>
     <DataPropertyDomain>
         <DataProperty IRI="#hasExecutionInstruction"/>
@@ -652,7 +695,15 @@
         <Class IRI="#SimpleAction"/>
     </DataPropertyDomain>
     <DataPropertyDomain>
+        <DataProperty IRI="#hasIdempotencyKey"/>
+        <Class IRI="#AutonomicAction"/>
+    </DataPropertyDomain>
+    <DataPropertyDomain>
         <DataProperty IRI="#hasLastTransitionTimestamp"/>
+        <Class IRI="#AutonomicAction"/>
+    </DataPropertyDomain>
+    <DataPropertyDomain>
+        <DataProperty IRI="#hasPriority"/>
         <Class IRI="#AutonomicAction"/>
     </DataPropertyDomain>
     <DataPropertyDomain>
@@ -684,6 +735,10 @@
         <Datatype abbreviatedIRI="xsd:string"/>
     </DataPropertyRange>
     <DataPropertyRange>
+        <DataProperty IRI="#hasExecutionDelay"/>
+        <Datatype abbreviatedIRI="xsd:int"/>
+    </DataPropertyRange>
+    <DataPropertyRange>
         <DataProperty IRI="#hasExecutionInstruction"/>
         <Datatype abbreviatedIRI="xsd:string"/>
     </DataPropertyRange>
@@ -708,8 +763,16 @@
         <Datatype abbreviatedIRI="xsd:string"/>
     </DataPropertyRange>
     <DataPropertyRange>
+        <DataProperty IRI="#hasIdempotencyKey"/>
+        <Datatype abbreviatedIRI="xsd:string"/>
+    </DataPropertyRange>
+    <DataPropertyRange>
         <DataProperty IRI="#hasLastTransitionTimestamp"/>
         <Datatype abbreviatedIRI="xsd:dateTime"/>
+    </DataPropertyRange>
+    <DataPropertyRange>
+        <DataProperty IRI="#hasPriority"/>
+        <Datatype abbreviatedIRI="xsd:int"/>
     </DataPropertyRange>
     <DataPropertyRange>
         <DataProperty IRI="#isIdempotent"/>
@@ -729,8 +792,200 @@
     </DataPropertyRange>
     <AnnotationAssertion>
         <AnnotationProperty abbreviatedIRI="rdfs:comment"/>
+        <IRI>#ComplexWorkflow</IRI>
+        <Literal>Stateful semantic containers that orchestrate SimpleAction instances via hierarchical task network and manage Saga-based compensations</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty abbreviatedIRI="rdfs:comment"/>
+        <IRI>#ConfigurationAction</IRI>
+        <Literal>Actions mutating the declarative state, environment variables, or configuration maps of a target entity</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty abbreviatedIRI="rdfs:comment"/>
+        <IRI>#ExecutionCost</IRI>
+        <Literal>This categorizes the expected systemic disruption or temporal latency of an action</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty abbreviatedIRI="rdfs:comment"/>
+        <IRI>#LayerBoundary</IRI>
+        <Literal>his categorizes the architectural tier at which the action operates (InfrastructureLayer, ContainerizationLayer, or ApplicationLayer)</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty abbreviatedIRI="rdfs:comment"/>
+        <IRI>#LifecycleControlAction</IRI>
+        <Literal>Operations altering the execution state of a resource without changing its configuration or scale</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty abbreviatedIRI="rdfs:comment"/>
+        <IRI>#MetricBasedCondition</IRI>
+        <Literal>Evaluates quantitative observability telemetry against defined thresholds (e.g., asserting network latency drops below a defined limit).</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty abbreviatedIRI="rdfs:comment"/>
+        <IRI>#MobilityAction</IRI>
+        <Literal>Operations focused on the spatial distribution of workloads across the infrastructure</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty abbreviatedIRI="rdfs:comment"/>
+        <IRI>#ScalingAction</IRI>
+        <Literal>Interventions designed to dynamically adjust resource allocation, strictly disjoint from
+lifecycle actions</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty abbreviatedIRI="rdfs:comment"/>
+        <IRI>#SecurityPolicyCondition</IRI>
+        <Literal>Validates boundary constraints, ensuring actions do not violate namespace isolations or zero-trust network policies</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty abbreviatedIRI="rdfs:comment"/>
+        <IRI>#SimpleAction</IRI>
+        <Literal>Atomic, stateless, and idempotent operations executed directly against the environment.</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty abbreviatedIRI="rdfs:comment"/>
+        <IRI>#StateBasedCondition</IRI>
+        <Literal>Evaluates the absolute lifecycle phase of the target (e.g., ensuring a target is Running
+before patching).</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty abbreviatedIRI="rdfs:comment"/>
+        <IRI>#TemporalCondition</IRI>
+        <Literal>Imposes time-based constraints, such as cooldown periods between operations, to prevent autonomic oscillation (thrashing)</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty abbreviatedIRI="rdfs:comment"/>
+        <IRI>#TrafficRoutingAction</IRI>
+        <Literal>Interventions operating at the service mesh or API gateway level, manipulating network request flows</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty abbreviatedIRI="rdfs:comment"/>
+        <IRI>#costValue</IRI>
+        <Literal>A normalized numerical representation of predicted systemic disruption</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty abbreviatedIRI="rdfs:comment"/>
+        <IRI>#dependsOn</IRI>
+        <Literal>Establishes a strict chronological prerequisite, mathematically locking an action until fulfilled.</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty abbreviatedIRI="rdfs:comment"/>
+        <IRI>#hasActionID</IRI>
+        <Literal>A unique identifier (e.g., UUID) crucial for tracking stateful sagas.</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty abbreviatedIRI="rdfs:comment"/>
+        <IRI>#hasAuthMechanism</IRI>
+        <Literal>Specifies the required authentication method (e.g., BearerToken, BasicAuth) to be injected by the engine.</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty abbreviatedIRI="rdfs:comment"/>
+        <IRI>#hasCompensation</IRI>
+        <Literal>Explicitly links an action to its exact inverse operation, providing a Saga backward recovery path.</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty abbreviatedIRI="rdfs:comment"/>
+        <IRI>#hasCondition</IRI>
+        <Literal>Umbrella property linking evaluation rules. Sub-properties include hasPreCondition (prerequisites) and hasPostCondition (success validation)</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty abbreviatedIRI="rdfs:comment"/>
+        <IRI>#hasCurrentState</IRI>
+        <Literal>Tracks the live progress of a workflow within the Petri Net abstraction.</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty abbreviatedIRI="rdfs:comment"/>
+        <IRI>#hasExecutionCost</IRI>
+        <Literal>Maps the action to a specific disruption classification</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty abbreviatedIRI="rdfs:comment"/>
+        <IRI>#hasExecutionDelay</IRI>
+        <Literal>Specifies an intentional pause (in seconds) before the action is physically dispatched for execution.</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty abbreviatedIRI="rdfs:comment"/>
+        <IRI>#hasExecutionInstruction</IRI>
+        <Literal>The physical command template (e.g. URL or bash script) to be hydrated at runtime.</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty abbreviatedIRI="rdfs:comment"/>
+        <IRI>#hasExecutionPayload</IRI>
+        <Literal>(Optional) The request body payload template utilized for state-mutating operations.</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty abbreviatedIRI="rdfs:comment"/>
+        <IRI>#hasExecutionProtocol</IRI>
+        <Literal>Specifies the protocol (e.g., REST, SHELL, gRPC) utilized by the stateless executor</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty abbreviatedIRI="rdfs:comment"/>
         <IRI>#hasExecutionStatus</IRI>
-        <Literal>{&quot;PENDING&quot;, &quot;COMPLETED&quot;, &quot;FAILED_POSTCONDITION&quot;, &quot;FAILED_HTTP&quot;, &quot;ROLLED_BACK&quot;}</Literal>
+        <Literal>Represents the explicit terminal or transitional outcome of an action (e.g., PENDING, COMPLETED, FAILED\_HTTP).</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty abbreviatedIRI="rdfs:comment"/>
+        <IRI>#hasExpectedStatusCode</IRI>
+        <Literal>The strictly expected response code used by the executor to determine deterministic, synchronous success.</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty abbreviatedIRI="rdfs:comment"/>
+        <IRI>#hasFunctionalIntent</IRI>
+        <Literal>Strictly categorizes an action under a single operational goal</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty abbreviatedIRI="rdfs:comment"/>
+        <IRI>#hasHttpMethod</IRI>
+        <Literal>(Optional) The HTTP method (e.g., GET, POST) required if the protocol is REST</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty abbreviatedIRI="rdfs:comment"/>
+        <IRI>#hasIdempotencyKey</IRI>
+        <Literal>A deterministic business hash utilized by the reasoner to aggressively deduplicate redundant alerts in the same time window</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty abbreviatedIRI="rdfs:comment"/>
+        <IRI>#hasLastTransitionTimestamp</IRI>
+        <Literal>Records the time of the last state change to detect and mitigate stalled workflows</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty abbreviatedIRI="rdfs:comment"/>
+        <IRI>#hasLayerBoundary</IRI>
+        <Literal>Confines an action to a singular architectural tier, preventing unintended cross-layer interference</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty abbreviatedIRI="rdfs:comment"/>
+        <IRI>#hasPriority</IRI>
+        <Literal>Defines the execution urgency, enabling the reasoning engine to sequence actions in the message broker</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty abbreviatedIRI="rdfs:comment"/>
+        <IRI>#isDecomposedInto</IRI>
+        <Literal>Links a complex workflow to its constituent action primitives.</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty abbreviatedIRI="rdfs:comment"/>
+        <IRI>#isIdempotent</IRI>
+        <Literal>A structural flag affirming the safety of blind retries (always true for simple actions).</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty abbreviatedIRI="rdfs:comment"/>
+        <IRI>#maxRetries</IRI>
+        <Literal>The strictly defined limit of idempotent retry attempts following a transient failure.</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty abbreviatedIRI="rdfs:comment"/>
+        <IRI>#policyQueryString</IRI>
+        <Literal>The declarative code (e.g., a Rego snippet) evaluated against the cluster state for a given condition.</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty abbreviatedIRI="rdfs:comment"/>
+        <IRI>#targetsEntity</IRI>
+        <Literal>Acts as the semantic bridge connecting the action to an external structural node</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty abbreviatedIRI="rdfs:comment"/>
+        <IRI>#timeoutSeconds</IRI>
+        <Literal>The maximum permissible duration before the manager declares a divergence.</Literal>
     </AnnotationAssertion>
 </Ontology>
 

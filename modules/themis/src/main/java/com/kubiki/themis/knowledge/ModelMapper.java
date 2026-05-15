@@ -23,6 +23,7 @@ public class ModelMapper {
     private static final String BINDING_PROTOCOL = "protocol";
     private static final String BINDING_STEP = "step";
     private static final String BINDING_COMPENSATION = "compensation";
+    private static final String BINDING_EXPECTED_STATUS = "expectedStatusCode";
 
     private static final String BINDING_PRE_ID = "preId";
     private static final String BINDING_PRE_TYPE = "preType";
@@ -72,8 +73,21 @@ public class ModelMapper {
                 .data(new HashMap<>())
                 .preConditions(pre)
                 .postConditions(post)
+                .expectedStatusCode(getExpectedStatusCode(first, protocol))
                 .build();
         });
+    }
+
+    private int getExpectedStatusCode(BindingSet bs, Protocol protocol) {
+        String val = getOptionalString(bs, BINDING_EXPECTED_STATUS);
+        if (val != null) {
+            try {
+                return Integer.parseInt(val);
+            } catch (NumberFormatException e) {
+                // fallback to default
+            }
+        }
+        return protocol == Protocol.SHELL ? 0 : 200;
     }
 
     private String getOptionalString(BindingSet bs, String name) {

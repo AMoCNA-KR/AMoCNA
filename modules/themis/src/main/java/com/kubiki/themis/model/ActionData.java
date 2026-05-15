@@ -24,7 +24,8 @@ public sealed interface ActionData
         HttpMethod method,
         String payload,
         List<ConditionData> preConditions,
-        List<ConditionData> postConditions
+        List<ConditionData> postConditions,
+        int expectedStatusCode
     ) implements ActionData {}
 
     @Builder

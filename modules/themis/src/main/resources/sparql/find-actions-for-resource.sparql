@@ -1,4 +1,4 @@
-SELECT ?action ?intent ?target ?protocol ?instruction ?method ?payload 
+SELECT ?action ?intent ?target ?protocol ?instruction ?method ?payload ?expectedStatusCode
        ?preId ?preType ?prePolicy 
        ?postId ?postType ?postPolicy 
 WHERE { 
@@ -9,6 +9,7 @@ WHERE {
   OPTIONAL { ?action moam:hasExecutionInstruction ?instruction } . 
   OPTIONAL { ?action moam:hasHttpMethod ?method } . 
   OPTIONAL { ?action moam:hasExecutionPayload ?payload } . 
+  OPTIONAL { ?action moam:hasExpectedStatusCode ?expectedStatusCode } . 
   OPTIONAL { 
     ?action moam:hasPreCondition ?preId . 
     ?preId a ?preType . 

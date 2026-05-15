@@ -12,6 +12,7 @@ MODULES=(
     "Metrics-Adapter"
     "Business-Demo/MetricExporter"
     "Business-Demo/KubernetesManagment"
+    "modules/themis/deployment"
     "modules/metis"
 )
 
