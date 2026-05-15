@@ -22,9 +22,6 @@ import java.util.UUID;
  * SagaManager (MAPE-Monitor/Analyze):
  * Handles execution feedback from Themis and manages workflow state/compensations.
  * Evaluates Post-conditions for verification.
- * 
- * Petri Net Rule: A parent workflow (Join Node) only completes when ALL its 
- * constituent children have reached the terminal SUCCESS state.
  */
 @Service
 public class SagaManager {

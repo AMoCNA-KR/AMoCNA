@@ -10,6 +10,7 @@ import com.kubiki.palamedes.pipeline.MapePipe;
 import com.kubiki.palamedes.pipeline.WorkflowContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 import java.util.Optional;
@@ -17,8 +18,8 @@ import java.util.Optional;
 /**
  * SafetyValidatorPipe (MAPE-Plan/Execute):
  * Verifies PreConditions before an action is transitioned to VALIDATED.
- * Industrial Rule: Logic is delegated to strategies; this pipe is purely orchestral.
  */
+@Order(3)
 @Component
 public class SafetyValidatorPipe implements MapePipe {
     private static final Logger log = LoggerFactory.getLogger(SafetyValidatorPipe.class);
@@ -51,8 +52,11 @@ public class SafetyValidatorPipe implements MapePipe {
             return false;
         }
 
-        log.info("Action {} safety checks PASSED", context.actionId());
-        return !stateRepository.transition(context.actionId(), WorkflowState.PLANNED, WorkflowState.VALIDATED);
+        boolean success = stateRepository.transition(context.actionId(), WorkflowState.PLANNED, WorkflowState.VALIDATED);
+        if (success) {
+            context.metadata().put("currentState", WorkflowState.VALIDATED.getFragment());
+        }
+        return !success;
     }
 
     private boolean evaluatePreConditions(WorkflowContext context) {

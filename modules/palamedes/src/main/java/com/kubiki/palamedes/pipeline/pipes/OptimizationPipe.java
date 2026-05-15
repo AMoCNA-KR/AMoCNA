@@ -4,13 +4,14 @@ import com.kubiki.palamedes.pipeline.MapePipe;
 import com.kubiki.palamedes.pipeline.WorkflowContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 /**
  * OptimizationPipe (MAPE-Plan):
  * Classifies the action's goal and scope based on MoaMont properties.
- * In a future industrial version, this would perform cost-based path selection.
  */
+@Order(2)
 @Component
 public class OptimizationPipe implements MapePipe {
     private static final Logger log = LoggerFactory.getLogger(OptimizationPipe.class);

@@ -10,6 +10,7 @@ import com.kubiki.palamedes.pipeline.WorkflowContext;
 import org.eclipse.rdf4j.model.IRI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -19,8 +20,8 @@ import java.util.UUID;
  * HtnPlannerPipe (MAPE-Plan):
  * Decomposes INITIAL workflows and transitions them to PLANNED.
  * Materializes sequential steps for ComplexWorkflows in the graph.
- * Industrial Rule: Incremental Decomposition. Only expands one level at a time.
  */
+@Order(1)
 @Component
 public class HtnPlannerPipe implements MapePipe {
     private static final Logger log = LoggerFactory.getLogger(HtnPlannerPipe.class);
@@ -50,8 +51,11 @@ public class HtnPlannerPipe implements MapePipe {
             log.debug("No decomposition needed for SimpleAction {}", context.actionId());
         }
 
-        // Atomic transition to PLANNED
-        return !stateRepository.transition(context.actionId(), WorkflowState.INITIAL, WorkflowState.PLANNED);
+        boolean success = stateRepository.transition(context.actionId(), WorkflowState.INITIAL, WorkflowState.PLANNED);
+        if (success) {
+            context.metadata().put("currentState", WorkflowState.PLANNED.getFragment());
+        }
+        return !success;
     }
 
     private void decomposeWorkflow(ActionData.ComplexWorkflow workflow, IRI parentIri) {

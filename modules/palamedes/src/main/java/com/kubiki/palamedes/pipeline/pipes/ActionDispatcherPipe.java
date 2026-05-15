@@ -10,6 +10,7 @@ import com.kubiki.palamedes.pipeline.MapePipe;
 import com.kubiki.palamedes.pipeline.WorkflowContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 import java.util.Map;
@@ -18,6 +19,7 @@ import java.util.Map;
  * ActionDispatcherPipe (MAPE-Execute):
  * Hydrates and dispatches actions that are VALIDATED.
  */
+@Order(4)
 @Component
 public class ActionDispatcherPipe implements MapePipe {
     private static final Logger log = LoggerFactory.getLogger(ActionDispatcherPipe.class);

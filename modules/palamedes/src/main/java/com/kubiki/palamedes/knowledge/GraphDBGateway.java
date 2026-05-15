@@ -19,6 +19,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Service
 public class GraphDBGateway {
@@ -185,14 +186,15 @@ public class GraphDBGateway {
     }
 
     public IRI findCompensation(IRI actionIri) {
-        IRI hasCompensation = ontologyRegistry.moam("hasCompensation");
-        return sparqlClient.executeWithConnection(conn -> {
-            var statements = conn.getStatements(actionIri, hasCompensation, null);
-            if (statements.hasNext()) {
-                return (IRI) statements.next().getObject();
-            }
-            return null;
-        });
+        String sparql = sparqlQueryBuilder.builder()
+                .template("find-compensation")
+                .variable("actionIri", actionIri)
+                .build();
+        List<BindingSet> results = sparqlClient.executeQuery(sparql, Stream::toList);
+        if (!results.isEmpty()) {
+            return (IRI) results.get(0).getValue("compensationIntent");
+        }
+        return null;
     }
 
     public List<AnomalyTarget> findAnomalies() {

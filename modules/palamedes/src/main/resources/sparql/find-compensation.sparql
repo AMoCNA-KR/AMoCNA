@@ -1,0 +1,4 @@
+SELECT ?compensationIntent WHERE {
+    ${actionIri} a ?intent .
+    ?intent moam:hasCompensation ?compensationIntent .
+}
