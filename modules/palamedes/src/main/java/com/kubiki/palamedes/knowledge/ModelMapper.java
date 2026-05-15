@@ -24,6 +24,10 @@ public class ModelMapper {
     private static final String BINDING_STEP = "step";
     private static final String BINDING_COMPENSATION = "compensation";
     private static final String BINDING_EXPECTED_STATUS = "expectedStatusCode";
+    private static final String BINDING_AUTH_MECHANISM = "authMechanism";
+    private static final String BINDING_TIMEOUT = "timeoutSeconds";
+    private static final String BINDING_IS_IDEMPOTENT = "isIdempotent";
+    private static final String BINDING_MAX_RETRIES = "maxRetries";
 
     private static final String BINDING_PRE_ID = "preId";
     private static final String BINDING_PRE_TYPE = "preType";
@@ -59,14 +63,14 @@ public class ModelMapper {
         Result<String> instructionResult = getString(first, BINDING_INSTRUCTION);
 
         return Result.combine(protocolResult, targetResult, instructionResult, (protocol, target, instruction) -> {
-            List<ActionData.ConditionData> pre = extractConditions(bindings, BINDING_PRE_ID, BINDING_PRE_TYPE, BINDING_PRE_POLICY);
-            List<ActionData.ConditionData> post = extractConditions(bindings, BINDING_POST_ID, BINDING_POST_TYPE, BINDING_POST_POLICY);
+            List<ActionData.Condition> pre = extractConditions(bindings, BINDING_PRE_ID, BINDING_PRE_TYPE, BINDING_PRE_POLICY);
+            List<ActionData.Condition> post = extractConditions(bindings, BINDING_POST_ID, BINDING_POST_TYPE, BINDING_POST_POLICY);
 
             return ActionData.SimpleAction.builder()
                 .id(actionId)
                 .functionalIntent(intent)
                 .protocol(protocol)
-                .targetIri(target)
+                .target(target)
                 .instruction(instruction)
                 .method(getHttpMethod(first).value())
                 .payload(getOptionalString(first, BINDING_PAYLOAD))
@@ -74,6 +78,10 @@ public class ModelMapper {
                 .preConditions(pre)
                 .postConditions(post)
                 .expectedStatusCode(getExpectedStatusCode(first, protocol))
+                .authMechanism(getOptionalString(first, BINDING_AUTH_MECHANISM))
+                .timeoutSeconds(getOptionalInt(first, BINDING_TIMEOUT, 30))
+                .isIdempotent(getOptionalBoolean(first, BINDING_IS_IDEMPOTENT, true))
+                .maxRetries(getOptionalInt(first, BINDING_MAX_RETRIES, 3))
                 .build();
         });
     }
@@ -91,7 +99,28 @@ public class ModelMapper {
     }
 
     private String getOptionalString(BindingSet bs, String name) {
-        return getString(bs, name).value();
+        Value val = bs.getValue(name);
+        return val != null ? val.stringValue() : null;
+    }
+
+    private int getOptionalInt(BindingSet bs, String name, int defaultValue) {
+        String val = getOptionalString(bs, name);
+        if (val != null) {
+            try {
+                return Integer.parseInt(val);
+            } catch (NumberFormatException e) {
+                // fallback
+            }
+        }
+        return defaultValue;
+    }
+
+    private boolean getOptionalBoolean(BindingSet bs, String name, boolean defaultValue) {
+        String val = getOptionalString(bs, name);
+        if (val != null) {
+            return Boolean.parseBoolean(val);
+        }
+        return defaultValue;
     }
 
     private Result<ActionData> mapComplexWorkflow(
@@ -102,6 +131,9 @@ public class ModelMapper {
     ) {
         List<ActionData> steps = new ArrayList<>();
         Map<IRI, ActionData> compensations = new HashMap<>();
+        
+        // We assume target is the same for the whole workflow, taken from the first binding
+        IRI target = (IRI) bindings.get(0).getValue(BINDING_TARGET);
 
         for (BindingSet bs : bindings) {
             Result<IRI> stepIdResult = getIRI(bs, BINDING_STEP);
@@ -132,16 +164,16 @@ public class ModelMapper {
             }
         }
 
-        return Result.success(new ActionData.ComplexWorkflow(actionId, intent, steps, compensations));
+        return Result.success(new ActionData.ComplexWorkflow(actionId, intent, target, steps, compensations));
     }
 
-    private List<ActionData.ConditionData> extractConditions(
+    private List<ActionData.Condition> extractConditions(
         List<BindingSet> bindings,
         String idVar,
         String typeVar,
         String policyVar
     ) {
-        Map<IRI, ActionData.ConditionData> conditions = new LinkedHashMap<>();
+        Map<IRI, ActionData.Condition> conditions = new LinkedHashMap<>();
         for (BindingSet bs : bindings) {
             Result<IRI> idResult = getIRI(bs, idVar);
             if (!idResult.isSuccess()) {
@@ -156,7 +188,7 @@ public class ModelMapper {
                 continue;
             }
             IRI id = idResult.value();
-            conditions.putIfAbsent(id, new ActionData.ConditionData(id, typeResult.value(), policyResult.value()));
+            conditions.putIfAbsent(id, new ActionData.Condition(id, typeResult.value(), policyResult.value()));
         }
         return List.copyOf(conditions.values());
     }

@@ -45,5 +45,11 @@ public class SparqlClient {
             action.accept(connection);
         }
     }
+
+    public <T> T executeWithConnection(java.util.function.Function<RepositoryConnection, T> action) {
+        try (RepositoryConnection connection = repository.getConnection()) {
+            return action.apply(connection);
+        }
+    }
 }
 

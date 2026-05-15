@@ -22,7 +22,6 @@ public class SparqlQueryBuilder {
     }
 
     public class QueryBuilder {
-        public static final String PREFIX_MOAM = "PREFIX moam: <";
         private String templateName;
         private final Map<String, Object> variables = new HashMap<>();
 
@@ -41,12 +40,19 @@ public class SparqlQueryBuilder {
             StringBuilder sb = new StringBuilder();
             
             // Inject standard prefixes
-            sb.append(PREFIX_MOAM).append(ontologyRegistry.getMoamNamespace()).append(">\n");
+            sb.append("PREFIX moam: <").append(ontologyRegistry.getMoamNamespace()).append(">\n");
+            sb.append("PREFIX cnee: <").append(ontologyRegistry.getCneeNamespace()).append(">\n");
+            sb.append("PREFIX bridge: <").append(ontologyRegistry.getBridgeNamespace()).append(">\n");
             
             String processed = rawTemplate;
             for (Map.Entry<String, Object> entry : variables.entrySet()) {
                 processed = processed.replace("${" + entry.getKey() + "}", formatValue(entry.getValue()));
             }
+            
+            // Also replace namespace placeholders if they exist in the raw template
+            processed = processed.replace("${moamNamespace}", ontologyRegistry.getMoamNamespace());
+            processed = processed.replace("${cneeNamespace}", ontologyRegistry.getCneeNamespace());
+            processed = processed.replace("${bridgeNamespace}", ontologyRegistry.getBridgeNamespace());
             
             sb.append(processed);
             return sb.toString();
@@ -70,29 +76,14 @@ public class SparqlQueryBuilder {
             for (int i = 0; i < value.length(); i++) {
                 char c = value.charAt(i);
                 switch (c) {
-                    case '\\':
-                        escaped.append("\\\\");
-                        break;
-                    case '"':
-                        escaped.append("\\\"");
-                        break;
-                    case '\n':
-                        escaped.append("\\n");
-                        break;
-                    case '\r':
-                        escaped.append("\\r");
-                        break;
-                    case '\t':
-                        escaped.append("\\t");
-                        break;
-                    case '\b':
-                        escaped.append("\\b");
-                        break;
-                    case '\f':
-                        escaped.append("\\f");
-                        break;
-                    default:
-                        escaped.append(c);
+                    case '\\': escaped.append("\\\\"); break;
+                    case '"': escaped.append("\\\""); break;
+                    case '\n': escaped.append("\\n"); break;
+                    case '\r': escaped.append("\\r"); break;
+                    case '\t': escaped.append("\\t"); break;
+                    case '\b': escaped.append("\\b"); break;
+                    case '\f': escaped.append("\\f"); break;
+                    default: escaped.append(c);
                 }
             }
             return escaped.toString();

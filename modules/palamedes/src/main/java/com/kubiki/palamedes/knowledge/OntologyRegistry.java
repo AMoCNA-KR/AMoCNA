@@ -20,7 +20,23 @@ public class OntologyRegistry {
         return valueFactory.createIRI(palamedesProperties.ontology().moamNamespace(), fragment);
     }
 
+    public IRI cnee(String fragment) {
+        return valueFactory.createIRI(palamedesProperties.ontology().cneeNamespace(), fragment);
+    }
+
+    public IRI bridge(String fragment) {
+        return valueFactory.createIRI(palamedesProperties.ontology().bridgeNamespace(), fragment);
+    }
+
     public String getMoamNamespace() {
         return palamedesProperties.ontology().moamNamespace();
+    }
+
+    public String getCneeNamespace() {
+        return palamedesProperties.ontology().cneeNamespace();
+    }
+
+    public String getBridgeNamespace() {
+        return palamedesProperties.ontology().bridgeNamespace();
     }
 }
