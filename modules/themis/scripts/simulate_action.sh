@@ -23,50 +23,75 @@ echo "---------------------------------------------------"
 
 if [ "$PROTOCOL" == "SHELL" ]; then
   # Shell Example
-  PAYLOAD='{
-    "actionId": "'$ACTION_ID'",
-    "protocol": "SHELL",
-    "instruction": "echo \"Hello Themis - ActionID: '$ACTION_ID'\"; exit '$EXPECTED_STATUS'",
-    "method": null,
-    "payload": null,
-    "authMechanism": "'$AUTH_MECHANISM'",
-    "timeoutSeconds": 10,
-    "isIdempotent": true,
-    "maxRetries": 3,
-    "expectedStatusCode": '$EXPECTED_STATUS'
-  }'
+  # Using jq --arg to safely build JSON without shell escaping hell
+  ACTION_PAYLOAD=$(jq -n \
+    --arg id "$ACTION_ID" \
+    --arg proto "SHELL" \
+    --arg inst "echo \"Hello Themis - ActionID: $ACTION_ID\"; exit $EXPECTED_STATUS" \
+    --arg auth "$AUTH_MECHANISM" \
+    --argjson timeout 10 \
+    --argjson idempotent true \
+    --argjson retries 3 \
+    --argjson status "$EXPECTED_STATUS" \
+    '{
+      actionId: $id,
+      protocol: $proto,
+      instruction: $inst,
+      method: null,
+      payload: null,
+      authMechanism: $auth,
+      timeoutSeconds: $timeout,
+      isIdempotent: $idempotent,
+      maxRetries: $retries,
+      expectedStatusCode: $status
+    }')
 else
   # REST Example
-  PAYLOAD='{
-    "actionId": "'$ACTION_ID'",
-    "protocol": "REST",
-    "instruction": "http://localhost:8080/actuator/health",
-    "method": "GET",
-    "payload": null,
-    "authMechanism": "'$AUTH_MECHANISM'",
-    "timeoutSeconds": 10,
-    "isIdempotent": true,
-    "maxRetries": 3,
-    "expectedStatusCode": '$EXPECTED_STATUS'
-  }'
+  ACTION_PAYLOAD=$(jq -n \
+    --arg id "$ACTION_ID" \
+    --arg proto "REST" \
+    --arg inst "http://localhost:8080/actuator/health" \
+    --arg auth "$AUTH_MECHANISM" \
+    --argjson timeout 10 \
+    --argjson idempotent true \
+    --argjson retries 3 \
+    --argjson status "$EXPECTED_STATUS" \
+    '{
+      actionId: $id,
+      protocol: $proto,
+      instruction: $inst,
+      method: "GET",
+      payload: null,
+      authMechanism: $auth,
+      timeoutSeconds: $timeout,
+      isIdempotent: $idempotent,
+      maxRetries: $retries,
+      expectedStatusCode: $status
+    }')
 fi
 
-# Use jq to format payload correctly
-ESCAPED_PAYLOAD=$(echo "$PAYLOAD" | jq -c .)
+# Build the final RabbitMQ Management API wrapper JSON
+# This ensures the internal JSON is string-escaped correctly
+RABBIT_WRAPPER=$(jq -n \
+  --arg p "$ACTION_PAYLOAD" \
+  '{
+    properties: {content_type: "application/json"},
+    routing_key: "action",
+    payload: $p,
+    payload_encoding: "string"
+  }')
 
 # Publish to RabbitMQ using Management API
-curl -s -u "$RABBIT_USER:$RABBIT_PASS" -X POST "http://$RABBIT_HOST:$RABBIT_PORT/api/exchanges/%2f/amocna.direct.exchange/publish" \
+# Using --data-binary @- to send JSON from stdin safely
+RESPONSE=$(echo "$RABBIT_WRAPPER" | curl -s -u "$RABBIT_USER:$RABBIT_PASS" \
+  -X POST "http://$RABBIT_HOST:$RABBIT_PORT/api/exchanges/%2f/amocna.direct.exchange/publish" \
   -H "content-type:application/json" \
-  -d '{
-  "properties": {"content_type":"application/json"},
-  "routing_key": "action",
-  "payload": "'$(echo "$ESCAPED_PAYLOAD" | sed 's/"/\\"/g')'",
-  "payload_encoding": "string"
-}' | grep -q "routed\":true"
+  --data-binary @-)
 
-if [ $? -eq 0 ]; then
+if echo "$RESPONSE" | grep -q "routed\":true"; then
   echo "SUCCESS: Action published to amocna.action.queue"
-  echo "Payload: $ESCAPED_PAYLOAD"
+  echo "Payload: $ACTION_PAYLOAD"
 else
-  echo "ERROR: Failed to publish action. Is RabbitMQ up at $RABBIT_HOST:$RABBIT_PORT?"
+  echo "ERROR: Failed to publish action."
+  echo "Response: $RESPONSE"
 fi
