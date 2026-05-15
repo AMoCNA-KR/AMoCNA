@@ -2,6 +2,9 @@ package com.kubiki.palamedes.model;
 
 public enum ExecutionStatus {
     IN_PROGRESS,
-    SUCCESS,
-    FAILED
+    COMPLETED,
+    FAILED_HTTP,
+    FAILED_TIMEOUT,
+    FAILED_AUTH,
+    FAILED_INTERNAL
 }

@@ -11,28 +11,42 @@ public sealed interface ActionData
     
     IRI id();
     String functionalIntent();
+    IRI target();
+    List<Condition> preConditions();
+    List<Condition> postConditions();
 
-    record ConditionData(IRI id, IRI type, String policy) {}
+    record Condition(IRI id, IRI type, String policy) {}
+    
     @Builder
     record SimpleAction(
         IRI id,
         String functionalIntent,
         Protocol protocol,
         String instruction,
-        IRI targetIri,
+        IRI target,
         Map<String, String> data,
         HttpMethod method,
         String payload,
-        List<ConditionData> preConditions,
-        List<ConditionData> postConditions,
-        int expectedStatusCode
+        List<Condition> preConditions,
+        List<Condition> postConditions,
+        int expectedStatusCode,
+        String authMechanism,
+        int timeoutSeconds,
+        boolean isIdempotent,
+        int maxRetries
     ) implements ActionData {}
 
     @Builder
     record ComplexWorkflow(
         IRI id,
         String functionalIntent,
+        IRI target,
         List<ActionData> steps,
         Map<IRI, ActionData> compensations
-    ) implements ActionData {}
+    ) implements ActionData {
+        @Override
+        public List<Condition> preConditions() { return List.of(); }
+        @Override
+        public List<Condition> postConditions() { return List.of(); }
+    }
 }
