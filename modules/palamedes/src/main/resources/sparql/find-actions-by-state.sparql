@@ -1,0 +1,12 @@
+PREFIX moam: <${moamNamespace}>
+PREFIX cnee: <${cneeNamespace}>
+
+SELECT ?action ?type ?resource ?resourceName
+WHERE {
+  ?action moam:hasCurrentState moam:${stateFragment} .
+  ?action rdf:type ?type .
+  ?action moam:targetsEntity ?resource .
+  ?resource cnee:resourceName ?resourceName .
+  
+  FILTER(?type != moam:AutonomicAction)
+}

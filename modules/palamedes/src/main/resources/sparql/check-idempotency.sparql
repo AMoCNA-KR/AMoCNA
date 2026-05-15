@@ -1,0 +1,8 @@
+PREFIX moam: <${moamNamespace}>
+
+SELECT ?window ?lastTransition
+WHERE {
+  ?action moam:idempotencyWindowSeconds ?window .
+  ?action moam:hasLastTransitionTimestamp ?lastTransition .
+  FILTER(?action = ${actionIri})
+}

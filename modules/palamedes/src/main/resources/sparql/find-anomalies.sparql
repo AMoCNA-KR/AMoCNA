@@ -1,0 +1,32 @@
+# Finds resources in an anomaly state that don't have an active management workflow.
+# Variables: ${cneeNamespace}, ${bridgeNamespace}, ${moamNamespace}
+
+PREFIX cnee: <${cneeNamespace}>
+PREFIX bridge: <${bridgeNamespace}>
+PREFIX moam: <${moamNamespace}>
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX owl: <http://www.w3.org/2002/07/owl#>
+
+SELECT ?resource ?resourceName ?intent
+WHERE {
+  # 1. Find resource and its current state
+  ?resource cnee:hasCurrentState ?state .
+  ?state rdf:type ?anomalyType .
+  ?resource cnee:resourceName ?resourceName .
+  
+  # 2. Map anomaly type to remediation intent via BridgeOnt
+  # This follows the 'isResolvedByIntent' restriction in BridgeOnt
+  ?anomalyType rdfs:subClassOf ?restriction .
+  ?restriction rdf:type owl:Restriction .
+  ?restriction owl:onProperty bridge:isResolvedByIntent .
+  ?restriction owl:someValuesFrom ?intent .
+  
+  # 3. Filter out resources that already have an active action
+  FILTER NOT EXISTS {
+    ?action moam:targetsEntity ?resource .
+    ?action moam:hasCurrentState ?currentState .
+    # Filter for active states (tokens in the Petri Net)
+    FILTER(?currentState IN (moam:State_Initial, moam:State_Planned, moam:State_Validated, moam:State_InProgress, moam:State_Compensating))
+  }
+}
