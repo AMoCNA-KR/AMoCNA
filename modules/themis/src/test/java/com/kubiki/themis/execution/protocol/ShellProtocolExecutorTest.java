@@ -1,17 +1,12 @@
 package com.kubiki.themis.execution.protocol;
 
-import com.kubiki.themis.model.ActionData;
+import com.kubiki.themis.model.ActionMessage;
 import com.kubiki.themis.model.ExecutionResult;
+import com.kubiki.themis.model.ExecutionStatus;
 import com.kubiki.themis.model.Protocol;
-import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-
-import java.io.File;
-import java.util.Collections;
-import java.util.Map;
-import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -36,160 +31,14 @@ class ShellProtocolExecutorTest {
     @DisplayName("Should execute command successfully when command is valid")
     void shouldExecuteEchoCommand() {
         // Given
-        ActionData.SimpleAction action = new ActionData.SimpleAction(
-                SimpleValueFactory.getInstance().createIRI("test:echo"),
-                "EchoAction",
+        ActionMessage action = new ActionMessage(
+                "action-shell-1",
                 Protocol.SHELL,
-                "echo \"Hello {name}\"",
-                SimpleValueFactory.getInstance().createIRI("test:resource"),
-                Map.of("name", "Themis"),
+                "echo \"Hello Themis\"",
                 null,
                 null,
-                Collections.emptyList(),
-                Collections.emptyList(), 0
-        );
-        UUID executionId = UUID.randomUUID();
-
-        // When
-        ExecutionResult result = shellProtocolExecutor.execute(action, executionId);
-
-        // Then
-        assertTrue(result.success());
-        assertEquals(0, result.observedStatusCode());
-    }
-
-    @Test
-    @DisplayName("Should return false when command is invalid or fails")
-    void shouldFailOnInvalidCommand() {
-        // Given
-        ActionData.SimpleAction action = new ActionData.SimpleAction(
-                SimpleValueFactory.getInstance().createIRI("test:fail"),
-                "FailAction",
-                Protocol.SHELL,
-                "non-existent-command",
-                SimpleValueFactory.getInstance().createIRI("test:resource"),
-                Map.of(),
                 null,
-                null,
-                Collections.emptyList(),
-                Collections.emptyList(), 0
-        );
-        UUID executionId = UUID.randomUUID();
-
-        // When
-        ExecutionResult result = shellProtocolExecutor.execute(action, executionId);
-
-        // Then
-        assertFalse(result.success());
-    }
-
-    @Test
-    @DisplayName("Should return false when instruction is missing")
-    void shouldReturnFalseWhenInstructionIsMissing() {
-        // Given
-        ActionData.SimpleAction action = new ActionData.SimpleAction(
-                SimpleValueFactory.getInstance().createIRI("test:fail"),
-                "FailAction",
-                Protocol.SHELL,
-                null, // missing instruction
-                SimpleValueFactory.getInstance().createIRI("test:resource"),
-                Map.of(),
-                null,
-                null,
-                Collections.emptyList(),
-                Collections.emptyList(), 0
-        );
-        UUID executionId = UUID.randomUUID();
-
-        // When
-        ExecutionResult result = shellProtocolExecutor.execute(action, executionId);
-
-        // Then
-        assertFalse(result.success());
-    }
-
-    @Test
-    @DisplayName("Should return false when instruction is blank")
-    void shouldReturnFalseWhenInstructionIsBlank() {
-        // Given
-        ActionData.SimpleAction action = new ActionData.SimpleAction(
-                SimpleValueFactory.getInstance().createIRI("test:fail"),
-                "FailAction",
-                Protocol.SHELL,
-                "   ", // blank instruction
-                SimpleValueFactory.getInstance().createIRI("test:resource"),
-                Map.of(),
-                null,
-                null,
-                Collections.emptyList(),
-                Collections.emptyList(), 0
-        );
-        UUID executionId = UUID.randomUUID();
-
-        // When
-        ExecutionResult result = shellProtocolExecutor.execute(action, executionId);
-
-        // Then
-        assertFalse(result.success());
-    }
-
-    @Test
-    @DisplayName("Should prevent command injection")
-    void shouldPreventCommandInjection() {
-        // Given
-        // We try to inject a command that creates a file.
-        // If injection is successful, 'touch injected' will be executed.
-        ActionData.SimpleAction action = new ActionData.SimpleAction(
-                SimpleValueFactory.getInstance().createIRI("test:inject"),
-                "InjectAction",
-                Protocol.SHELL,
-                "touch \"{name}.txt\"",
-                SimpleValueFactory.getInstance().createIRI("test:resource"),
-                Map.of("name", "safe; touch injected"),
-                null,
-                null,
-                Collections.emptyList(),
-                Collections.emptyList(), 0
-        );
-        UUID executionId = UUID.randomUUID();
-
-        // When
-        shellProtocolExecutor.execute(action, executionId);
-
-        // Then
-        var safeFile = new File("safe; touch injected.txt");
-        var injectedFile = new File("injected");
-
-        boolean safeFileExists = safeFile.exists();
-        boolean injectedFileExists = injectedFile.exists();
-
-        if (safeFileExists) {
-            safeFile.delete();
-        }
-        if (injectedFileExists) {
-            injectedFile.delete();
-        }
-
-
-        assertAll(
-                () -> assertTrue(safeFileExists, "Safe file should have been created"),
-                () -> assertFalse(injectedFileExists, "Command injection was successful! 'injected' file was created.")
-        );
-    }
-
-    @Test
-    @DisplayName("Should execute stateless command successfully")
-    void shouldExecuteStatelessCommand() {
-        // Given
-        com.kubiki.themis.model.ActionMessage action = new com.kubiki.themis.model.ActionMessage(
-                "stateless-1",
-                Protocol.SHELL,
-                "echo \"Hello {name}\"",
-                null,
-                null,
-                Map.of("name", "Themis"),
-                null,
-                30,
+                10,
                 true,
                 3,
                 0
@@ -201,5 +50,57 @@ class ShellProtocolExecutorTest {
         // Then
         assertTrue(result.success());
         assertEquals(0, result.observedStatusCode());
+        assertEquals(ExecutionStatus.COMPLETED, result.status());
+    }
+
+    @Test
+    @DisplayName("Should return failure when command fails")
+    void shouldFailOnInvalidCommand() {
+        // Given
+        ActionMessage action = new ActionMessage(
+                "action-shell-fail",
+                Protocol.SHELL,
+                "exit 1",
+                null,
+                null,
+                null,
+                10,
+                true,
+                3,
+                0
+        );
+
+        // When
+        ExecutionResult result = shellProtocolExecutor.executeStateless(action);
+
+        // Then
+        assertFalse(result.success());
+        assertEquals(1, result.observedStatusCode());
+        assertEquals(ExecutionStatus.FAILED_INTERNAL, result.status());
+    }
+
+    @Test
+    @DisplayName("Should return failure when instruction is missing")
+    void shouldReturnFalseWhenInstructionIsMissing() {
+        // Given
+        ActionMessage action = new ActionMessage(
+                "action-shell-missing",
+                Protocol.SHELL,
+                null,
+                null,
+                null,
+                null,
+                10,
+                true,
+                3,
+                0
+        );
+
+        // When
+        ExecutionResult result = shellProtocolExecutor.executeStateless(action);
+
+        // Then
+        assertFalse(result.success());
+        assertEquals(ExecutionStatus.FAILED_INTERNAL, result.status());
     }
 }

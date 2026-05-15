@@ -43,7 +43,6 @@ public class ShellProtocolExecutor implements ProtocolExecutor {
             ProcessBuilder pb = new ProcessBuilder();
             Process process = pb.command(BIN_SH, "-c", command).start();
             
-            // Capture output
             Thread.ofVirtual().start(() -> readStream(process.inputReader(), "STDOUT", actionId));
             Thread.ofVirtual().start(() -> readStream(process.errorReader(), "STDERR", actionId));
 

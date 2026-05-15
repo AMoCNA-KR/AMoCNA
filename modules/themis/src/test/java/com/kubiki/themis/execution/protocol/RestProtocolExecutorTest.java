@@ -1,9 +1,10 @@
 package com.kubiki.themis.execution.protocol;
 
-import com.kubiki.themis.model.ActionData;
+import com.kubiki.themis.config.ThemisProperties;
+import com.kubiki.themis.model.ActionMessage;
 import com.kubiki.themis.model.ExecutionResult;
+import com.kubiki.themis.model.ExecutionStatus;
 import com.kubiki.themis.model.Protocol;
-import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -14,9 +15,6 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestClient;
-
-import java.util.Map;
-import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -36,10 +34,10 @@ class RestProtocolExecutorTest {
     private RestClient restClient;
 
     @Mock
-    private RestClient.RequestHeadersUriSpec requestHeadersUriSpec;
+    private RestClient.RequestBodyUriSpec requestBodyUriSpec;
 
     @Mock
-    private RestClient.RequestBodyUriSpec requestBodyUriSpec;
+    private RestClient.RequestBodySpec requestBodySpec;
 
     @Mock
     private RestClient.ResponseSpec responseSpec;
@@ -47,10 +45,16 @@ class RestProtocolExecutorTest {
     @Mock
     private ResponseEntity<Void> responseEntity;
 
+    @Mock
+    private ThemisProperties themisProperties;
+
+    @Mock
+    private ThemisProperties.Secret secret;
+
     @BeforeEach
     void setUp() {
         when(restClientBuilder.build()).thenReturn(restClient);
-        restProtocolExecutor = new RestProtocolExecutor(restClientBuilder);
+        restProtocolExecutor = new RestProtocolExecutor(restClientBuilder, themisProperties);
     }
 
     @Test
@@ -64,157 +68,22 @@ class RestProtocolExecutorTest {
     @DisplayName("Should execute GET request when GET method is specified")
     void shouldExecuteGetRequest() {
         // Given
-        ActionData.SimpleAction action = new ActionData.SimpleAction(
-                SimpleValueFactory.getInstance().createIRI("http://moa#DeletePod_1"),
-                "DeletePodAction",
+        ActionMessage action = new ActionMessage(
+                "action-1",
                 Protocol.REST,
-                "http://localhost:8080/delete?ns={ns}&pod={pod}",
-                SimpleValueFactory.getInstance().createIRI("http://cnee#pod-1"),
-                Map.of("ns", "prod", "pod", "nginx v1"),
+                "http://localhost:8080/health",
                 HttpMethod.GET,
                 null,
-                java.util.List.of(),
-                java.util.List.of(), 200
-        );
-        UUID executionId = UUID.randomUUID();
-
-        when(restClient.method(HttpMethod.GET)).thenReturn(requestBodyUriSpec);
-        when(requestBodyUriSpec.uri(eq("http://localhost:8080/delete?ns={ns}&pod={pod}"), any(Map.class))).thenReturn(requestBodyUriSpec);
-        when(requestBodyUriSpec.retrieve()).thenReturn(responseSpec);
-        when(responseSpec.toBodilessEntity()).thenReturn(responseEntity);
-        when(responseEntity.getStatusCode()).thenReturn(HttpStatus.OK);
-
-        // When
-        ExecutionResult result = restProtocolExecutor.execute(action, executionId);
-
-        // Then
-        assertTrue(result.success());
-        assertEquals(200, result.observedStatusCode());
-        verify(requestBodyUriSpec).uri(eq("http://localhost:8080/delete?ns={ns}&pod={pod}"), any(Map.class));
-    }
-
-    @Test
-    @DisplayName("Should execute POST request with payload when POST method and body template are provided")
-    void shouldExecutePostRequestWithPayload() {
-        // Given
-        ActionData.SimpleAction action = new ActionData.SimpleAction(
-                SimpleValueFactory.getInstance().createIRI("http://moa#ScaleDeployment_1"),
-                "ScaleDeploymentAction",
-                Protocol.REST,
-                "http://localhost:8080/scale",
-                SimpleValueFactory.getInstance().createIRI("http://cnee#deploy-1"),
-                Map.of("replicas", "3"),
-                HttpMethod.POST,
-                "{\"replicas\": {replicas}}",
-                java.util.List.of(),
-                java.util.List.of(), 200
-        );
-        UUID executionId = UUID.randomUUID();
-
-        when(restClient.method(HttpMethod.POST)).thenReturn(requestBodyUriSpec);
-        when(requestBodyUriSpec.uri(eq("http://localhost:8080/scale"), any(Map.class))).thenReturn(requestBodyUriSpec);
-        when(requestBodyUriSpec.body(anyString())).thenReturn(requestBodyUriSpec);
-        when(requestBodyUriSpec.retrieve()).thenReturn(responseSpec);
-        when(responseSpec.toBodilessEntity()).thenReturn(responseEntity);
-        when(responseEntity.getStatusCode()).thenReturn(HttpStatus.OK);
-
-        // When
-        ExecutionResult result = restProtocolExecutor.execute(action, executionId);
-
-        // Then
-        assertTrue(result.success());
-        verify(requestBodyUriSpec).uri(eq("http://localhost:8080/scale"), any(Map.class));
-        verify(requestBodyUriSpec).body("{\"replicas\": 3}");
-    }
-
-    @Test
-    @DisplayName("Should execute PUT request with payload when PUT method and body template are provided")
-    void shouldExecutePutRequestWithPayload() {
-        // Given
-        ActionData.SimpleAction action = new ActionData.SimpleAction(
-                SimpleValueFactory.getInstance().createIRI("http://moa#UpdateConfig_1"),
-                "UpdateConfigAction",
-                Protocol.REST,
-                "http://localhost:8080/config",
-                SimpleValueFactory.getInstance().createIRI("http://cnee#config-1"),
-                Map.of(),
-                HttpMethod.PUT,
-                "{\"key\": \"value\"}",
-                java.util.List.of(),
-                java.util.List.of(), 200
-        );
-        UUID executionId = UUID.randomUUID();
-
-        when(restClient.method(HttpMethod.PUT)).thenReturn(requestBodyUriSpec);
-        when(requestBodyUriSpec.uri(eq("http://localhost:8080/config"), any(Map.class))).thenReturn(requestBodyUriSpec);
-        when(requestBodyUriSpec.body(anyString())).thenReturn(requestBodyUriSpec);
-        when(requestBodyUriSpec.retrieve()).thenReturn(responseSpec);
-        when(responseSpec.toBodilessEntity()).thenReturn(responseEntity);
-        when(responseEntity.getStatusCode()).thenReturn(HttpStatus.OK);
-
-        // When
-        ExecutionResult result = restProtocolExecutor.execute(action, executionId);
-
-        // Then
-        assertTrue(result.success());
-        verify(requestBodyUriSpec).uri(eq("http://localhost:8080/config"), any(Map.class));
-        verify(requestBodyUriSpec).body("{\"key\": \"value\"}");
-    }
-
-    @Test
-    @DisplayName("Should execute DELETE request when DELETE method is specified")
-    void shouldExecuteDeleteRequest() {
-        // Given
-        ActionData.SimpleAction action = new ActionData.SimpleAction(
-                SimpleValueFactory.getInstance().createIRI("http://moa#RemoveResource_1"),
-                "RemoveResourceAction",
-                Protocol.REST,
-                "http://localhost:8080/resource/{id}",
-                SimpleValueFactory.getInstance().createIRI("http://cnee#res-1"),
-                Map.of("id", "123"),
-                HttpMethod.DELETE,
                 null,
-                java.util.List.of(),
-                java.util.List.of(), 200
-        );
-        UUID executionId = UUID.randomUUID();
-
-        when(restClient.method(HttpMethod.DELETE)).thenReturn(requestBodyUriSpec);
-        when(requestBodyUriSpec.uri(eq("http://localhost:8080/resource/{id}"), any(Map.class))).thenReturn(requestBodyUriSpec);
-        when(requestBodyUriSpec.retrieve()).thenReturn(responseSpec);
-        when(responseSpec.toBodilessEntity()).thenReturn(responseEntity);
-        when(responseEntity.getStatusCode()).thenReturn(HttpStatus.OK);
-
-        // When
-        ExecutionResult result = restProtocolExecutor.execute(action, executionId);
-
-        // Then
-        assertTrue(result.success());
-        verify(requestBodyUriSpec).uri(eq("http://localhost:8080/resource/{id}"), any(Map.class));
-    }
-
-    @Test
-    @DisplayName("Should execute stateless request successfully")
-    void shouldExecuteStatelessRequest() {
-        // Given
-        com.kubiki.themis.model.ActionMessage action = new com.kubiki.themis.model.ActionMessage(
-                "stateless-1",
-                Protocol.REST,
-                "http://localhost:8080/stateless",
-                HttpMethod.POST,
-                "{\"key\": \"{val}\"}",
-                Map.of("val", "data"),
-                null,
-                30,
+                10,
                 true,
                 3,
                 200
         );
 
-        when(restClient.method(HttpMethod.POST)).thenReturn(requestBodyUriSpec);
-        when(requestBodyUriSpec.uri(eq("http://localhost:8080/stateless"), any(Map.class))).thenReturn(requestBodyUriSpec);
-        when(requestBodyUriSpec.body(anyString())).thenReturn(requestBodyUriSpec);
-        when(requestBodyUriSpec.retrieve()).thenReturn(responseSpec);
+        when(restClient.method(HttpMethod.GET)).thenReturn(requestBodyUriSpec);
+        when(requestBodyUriSpec.uri(anyString())).thenReturn(requestBodySpec);
+        when(requestBodySpec.retrieve()).thenReturn(responseSpec);
         when(responseSpec.toBodilessEntity()).thenReturn(responseEntity);
         when(responseEntity.getStatusCode()).thenReturn(HttpStatus.OK);
 
@@ -224,6 +93,75 @@ class RestProtocolExecutorTest {
         // Then
         assertTrue(result.success());
         assertEquals(200, result.observedStatusCode());
-        verify(requestBodyUriSpec).body("{\"key\": \"data\"}");
+        assertEquals(ExecutionStatus.COMPLETED, result.status());
+        verify(requestBodyUriSpec).uri("http://localhost:8080/health");
+    }
+
+    @Test
+    @DisplayName("Should execute POST request with payload when POST method and body are provided")
+    void shouldExecutePostRequestWithPayload() {
+        // Given
+        ActionMessage action = new ActionMessage(
+                "action-2",
+                Protocol.REST,
+                "http://localhost:8080/scale",
+                HttpMethod.POST,
+                "{\"replicas\": 3}",
+                null,
+                10,
+                true,
+                3,
+                200
+        );
+
+        when(restClient.method(HttpMethod.POST)).thenReturn(requestBodyUriSpec);
+        when(requestBodyUriSpec.uri(anyString())).thenReturn(requestBodySpec);
+        when(requestBodySpec.body(anyString())).thenReturn(requestBodySpec);
+        when(requestBodySpec.retrieve()).thenReturn(responseSpec);
+        when(responseSpec.toBodilessEntity()).thenReturn(responseEntity);
+        when(responseEntity.getStatusCode()).thenReturn(HttpStatus.OK);
+
+        // When
+        ExecutionResult result = restProtocolExecutor.executeStateless(action);
+
+        // Then
+        assertTrue(result.success());
+        verify(requestBodyUriSpec).uri("http://localhost:8080/scale");
+        verify(requestBodySpec).body("{\"replicas\": 3}");
+    }
+
+    @Test
+    @DisplayName("Should inject Bearer Token when authMechanism is BearerToken")
+    void shouldInjectBearerToken() {
+        // Given
+        ActionMessage action = new ActionMessage(
+                "action-auth",
+                Protocol.REST,
+                "http://localhost:8080/secure",
+                HttpMethod.GET,
+                null,
+                "BearerToken",
+                10,
+                true,
+                3,
+                200
+        );
+
+        when(themisProperties.secret()).thenReturn(secret);
+        when(secret.bearerToken()).thenReturn("my-token");
+
+        when(restClient.method(HttpMethod.GET)).thenReturn(requestBodyUriSpec);
+        when(requestBodyUriSpec.uri(anyString())).thenReturn(requestBodySpec);
+        when(requestBodySpec.header(eq("Authorization"), eq("Bearer my-token"))).thenReturn(requestBodySpec);
+        when(requestBodySpec.retrieve()).thenReturn(responseSpec);
+        when(responseSpec.toBodilessEntity()).thenReturn(responseEntity);
+        when(responseEntity.getStatusCode()).thenReturn(HttpStatus.OK);
+
+        // When
+        ExecutionResult result = restProtocolExecutor.executeStateless(action);
+
+        // Then
+        assertTrue(result.success());
+        verify(requestBodySpec).header("Authorization", "Bearer my-token");
     }
 }

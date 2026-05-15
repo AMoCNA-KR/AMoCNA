@@ -23,7 +23,7 @@ class StatusProducerTest {
 
     @Test
     void shouldSendUpdateToRabbitMQ() {
-        ActionStatusUpdate update = new ActionStatusUpdate("action1", ExecutionStatus.SUCCESS, null, 200);
+        ActionStatusUpdate update = new ActionStatusUpdate("action1", ExecutionStatus.COMPLETED, null, 200);
 
         statusProducer.sendUpdate(update);
 
