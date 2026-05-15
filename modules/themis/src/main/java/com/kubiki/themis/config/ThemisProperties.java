@@ -9,16 +9,8 @@ import org.springframework.boot.context.properties.NestedConfigurationProperty;
  */
 @ConfigurationProperties(prefix = "themis")
 public record ThemisProperties(
-        @NestedConfigurationProperty GraphDB graphdb,
-        @NestedConfigurationProperty Ontology ontology,
-        @NestedConfigurationProperty Prometheus prometheus
+        @NestedConfigurationProperty Secret secret
 ) {
-    public record GraphDB(String url, String repositoryId, int timeoutMs) {
-    }
-
-    public record Ontology(String moamNamespace) {
-    }
-
-    public record Prometheus(String url) {
+    public record Secret(String bearerToken) {
     }
 }

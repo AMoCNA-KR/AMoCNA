@@ -1,18 +1,25 @@
 spring:
-  threads:
-    virtual:
-      enabled: true
-  profiles:
-    active: dev
+  application:
+    name: themis
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USER:guest}
+    password: ${RABBITMQ_PASS:guest}
 
-grpc:
-  server:
-    port: 50051
+server:
+  port: ${SERVER_PORT:8080}
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      show-details: always
+
+# Themis specific properties
 themis:
-  graphdb:
-    url: "http://graphdb:7200"
-    repositoryId: "amocna"
-    timeoutMs: 5000
-  ontology:
-    moamNamespace: "http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#"
+  secret:
+    bearer-token: ${THEMIS_BEARER_TOKEN:}

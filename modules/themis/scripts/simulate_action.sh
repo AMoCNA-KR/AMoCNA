@@ -8,6 +8,7 @@ RABBIT_PASS=${RABBIT_PASS:-guest}
 
 PROTOCOL=${1:-REST}
 EXPECTED_STATUS=${2:-200}
+AUTH_MECHANISM=${3:-NONE}
 
 # Generate a random ID
 ACTION_ID=$(cat /proc/sys/kernel/random/uuid 2>/dev/null || echo "test-action-$(date +%s)")
@@ -17,6 +18,7 @@ echo "Simulating Action for Themis"
 echo "Action ID: $ACTION_ID"
 echo "Protocol:  $PROTOCOL"
 echo "Expected:  $EXPECTED_STATUS"
+echo "Auth:      $AUTH_MECHANISM"
 echo "---------------------------------------------------"
 
 if [ "$PROTOCOL" == "SHELL" ]; then
@@ -24,11 +26,10 @@ if [ "$PROTOCOL" == "SHELL" ]; then
   PAYLOAD='{
     "actionId": "'$ACTION_ID'",
     "protocol": "SHELL",
-    "instruction": "echo \"Hello Themis\"; exit '$EXPECTED_STATUS'",
+    "instruction": "echo \"Hello Themis - ActionID: '$ACTION_ID'\"; exit '$EXPECTED_STATUS'",
     "method": null,
     "payload": null,
-    "data": {"name": "Themis"},
-    "authMechanism": "NONE",
+    "authMechanism": "'$AUTH_MECHANISM'",
     "timeoutSeconds": 10,
     "isIdempotent": true,
     "maxRetries": 3,
@@ -39,11 +40,10 @@ else
   PAYLOAD='{
     "actionId": "'$ACTION_ID'",
     "protocol": "REST",
-    "instruction": "http://themis:8080/actuator/health",
+    "instruction": "http://localhost:8080/actuator/health",
     "method": "GET",
     "payload": null,
-    "data": {},
-    "authMechanism": "NONE",
+    "authMechanism": "'$AUTH_MECHANISM'",
     "timeoutSeconds": 10,
     "isIdempotent": true,
     "maxRetries": 3,
@@ -51,22 +51,22 @@ else
   }'
 fi
 
-ESCAPED_PAYLOAD=$(printf '%s' "$PAYLOAD" | jq -Rs .)
+# Use jq to format payload correctly
+ESCAPED_PAYLOAD=$(echo "$PAYLOAD" | jq -c .)
 
+# Publish to RabbitMQ using Management API
 curl -s -u "$RABBIT_USER:$RABBIT_PASS" -X POST "http://$RABBIT_HOST:$RABBIT_PORT/api/exchanges/%2f/amocna.direct.exchange/publish" \
   -H "content-type:application/json" \
-  -d "$(cat <<EOF
-{
-  "properties": {},
+  -d '{
+  "properties": {"content_type":"application/json"},
   "routing_key": "action",
-  "payload": ${ESCAPED_PAYLOAD},
+  "payload": "'$(echo "$ESCAPED_PAYLOAD" | sed 's/"/\\"/g')'",
   "payload_encoding": "string"
-}
-EOF
-)" | grep -q "routed\":true"
+}' | grep -q "routed\":true"
 
 if [ $? -eq 0 ]; then
   echo "SUCCESS: Action published to amocna.action.queue"
+  echo "Payload: $ESCAPED_PAYLOAD"
 else
   echo "ERROR: Failed to publish action. Is RabbitMQ up at $RABBIT_HOST:$RABBIT_PORT?"
 fi
