@@ -8,13 +8,9 @@ services:
       - "50051:50051"
     environment:
       - SPRING_RABBITMQ_HOST=rabbitmq
-      - THEMIS_GRAPHDB_URL=http://graphdb:7200
-      - THEMIS_PROMETHEUS_URL=http://prometheus:9090
     depends_on:
       rabbitmq:
         condition: service_healthy
-      graphdb:
-        condition: service_started
 
   rabbitmq:
     build:
