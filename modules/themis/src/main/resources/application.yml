@@ -19,7 +19,6 @@ management:
     health:
       show-details: always
 
-# Themis specific properties
 themis:
   secret:
     bearer-token: ${THEMIS_BEARER_TOKEN:}

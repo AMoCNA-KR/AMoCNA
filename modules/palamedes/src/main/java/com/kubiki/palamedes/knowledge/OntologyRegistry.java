@@ -9,6 +9,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class OntologyRegistry {
 
+    public static final String HTTP = "http";
     private final PalamedesProperties palamedesProperties;
     private final ValueFactory valueFactory = SimpleValueFactory.getInstance();
 
@@ -16,36 +17,24 @@ public class OntologyRegistry {
         this.palamedesProperties = palamedesProperties;
     }
 
-    public IRI moam(String fragment) {
-        if (fragment != null && fragment.startsWith("http")) {
+    public IRI actionsOntology(String fragment) {
+        if (fragment != null && fragment.startsWith(HTTP)) {
             return valueFactory.createIRI(fragment);
         }
-        return valueFactory.createIRI(palamedesProperties.ontology().moamNamespace(), fragment);
+        return valueFactory.createIRI(palamedesProperties.ontology().actionsNamespace(), fragment);
     }
 
-    public IRI cnee(String fragment) {
-        if (fragment != null && fragment.startsWith("http")) {
+    public IRI resourcesOntology(String fragment) {
+        if (fragment != null && fragment.startsWith(HTTP)) {
             return valueFactory.createIRI(fragment);
         }
-        return valueFactory.createIRI(palamedesProperties.ontology().cneeNamespace(), fragment);
+        return valueFactory.createIRI(palamedesProperties.ontology().resourcesNamespace(), fragment);
     }
 
-    public IRI bridge(String fragment) {
-        if (fragment != null && fragment.startsWith("http")) {
+    public IRI bridgeOntology(String fragment) {
+        if (fragment != null && fragment.startsWith(HTTP)) {
             return valueFactory.createIRI(fragment);
         }
         return valueFactory.createIRI(palamedesProperties.ontology().bridgeNamespace(), fragment);
-    }
-
-    public String getMoamNamespace() {
-        return palamedesProperties.ontology().moamNamespace();
-    }
-
-    public String getCneeNamespace() {
-        return palamedesProperties.ontology().cneeNamespace();
-    }
-
-    public String getBridgeNamespace() {
-        return palamedesProperties.ontology().bridgeNamespace();
     }
 }

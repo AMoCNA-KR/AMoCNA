@@ -15,16 +15,11 @@ import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
-import static com.kubiki.palamedes.constants.OntologyConstants.CLASS_PROMETHEUS_CONDITION;
-
-/**
- * Prometheus Condition Strategy.
- * Industrial Rule: Zero magic strings in logic, all paths and error messages are constants.
- */
 @Component
 public class PrometheusConditionStrategy implements ConditionStrategy {
     private static final Logger log = LoggerFactory.getLogger(PrometheusConditionStrategy.class);
 
+    private static final String CLASS_PROMETHEUS_CONDITION = "PrometheusCondition";
     private static final String PROMETHEUS_QUERY_PATH = "/api/v1/query";
     private static final String QUERY_PARAM = "query";
     private static final String RESPONSE_STATUS_SUCCESS = "success";
@@ -46,7 +41,7 @@ public class PrometheusConditionStrategy implements ConditionStrategy {
 
     @Override
     public boolean supports(IRI conditionType) {
-        String namespace = properties.ontology().moamNamespace();
+        String namespace = properties.ontology().actionsNamespace();
         return (namespace + CLASS_PROMETHEUS_CONDITION).equals(conditionType.stringValue());
     }
 

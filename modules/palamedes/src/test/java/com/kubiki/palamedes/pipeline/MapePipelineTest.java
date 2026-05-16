@@ -3,6 +3,7 @@ package com.kubiki.palamedes.pipeline;
 import com.kubiki.palamedes.analyzer.AnomalyAgent;
 import com.kubiki.palamedes.knowledge.GraphDBGateway;
 import com.kubiki.palamedes.model.ActionData;
+import com.kubiki.palamedes.model.ActiveActionSummary;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.junit.jupiter.api.Test;
@@ -28,7 +29,7 @@ class MapePipelineTest {
         MapePipeline pipeline = new MapePipeline(List.of(pipe1, pipe2), gateway, anomalyAgent);
         
         IRI actionId = SimpleValueFactory.getInstance().createIRI("http://test/action1");
-        GraphDBGateway.ActiveActionSummary action = new GraphDBGateway.ActiveActionSummary(
+        var action = new ActiveActionSummary(
                 actionId, null, "resource1", "State_Initial");
         
         when(gateway.findActiveActions()).thenReturn(List.of(action));

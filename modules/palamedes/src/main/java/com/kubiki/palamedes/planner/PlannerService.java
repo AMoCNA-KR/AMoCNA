@@ -2,14 +2,14 @@ package com.kubiki.palamedes.planner;
 
 import com.kubiki.palamedes.model.ActionData;
 import com.kubiki.palamedes.model.ActionMessage;
-import com.kubiki.palamedes.model.Protocol;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Service;
 
 import java.util.Map;
-import java.util.UUID;
+
+import static com.kubiki.palamedes.templating.TemplatingConstants.BEGIN_OF_VARIABLE;
+import static com.kubiki.palamedes.templating.TemplatingConstants.END_OF_VARIABLE;
 
 @Service
 public class PlannerService {
@@ -20,7 +20,7 @@ public class PlannerService {
         if (data == null) return template;
         String result = template;
         for (var entry : data.entrySet()) {
-            result = result.replace("${" + entry.getKey() + "}", entry.getValue());
+            result = result.replace(BEGIN_OF_VARIABLE + entry.getKey() + END_OF_VARIABLE, entry.getValue());
         }
         return result;
     }

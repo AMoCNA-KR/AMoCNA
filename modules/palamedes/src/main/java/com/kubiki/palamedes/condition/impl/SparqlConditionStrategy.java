@@ -9,11 +9,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
-import static com.kubiki.palamedes.constants.OntologyConstants.CLASS_STATE_BASED_CONDITION;
-
 @Component
 public class SparqlConditionStrategy implements ConditionStrategy {
     private static final Logger log = LoggerFactory.getLogger(SparqlConditionStrategy.class);
+    private static final String CLASS_STATE_BASED_CONDITION = "StateBasedCondition";
+
     private final GraphDBGateway gateway;
     private final PalamedesProperties properties;
 
@@ -24,7 +24,7 @@ public class SparqlConditionStrategy implements ConditionStrategy {
 
     @Override
     public boolean supports(IRI conditionType) {
-        String namespace = properties.ontology().moamNamespace();
+        String namespace = properties.ontology().actionsNamespace();
         return (namespace + CLASS_STATE_BASED_CONDITION).equals(conditionType.stringValue());
     }
 

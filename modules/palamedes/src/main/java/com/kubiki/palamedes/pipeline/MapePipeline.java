@@ -3,7 +3,7 @@ package com.kubiki.palamedes.pipeline;
 import com.kubiki.palamedes.analyzer.AnomalyAgent;
 import com.kubiki.palamedes.knowledge.GraphDBGateway;
 import com.kubiki.palamedes.model.ActionData;
-import org.eclipse.rdf4j.model.IRI;
+import com.kubiki.palamedes.model.ActiveActionSummary;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -33,10 +33,10 @@ public class MapePipeline {
         anomalyAgent.analyze();
 
         // 2. Fetch all non-terminal actions from GraphDB
-        List<GraphDBGateway.ActiveActionSummary> activeActions = graphDBGateway.findActiveActions();
+        List<ActiveActionSummary> activeActions = graphDBGateway.findActiveActions();
         log.debug("Found {} active actions in the Petri Net", activeActions.size());
 
-        for (GraphDBGateway.ActiveActionSummary action : activeActions) {
+        for (ActiveActionSummary action : activeActions) {
             try {
                 // Fetch the full structure for the context
                 ActionData data = graphDBGateway.fetchActionStructure(action.actionIri());

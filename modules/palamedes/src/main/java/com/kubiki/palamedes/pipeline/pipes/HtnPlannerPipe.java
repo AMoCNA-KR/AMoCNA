@@ -7,6 +7,8 @@ import com.kubiki.palamedes.model.ActionData;
 import com.kubiki.palamedes.model.WorkflowState;
 import com.kubiki.palamedes.pipeline.MapePipe;
 import com.kubiki.palamedes.pipeline.WorkflowContext;
+import com.kubiki.palamedes.utils.ActionUtils;
+import lombok.RequiredArgsConstructor;
 import org.eclipse.rdf4j.model.IRI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,7 +16,6 @@ import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
-import java.util.UUID;
 
 /**
  * HtnPlannerPipe (MAPE-Plan):
@@ -23,17 +24,15 @@ import java.util.UUID;
  */
 @Order(1)
 @Component
+@RequiredArgsConstructor
 public class HtnPlannerPipe implements MapePipe {
     private static final Logger log = LoggerFactory.getLogger(HtnPlannerPipe.class);
-    private final StateRepository stateRepository;
+
+    private final ActionUtils utils;
     private final GraphDBGateway graphDBGateway;
+    private final StateRepository stateRepository;
     private final OntologyRegistry ontologyRegistry;
 
-    public HtnPlannerPipe(StateRepository stateRepository, GraphDBGateway graphDBGateway, OntologyRegistry ontologyRegistry) {
-        this.stateRepository = stateRepository;
-        this.graphDBGateway = graphDBGateway;
-        this.ontologyRegistry = ontologyRegistry;
-    }
 
     @Override
     public boolean process(WorkflowContext context) {
@@ -64,13 +63,12 @@ public class HtnPlannerPipe implements MapePipe {
 
         for (ActionData step : steps) {
             // Generate a concrete IRI for this step instance
-            String stepId = "step-" + UUID.randomUUID().toString().substring(0, 8);
-            IRI stepIri = ontologyRegistry.moam(stepId);
+            String stepId = utils.generateStepId();
+            IRI stepIri = ontologyRegistry.actionsOntology(stepId);
 
             // Materialize the child node (Simple or Complex)
             graphDBGateway.materializeActionInstance(stepIri, step, workflow.target(), parentIri);
 
-            // Sequential Locking (Option A: Sequential Saga)
             if (previousStepIri != null) {
                 // Link to depend on previous sibling
                 graphDBGateway.linkDependent(stepIri, previousStepIri);

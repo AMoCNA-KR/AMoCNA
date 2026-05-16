@@ -9,7 +9,7 @@ class PlannerServiceTest {
 
     @Test
     void shouldHydrateUrl() {
-        String template = "https://k8s/{resourceName}";
+        String template = "https://k8s/${resourceName}";
         Map<String, String> data = Map.of("resourceName", "my-pod");
         String result = plannerService.hydrate(template, data);
         assertEquals("https://k8s/my-pod", result);

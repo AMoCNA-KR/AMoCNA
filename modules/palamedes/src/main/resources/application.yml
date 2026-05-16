@@ -16,8 +16,8 @@ palamedes:
     repository-id: ${GRAPHDB_REPO:amocna}
     timeout-ms: ${GRAPHDB_TIMEOUT:5000}
   ontology:
-    moam-namespace: ${ONTOLOGY_MOAM:http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#}
-    cnee-namespace: ${ONTOLOGY_CNEE:http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/}
+    actions-namespace: ${ONTOLOGY_ACTIONS:http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#}
+    resources-namespace: ${ONTOLOGY_RESOURCES:http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/}
     bridge-namespace: ${ONTOLOGY_BRIDGE:http://www.semanticweb.org/patryk/ontologies/2026/4/BridgeOnt#}
     states:
       initial: "State_Initial"
@@ -27,11 +27,19 @@ palamedes:
       succeeded: "State_Succeeded"
       failed: "State_Failed"
       compensating: "State_Compensating"
+    actions-prefix: "moam"
+    resources-prefix: "cnee"
+    bridge-prefix: "bridge"
   prometheus:
     url: ${PROMETHEUS_URL:http://localhost:9090}
   engine:
     pipeline-rate-ms: 5000
     default-idempotency-seconds: 300
+  utilities:
+    step-prefix: "step-"
+    action-prefix: "action-"
+    compensation-prefix: "compensation-"
+    size-of-generated-uuid: 12
 
 management:
   endpoints:

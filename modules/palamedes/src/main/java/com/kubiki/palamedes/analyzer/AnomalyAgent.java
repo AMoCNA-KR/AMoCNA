@@ -1,39 +1,38 @@
 package com.kubiki.palamedes.analyzer;
 
 import com.kubiki.palamedes.knowledge.GraphDBGateway;
-import com.kubiki.palamedes.knowledge.OntologyRegistry;
+import com.kubiki.palamedes.model.AnomalyTarget;
+import com.kubiki.palamedes.utils.ActionUtils;
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.UUID;
 
 /**
  * AnomalyAgent (MAPE-Analyze):
  * Scans for resources in AnomalyState and creates remediation workflows in State_Initial.
  */
 @Service
+@RequiredArgsConstructor
 public class AnomalyAgent {
     private static final Logger log = LoggerFactory.getLogger(AnomalyAgent.class);
-    public static final String ACTION_PREFIX = "action-";
-    private final GraphDBGateway gateway;
 
-    public AnomalyAgent(GraphDBGateway gateway) {
-        this.gateway = gateway;
-    }
+    private final GraphDBGateway gateway;
+    private final ActionUtils utils;
 
     @Scheduled(fixedRate = 5000)
     public void analyze() {
-        log.debug("AnomalyAgent: Scanning for cluster anomalies...");
+        log.debug("Scanning for cluster anomalies...");
         
-        List<GraphDBGateway.AnomalyTarget> anomalies = gateway.findAnomalies();
+        List<AnomalyTarget> anomalies = gateway.findAnomalies();
         
-        for (GraphDBGateway.AnomalyTarget anomaly : anomalies) {
+        for (var anomaly : anomalies) {
             log.info("Anomaly detected: resource {} needs {}", anomaly.resourceName(), anomaly.intentIri());
             
-            String actionId = ACTION_PREFIX + UUID.randomUUID().toString().substring(0, 8);
+            String actionId = utils.generateActionId();
             
             gateway.createActionWorkflow(anomaly.resourceIri(), anomaly.intentIri(), actionId);
         }

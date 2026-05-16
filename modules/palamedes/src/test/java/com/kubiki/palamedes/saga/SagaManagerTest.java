@@ -8,6 +8,7 @@ import com.kubiki.palamedes.model.ActionData;
 import com.kubiki.palamedes.model.ActionStatusUpdate;
 import com.kubiki.palamedes.model.ExecutionStatus;
 import com.kubiki.palamedes.model.WorkflowState;
+import com.kubiki.palamedes.utils.ActionUtils;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.junit.jupiter.api.BeforeEach;
@@ -27,6 +28,7 @@ class SagaManagerTest {
     @Mock private StateRepository stateRepository;
     @Mock private OntologyRegistry registry;
     @Mock private ConditionFactory conditionFactory;
+    @Mock private ActionUtils actionUtils;
 
     private SagaManager sagaManager;
     private final IRI actionIri = SimpleValueFactory.getInstance().createIRI("http://test/action1");
@@ -34,15 +36,14 @@ class SagaManagerTest {
 
     @BeforeEach
     void setUp() {
-        sagaManager = new SagaManager(gateway, stateRepository, registry, conditionFactory);
-        when(registry.moam(anyString())).thenReturn(actionIri);
+        sagaManager = new SagaManager(gateway, stateRepository, registry, conditionFactory, actionUtils);
+        when(registry.actionsOntology(anyString())).thenReturn(actionIri);
     }
 
     @Test
     void shouldUnlockNextStepsOnSuccess() {
         ActionStatusUpdate update = new ActionStatusUpdate("action1", ExecutionStatus.COMPLETED, null, 200);
         
-        // Mock post-conditions verification
         ActionData data = mock(ActionData.SimpleAction.class);
         when(data.postConditions()).thenReturn(List.of());
         when(gateway.fetchActionStructure(actionIri)).thenReturn(data);
@@ -68,6 +69,8 @@ class SagaManagerTest {
         IRI targetIri = SimpleValueFactory.getInstance().createIRI("http://test/pod");
         when(originalAction.target()).thenReturn(targetIri);
         when(gateway.fetchActionStructure(actionIri)).thenReturn(originalAction);
+
+        when(actionUtils.generateCompensationId()).thenReturn("mocked-compensation-id-123");
 
         sagaManager.handleFeedback(update);
 

@@ -32,10 +32,10 @@ class StateRepositoryTest {
     void shouldTransitionState() {
         when(queryBuilder.builder()).thenReturn(builder);
         when(builder.template(anyString())).thenReturn(builder);
-        when(builder.variable(anyString(), any())).thenReturn(builder);
+        when(builder.variable(any())).thenReturn(builder);
         when(builder.build()).thenReturn("SPARQL");
         when(sparqlClient.executeUpdateWithSuccess("SPARQL")).thenReturn(true);
-        when(registry.moam(anyString())).thenReturn(SimpleValueFactory.getInstance().createIRI("http://test/State"));
+        when(registry.actionsOntology(anyString())).thenReturn(SimpleValueFactory.getInstance().createIRI("http://test/State"));
 
         boolean result = repository.transition(actionId, WorkflowState.INITIAL, WorkflowState.PLANNED);
 

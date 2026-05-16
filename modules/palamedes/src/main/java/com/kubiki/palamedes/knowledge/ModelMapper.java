@@ -69,7 +69,7 @@ public class ModelMapper {
                          && !i.getLocalName().equals("SimpleAction") 
                          && !i.getLocalName().equals("ComplexWorkflow"))
                 .findFirst()
-                .orElse(intents.isEmpty() ? null : intents.get(0));
+                .orElse(intents.isEmpty() ? null : intents.getFirst());
     }
 
     private boolean isComplexWorkflow(String intent) {
@@ -116,7 +116,7 @@ public class ModelMapper {
         if (val != null) {
             try {
                 return Integer.parseInt(val);
-            } catch (NumberFormatException e) {
+            } catch (NumberFormatException _) {
             }
         }
         return protocol == Protocol.SHELL ? 0 : 200;
@@ -137,7 +137,7 @@ public class ModelMapper {
         if (val != null) {
             try {
                 return Integer.parseInt(val);
-            } catch (NumberFormatException e) {
+            } catch (NumberFormatException _) {
             }
         }
         return defaultValue;
