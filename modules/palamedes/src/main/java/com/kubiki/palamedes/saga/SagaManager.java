@@ -6,10 +6,7 @@ import com.kubiki.palamedes.config.PalamedesProperties;
 import com.kubiki.palamedes.knowledge.GraphDBGateway;
 import com.kubiki.palamedes.knowledge.OntologyRegistry;
 import com.kubiki.palamedes.knowledge.StateRepository;
-import com.kubiki.palamedes.model.ActionData;
-import com.kubiki.palamedes.model.ActionStatusUpdate;
-import com.kubiki.palamedes.model.ExecutionStatus;
-import com.kubiki.palamedes.model.WorkflowState;
+import com.kubiki.palamedes.model.*;
 import com.kubiki.palamedes.utils.ActionUtils;
 import lombok.RequiredArgsConstructor;
 import org.eclipse.rdf4j.model.IRI;
@@ -30,11 +27,12 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class SagaManager {
     private static final Logger log = LoggerFactory.getLogger(SagaManager.class);
+    private final ActionUtils utils;
     private final GraphDBGateway gateway;
     private final StateRepository stateRepository;
     private final OntologyRegistry ontologyRegistry;
     private final ConditionFactory conditionFactory;
-    private final ActionUtils utils;
+    private final WorkflowStateMapper mapper;
 
 
     public void handleFeedback(ActionStatusUpdate update) {
@@ -68,7 +66,7 @@ public class SagaManager {
         if (!dependents.isEmpty()) {
             for (IRI dependent : dependents) {
                 log.info("Unlocking dependent step {}", dependent);
-                gateway.transitionState(dependent, WorkflowState.INITIAL.getFragment());
+                gateway.transitionState(dependent, mapper.getFragment(WorkflowState.INITIAL));
             }
         } else {
             // B. If no siblings, check if we need to complete the parent (Join Logic)

@@ -6,6 +6,7 @@ import com.kubiki.palamedes.knowledge.GraphDBGateway;
 import com.kubiki.palamedes.knowledge.StateRepository;
 import com.kubiki.palamedes.model.ActionData;
 import com.kubiki.palamedes.model.WorkflowState;
+import com.kubiki.palamedes.model.WorkflowStateMapper;
 import com.kubiki.palamedes.pipeline.WorkflowContext;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.junit.jupiter.api.Test;
@@ -27,6 +28,7 @@ class SafetyValidatorPipeTest {
     @Mock private StateRepository stateRepository;
     @Mock private ConditionFactory conditionFactory;
     @Mock private GraphDBGateway gateway;
+    @Mock private WorkflowStateMapper mapper;
 
     @InjectMocks
     private SafetyValidatorPipe pipe;
@@ -36,10 +38,13 @@ class SafetyValidatorPipeTest {
         ActionData.Condition cond = new ActionData.Condition(null, null, null);
         ActionData data = mock(ActionData.SimpleAction.class);
         when(data.preConditions()).thenReturn(List.of(cond));
-        
+
         WorkflowContext context = new WorkflowContext(SimpleValueFactory.getInstance().createIRI("http://test/1"), data);
         context.metadata().put("currentState", "State_Planned");
-        
+
+        when(mapper.getFragment(WorkflowState.PLANNED)).thenReturn("State_Planned");
+        when(mapper.getFragment(WorkflowState.VALIDATED)).thenReturn("State_Validated");
+
         when(gateway.isIdempotencyWindowOpen(any())).thenReturn(true);
         ConditionStrategy strategy = mock(ConditionStrategy.class);
         when(strategy.evaluate(any())).thenReturn(true);
@@ -48,7 +53,7 @@ class SafetyValidatorPipeTest {
 
         boolean result = pipe.process(context);
 
-        assertFalse(result); // pipeline stops for this action after success
+        assertFalse(result);
         verify(stateRepository).transition(any(), eq(WorkflowState.PLANNED), eq(WorkflowState.VALIDATED));
     }
 }

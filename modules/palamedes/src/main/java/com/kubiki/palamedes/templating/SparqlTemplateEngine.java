@@ -10,15 +10,23 @@ import static com.kubiki.palamedes.templating.TemplatingConstants.*;
 
 @Component
 public class SparqlTemplateEngine {
+
     private final LinkedList<PrefixType> prefixes;
-    private final LinkedList<TemplatingType<?>> templatedPrefixes;
+    private final LinkedList<TemplatingType<?>> propertiesVariables;
 
     public SparqlTemplateEngine(PalamedesProperties properties) {
-        this.templatedPrefixes = new LinkedList<>();
+        this.propertiesVariables = new LinkedList<>();
 
-        this.templatedPrefixes.add(new PrefixType(ACTIONS_PREFIX_VARIABLE, properties.ontology().actionsPrefix()));
-        this.templatedPrefixes.add(new PrefixType(RESOURCES_PREFIX_VARIABLE, properties.ontology().resourcesPrefix()));
-        this.templatedPrefixes.add(new PrefixType(BRIDGE_PREFIX_VARIABLE, properties.ontology().bridgePrefix()));
+        this.propertiesVariables.add(new PrefixType(ACTIONS_PREFIX_VARIABLE, properties.ontology().actionsPrefix()));
+        this.propertiesVariables.add(new PrefixType(RESOURCES_PREFIX_VARIABLE, properties.ontology().resourcesPrefix()));
+        this.propertiesVariables.add(new PrefixType(BRIDGE_PREFIX_VARIABLE, properties.ontology().bridgePrefix()));
+        this.propertiesVariables.add(new IndividualType(STATE_INITIAL, properties.ontology().states().getOrDefault(PROPERTIES_INITIAL_STATE_NAME, DEFAULT_STATE_INITIAL)));
+        this.propertiesVariables.add(new IndividualType(STATE_PLANNED, properties.ontology().states().getOrDefault(PROPERTIES_PLANNED_STATE_NAME, DEFAULT_STATE_PLANNED)));
+        this.propertiesVariables.add(new IndividualType(STATE_VALIDATED, properties.ontology().states().getOrDefault(PROPERTIES_VALIDATED_STATE_NAME, DEFAULT_STATE_VALIDATED)));
+        this.propertiesVariables.add(new IndividualType(STATE_IN_PROGRESS, properties.ontology().states().getOrDefault(PROPERTIES_IN_PROGRESS_STATE_NAME, DEFAULT_STATE_IN_PROGRESS)));
+        this.propertiesVariables.add(new IndividualType(STATE_SUCCEEDED, properties.ontology().states().getOrDefault(PROPERTIES_SUCCEEDED_STATE_NAME, DEFAULT_STATE_SUCCEEDED)));
+        this.propertiesVariables.add(new IndividualType(STATE_FAILED, properties.ontology().states().getOrDefault(PROPERTIES_FAILED_STATE_NAME, DEFAULT_STATE_FAILED)));
+        this.propertiesVariables.add(new IndividualType(STATE_COMPENSATING, properties.ontology().states().getOrDefault(PROPERTIES_COMPENSATING_STATE_NAME, DEFAULT_STATE_COMPENSATING)));
 
         this.prefixes = new LinkedList<>();
         prefixes.add(new PrefixType(properties.ontology().actionsPrefix(), properties.ontology().actionsNamespace()));
@@ -37,7 +45,7 @@ public class SparqlTemplateEngine {
         populatePrefixes(sb);
         sb.append(rawTemplate);
         var prefixedTemplate = sb.toString();
-        prefixedTemplate = substituteVariables(prefixedTemplate, templatedPrefixes);
+        prefixedTemplate = substituteVariables(prefixedTemplate, propertiesVariables);
         prefixedTemplate = substituteVariables(prefixedTemplate, variables);
 
         return prefixedTemplate;

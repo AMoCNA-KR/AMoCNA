@@ -4,16 +4,14 @@ import com.kubiki.palamedes.condition.ConditionFactory;
 import com.kubiki.palamedes.knowledge.GraphDBGateway;
 import com.kubiki.palamedes.knowledge.OntologyRegistry;
 import com.kubiki.palamedes.knowledge.StateRepository;
-import com.kubiki.palamedes.model.ActionData;
-import com.kubiki.palamedes.model.ActionStatusUpdate;
-import com.kubiki.palamedes.model.ExecutionStatus;
-import com.kubiki.palamedes.model.WorkflowState;
+import com.kubiki.palamedes.model.*;
 import com.kubiki.palamedes.utils.ActionUtils;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -29,6 +27,7 @@ class SagaManagerTest {
     @Mock private OntologyRegistry registry;
     @Mock private ConditionFactory conditionFactory;
     @Mock private ActionUtils actionUtils;
+    @Mock private WorkflowStateMapper mapper;
 
     private SagaManager sagaManager;
     private final IRI actionIri = SimpleValueFactory.getInstance().createIRI("http://test/action1");
@@ -36,7 +35,7 @@ class SagaManagerTest {
 
     @BeforeEach
     void setUp() {
-        sagaManager = new SagaManager(gateway, stateRepository, registry, conditionFactory, actionUtils);
+        sagaManager = new SagaManager(actionUtils, gateway, stateRepository, registry, conditionFactory, mapper);
         when(registry.actionsOntology(anyString())).thenReturn(actionIri);
     }
 
@@ -54,7 +53,7 @@ class SagaManagerTest {
         sagaManager.handleFeedback(update);
 
         verify(gateway).findDependents(actionIri);
-        verify(gateway).transitionState(dependentIri, WorkflowState.INITIAL.getFragment());
+        verify(gateway).transitionState(dependentIri, mapper.getFragment(WorkflowState.INITIAL));
     }
 
     @Test

@@ -5,6 +5,7 @@ import com.kubiki.palamedes.knowledge.OntologyRegistry;
 import com.kubiki.palamedes.knowledge.StateRepository;
 import com.kubiki.palamedes.model.ActionData;
 import com.kubiki.palamedes.model.WorkflowState;
+import com.kubiki.palamedes.model.WorkflowStateMapper;
 import com.kubiki.palamedes.pipeline.MapePipe;
 import com.kubiki.palamedes.pipeline.WorkflowContext;
 import com.kubiki.palamedes.utils.ActionUtils;
@@ -19,7 +20,7 @@ import java.util.List;
 
 /**
  * HtnPlannerPipe (MAPE-Plan):
- * Decomposes INITIAL workflows and transitions them to PLANNED.
+ * Decomposes INITIAL workflows and transitions them to PLANNED state.
  * Materializes sequential steps for ComplexWorkflows in the graph.
  */
 @Order(1)
@@ -32,11 +33,12 @@ public class HtnPlannerPipe implements MapePipe {
     private final GraphDBGateway graphDBGateway;
     private final StateRepository stateRepository;
     private final OntologyRegistry ontologyRegistry;
+    private final WorkflowStateMapper mapper;
 
 
     @Override
     public boolean process(WorkflowContext context) {
-        if (!WorkflowState.INITIAL.getFragment().equals(context.metadata().get("currentState"))) {
+        if (!mapper.getFragment(WorkflowState.INITIAL).equals(context.metadata().get("currentState"))) {
             return true;
         }
 
@@ -52,7 +54,7 @@ public class HtnPlannerPipe implements MapePipe {
 
         boolean success = stateRepository.transition(context.actionId(), WorkflowState.INITIAL, WorkflowState.PLANNED);
         if (success) {
-            context.metadata().put("currentState", WorkflowState.PLANNED.getFragment());
+            context.metadata().put("currentState", mapper.getFragment(WorkflowState.PLANNED));
         }
         return !success;
     }
@@ -74,7 +76,7 @@ public class HtnPlannerPipe implements MapePipe {
                 graphDBGateway.linkDependent(stepIri, previousStepIri);
             } else {
                 // The very first child starts in INITIAL state to trigger its own MAPE loop
-                graphDBGateway.transitionState(stepIri, WorkflowState.INITIAL.getFragment());
+                graphDBGateway.transitionState(stepIri, mapper.getFragment(WorkflowState.INITIAL));
             }
 
             previousStepIri = stepIri;

@@ -6,8 +6,10 @@ import com.kubiki.palamedes.knowledge.GraphDBGateway;
 import com.kubiki.palamedes.knowledge.StateRepository;
 import com.kubiki.palamedes.model.ActionData;
 import com.kubiki.palamedes.model.WorkflowState;
+import com.kubiki.palamedes.model.WorkflowStateMapper;
 import com.kubiki.palamedes.pipeline.MapePipe;
 import com.kubiki.palamedes.pipeline.WorkflowContext;
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.annotation.Order;
@@ -21,21 +23,18 @@ import java.util.Optional;
  */
 @Order(3)
 @Component
+@RequiredArgsConstructor
 public class SafetyValidatorPipe implements MapePipe {
     private static final Logger log = LoggerFactory.getLogger(SafetyValidatorPipe.class);
     private final StateRepository stateRepository;
     private final ConditionFactory conditionFactory;
     private final GraphDBGateway graphDBGateway;
+    private final WorkflowStateMapper mapper;
 
-    public SafetyValidatorPipe(StateRepository stateRepository, ConditionFactory conditionFactory, GraphDBGateway graphDBGateway) {
-        this.stateRepository = stateRepository;
-        this.conditionFactory = conditionFactory;
-        this.graphDBGateway = graphDBGateway;
-    }
 
     @Override
     public boolean process(WorkflowContext context) {
-        if (!"State_Planned".equals(context.metadata().get("currentState"))) {
+        if (!mapper.getFragment(WorkflowState.PLANNED).equals(context.metadata().get("currentState"))) {
             return true;
         }
 
@@ -54,7 +53,7 @@ public class SafetyValidatorPipe implements MapePipe {
 
         boolean success = stateRepository.transition(context.actionId(), WorkflowState.PLANNED, WorkflowState.VALIDATED);
         if (success) {
-            context.metadata().put("currentState", WorkflowState.VALIDATED.getFragment());
+            context.metadata().put("currentState", mapper.getFragment(WorkflowState.VALIDATED));
         }
         return !success;
     }

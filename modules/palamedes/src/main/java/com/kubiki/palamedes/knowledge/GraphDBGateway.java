@@ -1,10 +1,8 @@
 package com.kubiki.palamedes.knowledge;
 
-import com.kubiki.palamedes.model.ActionData;
-import com.kubiki.palamedes.model.AnomalyTarget;
-import com.kubiki.palamedes.model.ActiveActionSummary;
-import com.kubiki.palamedes.model.WorkflowState;
+import com.kubiki.palamedes.model.*;
 import com.kubiki.palamedes.templating.types.IriType;
+import lombok.RequiredArgsConstructor;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.ValueFactory;
@@ -23,6 +21,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Service
+@RequiredArgsConstructor
 public class GraphDBGateway {
     private static final Logger log = LoggerFactory.getLogger(GraphDBGateway.class);
 
@@ -36,17 +35,9 @@ public class GraphDBGateway {
     private final SparqlClient sparqlClient;
     private final SparqlQueryBuilder sparqlQueryBuilder;
     private final ModelMapper modelMapper;
+    private final WorkflowStateMapper workflowStateMapper;
     private final OntologyRegistry ontologyRegistry;
 
-    public GraphDBGateway(SparqlClient sparqlClient,
-                          SparqlQueryBuilder sparqlQueryBuilder,
-                          ModelMapper modelMapper,
-                          OntologyRegistry ontologyRegistry) {
-        this.sparqlClient = sparqlClient;
-        this.sparqlQueryBuilder = sparqlQueryBuilder;
-        this.modelMapper = modelMapper;
-        this.ontologyRegistry = ontologyRegistry;
-    }
 
     public void transitionState(IRI actionId, String stateFragment) {
         IRI hasCurrentState = ontologyRegistry.actionsOntology("hasCurrentState");
@@ -121,7 +112,7 @@ public class GraphDBGateway {
             var statements = conn.getStatements(actionIri, hasCurrentState, null);
             if (statements.hasNext()) {
                 IRI stateIri = (IRI) statements.next().getObject();
-                return WorkflowState.fromFragment(stateIri.getLocalName());
+                return workflowStateMapper.fromFragment(stateIri.getLocalName());
             }
             return null;
         });

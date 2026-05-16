@@ -15,6 +15,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.LinkedList;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.when;
@@ -40,15 +41,19 @@ class SparqlTemplateEngineTest {
                 "res",
                 "http://example.com/bridge#",
                 "br",
-                null
+                Map.of(
+                        "initial", "State_Initial",
+                        "planned", "State_Planned",
+                        "validated", "State_Validated",
+                        "in-progress", "State_InProgress",
+                        "succeeded", "State_Succeeded",
+                        "failed", "State_Failed",
+                        "compensating", "State_Compensating"
+                )
         ));
 
         LinkedList<TemplatingType<?>> variables = new LinkedList<>();
-        variables.add(new IndividualType("STATE_INITIAL", "State_Initial"));
-        variables.add(new IndividualType("STATE_PLANNED", "State_Planned"));
-        variables.add(new IndividualType("STATE_VALIDATED", "State_Validated"));
-        variables.add(new IndividualType("STATE_INPROGRESS", "State_InProgress"));
-        variables.add(new IndividualType("STATE_COMPENSATING", "State_Compensating"));
+
         IRI action = new IRI() {
             @Override
             public String getNamespace() {
