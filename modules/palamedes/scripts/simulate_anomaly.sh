@@ -5,11 +5,9 @@ set -e
 GRAPHDB_URL=${GRAPHDB_URL:-http://localhost:7200}
 REPOSITORY_ID=${REPOSITORY_ID:-amocna}
 
-# Namespaces (matching application.yml defaults)
 MOAM_NS="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#"
 CNEE_NS="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/"
 
-# Use ContainerDead as default because it is mapped in BridgeOnt
 RESOURCE_NAME=${1:-pod1}
 ANOMALY_TYPE=${2:-ContainerDead}
 
@@ -18,10 +16,6 @@ echo "Simulating Anomaly for Palamedes"
 echo "Resource:  $RESOURCE_NAME"
 echo "Anomaly:   $ANOMALY_TYPE"
 echo "---------------------------------------------------"
-
-# 1. Check if resource exists or create a mock one
-# 2. Inject Anomaly State
-# Using SPARQL UPDATE
 
 SPARQL_UPDATE="
 PREFIX moam: <$MOAM_NS>
@@ -49,10 +43,9 @@ INSERT DATA {
 "
 
 echo "Executing SPARQL Update..."
-# Use -f to fail on HTTP errors and -w to get status
 STATUS=$(curl -s -f -o /dev/null -w "%{http_code}" -X POST "$GRAPHDB_URL/repositories/$REPOSITORY_ID/statements" \
-     -H "Content-Type: application/sparql-update" \
-     --data-binary "$SPARQL_UPDATE")
+  -H "Content-Type: application/sparql-update" \
+  --data-binary "$SPARQL_UPDATE")
 
 if [ "$STATUS" = "204" ] || [ "$STATUS" = "200" ]; then
   echo "SUCCESS: Anomaly injected into GraphDB."

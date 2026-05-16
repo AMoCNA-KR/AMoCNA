@@ -43,9 +43,6 @@ while true; do
   echo -e "ACTION\t\t\tSTATE\t\tRESOURCE\tTIMESTAMP"
   echo "---------------------------------------------------"
 
-  # Fetch and format with simple column logic (using curl + awk or jq if available)
-  # For industrial reliability, we use curl and a simple table output
-
   curl -s -H "Accept: application/sparql-results+json" \
     --data-urlencode "query=$SPARQL_QUERY" \
     "$GRAPHDB_URL/repositories/$REPOSITORY_ID" |
