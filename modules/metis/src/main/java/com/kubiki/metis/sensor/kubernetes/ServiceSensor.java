@@ -81,7 +81,6 @@ public class ServiceSensor extends AbstractNamespacedSensor {
                 .setOntologyType(type)
                 .setResourceId(name)
                 .setResourceName(name)
-                .putProperties("namespace", ns)
                 .build();
 
         publisher.publish(SensorEventPublisher.withTimestamp(
