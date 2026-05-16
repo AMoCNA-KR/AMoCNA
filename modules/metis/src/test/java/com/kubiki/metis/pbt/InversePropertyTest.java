@@ -6,7 +6,7 @@ import com.kubiki.metis.config.MetisProperties;
 import com.kubiki.metis.grpc.RelationshipAssertedEvent;
 import com.kubiki.metis.knowledge.KnowledgeBaseException;
 import com.kubiki.metis.knowledge.KnowledgeBaseWriter;
-import com.kubiki.metis.knowledge.OntologyRegistry;
+import com.kubiki.metis.sensor.IriFactory;
 import net.jqwik.api.*;
 import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.query.QueryLanguage;
@@ -94,8 +94,8 @@ class InversePropertyTest {
                 new MetisProperties.Ontology(CNEE),
                 new MetisProperties.Palamedes("localhost", 50051), null
         );
-        OntologyRegistry ontologyRegistry = new OntologyRegistry(props);
-        KnowledgeBaseWriter writer = new KnowledgeBaseWriter(capturingRepo, ontologyRegistry);
+        IriFactory iriFactory = new IriFactory(props);
+        KnowledgeBaseWriter writer = new KnowledgeBaseWriter(capturingRepo, iriFactory);
 
         RelationshipAssertedEvent event = RelationshipAssertedEvent.newBuilder()
                 .setSubjectIri(subjectIri)

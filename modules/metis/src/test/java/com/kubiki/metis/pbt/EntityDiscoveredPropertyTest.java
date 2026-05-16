@@ -4,7 +4,7 @@ import com.kubiki.metis.config.MetisProperties;
 import com.kubiki.metis.grpc.EntityDiscoveredEvent;
 import com.kubiki.metis.knowledge.KnowledgeBaseException;
 import com.kubiki.metis.knowledge.KnowledgeBaseWriter;
-import com.kubiki.metis.knowledge.OntologyRegistry;
+import com.kubiki.metis.sensor.IriFactory;
 import net.jqwik.api.*;
 import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
@@ -37,8 +37,8 @@ class EntityDiscoveredPropertyTest {
 
         private final List<String> capturedSparql = new ArrayList<>();
 
-        CapturingKnowledgeBaseWriter(Repository repository, OntologyRegistry ontologyRegistry) {
-            super(repository, ontologyRegistry);
+        CapturingKnowledgeBaseWriter(Repository repository, IriFactory iriFactory) {
+            super(repository, iriFactory);
         }
 
         @Override
@@ -115,9 +115,9 @@ class EntityDiscoveredPropertyTest {
                 new MetisProperties.Ontology(CNEE_NAMESPACE),
                 new MetisProperties.Palamedes("localhost", 50051), null
         );
-        OntologyRegistry ontologyRegistry = new OntologyRegistry(props);
+        IriFactory iriFactory = new IriFactory(props);
         CapturingKnowledgeBaseWriter writer =
-                new CapturingKnowledgeBaseWriter(repo, ontologyRegistry);
+                new CapturingKnowledgeBaseWriter(repo, iriFactory);
 
         // Build the event
         EntityDiscoveredEvent event = EntityDiscoveredEvent.newBuilder()
@@ -133,25 +133,24 @@ class EntityDiscoveredPropertyTest {
         // Assert: join all captured SPARQL into one string for analysis
         String allSparql = writer.getAllCapturedSparql();
 
-        // 1. Exactly one rdf:type triple with a CNEEOnt-namespaced object.
-        //    In the INSERT body the triple ends with " ." so we count
-        //    "rdf:type <CNEEOnt#...> ." occurrences (INSERT body only, not FILTER clause).
-        long rdfTypeCount = countInsertTriples(allSparql, "rdf:type <" + CNEE_NAMESPACE);
+        // The new atomic-INSERT format produces one rdf:type triple in INSERT and one in FILTER NOT EXISTS,
+        // so we expect exactly 2 occurrences of "rdf:type <CNEEOnt#...". Same for the FILTER clause check.
+        // For data properties (cnee:resourceID, cnee:resourceName), they appear only in the INSERT body
+        // (no FILTER guard per property in the new format).
+        long rdfTypeCount = countOccurrences(allSparql, "rdf:type <" + CNEE_NAMESPACE);
         assertThat(rdfTypeCount)
-                .as("Expected exactly one rdf:type triple with CNEEOnt-namespaced object in SPARQL:\n%s",
+                .as("Expected rdf:type with CNEEOnt-namespaced object to appear in INSERT and FILTER (count=2):\n%s",
                         allSparql)
-                .isEqualTo(1);
+                .isEqualTo(2);
 
-        // 2. Exactly one cnee:resourceID triple in the INSERT body.
-        long resourceIdCount = countInsertTriples(allSparql, "cnee:resourceID");
+        long resourceIdCount = countOccurrences(allSparql, "cnee:resourceID");
         assertThat(resourceIdCount)
-                .as("Expected exactly one cnee:resourceID triple in SPARQL:\n%s", allSparql)
+                .as("Expected exactly one cnee:resourceID occurrence in SPARQL:\n%s", allSparql)
                 .isEqualTo(1);
 
-        // 3. Exactly one cnee:resourceName triple in the INSERT body.
-        long resourceNameCount = countInsertTriples(allSparql, "cnee:resourceName");
+        long resourceNameCount = countOccurrences(allSparql, "cnee:resourceName");
         assertThat(resourceNameCount)
-                .as("Expected exactly one cnee:resourceName triple in SPARQL:\n%s", allSparql)
+                .as("Expected exactly one cnee:resourceName occurrence in SPARQL:\n%s", allSparql)
                 .isEqualTo(1);
 
         repo.shutDown();

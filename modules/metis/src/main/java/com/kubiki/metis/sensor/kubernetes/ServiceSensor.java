@@ -1,6 +1,7 @@
 package com.kubiki.metis.sensor.kubernetes;
 
 import com.kubiki.metis.config.MetisProperties;
+import com.kubiki.metis.knowledge.CneeOntology;
 import com.kubiki.metis.sensor.IriFactory;
 import com.kubiki.metis.sensor.SensorEventPublisher;
 import com.kubiki.metis.grpc.*;
@@ -24,7 +25,7 @@ import org.springframework.stereotype.Component;
 @ConditionalOnProperty(name = "metis.sensor.enabled", havingValue = "true", matchIfMissing = false)
 public class ServiceSensor extends AbstractNamespacedSensor {
 
-    private static final String ONTOLOGY_TYPE_LOCAL = "Service";
+    private static final String ONTOLOGY_TYPE_LOCAL = CneeOntology.CLASS_SERVICE;
 
     private final SensorEventPublisher publisher;
     private final IriFactory iriFactory;
@@ -73,7 +74,7 @@ public class ServiceSensor extends AbstractNamespacedSensor {
     private void onServiceAdded(Service svc) {
         String ns   = svc.getMetadata().getNamespace();
         String name = svc.getMetadata().getName();
-        String iri  = iriFactory.namespacedIri("Service", ns, name);
+        String iri  = iriFactory.namespacedIri(CneeOntology.KIND_SERVICE, ns, name);
         String type = iriFactory.typeIri(ONTOLOGY_TYPE_LOCAL);
 
         EntityDiscoveredEvent discovered = EntityDiscoveredEvent.newBuilder()
@@ -92,7 +93,7 @@ public class ServiceSensor extends AbstractNamespacedSensor {
     private void onServiceDeleted(Service svc) {
         String ns   = svc.getMetadata().getNamespace();
         String name = svc.getMetadata().getName();
-        String iri  = iriFactory.namespacedIri("Service", ns, name);
+        String iri  = iriFactory.namespacedIri(CneeOntology.KIND_SERVICE, ns, name);
         String type = iriFactory.typeIri(ONTOLOGY_TYPE_LOCAL);
 
         EntityDeletedEvent deleted = EntityDeletedEvent.newBuilder()

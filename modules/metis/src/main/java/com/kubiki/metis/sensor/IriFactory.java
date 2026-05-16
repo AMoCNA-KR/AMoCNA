@@ -30,9 +30,16 @@ public class IriFactory {
     }
 
     /**
+     * @return the configured CNEEOnt namespace IRI prefix
+     */
+    public String getCneeNamespace() {
+        return cneeNamespace;
+    }
+
+    /**
      * IRI for a namespaced resource (Pod, Service, …).
      *
-     * @param kind      Kubernetes kind, e.g. {@code "Pod"}
+     * @param kind      Kubernetes kind, e.g. {@link com.kubiki.metis.knowledge.CneeOntology#KIND_POD}
      * @param namespace Kubernetes namespace
      * @param name      resource name
      * @return fully qualified CNEEOnt IRI string
@@ -44,7 +51,7 @@ public class IriFactory {
     /**
      * IRI for a cluster-scoped resource (Node, …).
      *
-     * @param kind Kubernetes kind, e.g. {@code "Node"}
+     * @param kind Kubernetes kind, e.g. {@link com.kubiki.metis.knowledge.CneeOntology#KIND_NODE}
      * @param name resource name
      * @return fully qualified CNEEOnt IRI string
      */

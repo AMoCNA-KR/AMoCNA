@@ -1,15 +1,17 @@
 package com.kubiki.metis.sensor.kubernetes;
 
 import com.kubiki.metis.config.MetisProperties;
+import com.kubiki.metis.grpc.*;
+import com.kubiki.metis.knowledge.CneeOntology;
 import com.kubiki.metis.sensor.IriFactory;
 import com.kubiki.metis.sensor.KubernetesSensor;
 import com.kubiki.metis.sensor.SensorEventPublisher;
-import com.kubiki.metis.grpc.*;
 import io.fabric8.kubernetes.api.model.Pod;
 import io.fabric8.kubernetes.api.model.Service;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.informers.ResourceEventHandler;
 import io.fabric8.kubernetes.client.informers.SharedIndexInformer;
+import io.fabric8.kubernetes.client.informers.cache.Indexer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -18,6 +20,10 @@ import org.springframework.stereotype.Component;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Watches Pods and Services to detect and emit topology relationships:
@@ -26,17 +32,22 @@ import java.util.Map;
  *   <li>{@code cnee:isHostedOn(pod, node)} — when a pod is scheduled to a node</li>
  * </ul>
  *
- * <p>Uses {@code cnee:contains} / {@code cnee:isHostedOn} predicates which trigger
- * automatic inverse triple insertion in {@link com.kubiki.metis.knowledge.KnowledgeBaseWriter}.
+ * <p>Reads existing pods and services from the local informer cache via
+ * {@link Indexer#list()} — no API calls per event.
+ *
+ * <h2>Sync barrier</h2>
+ * Both pod and service informers are started together, then the sensor blocks
+ * on a worker thread until both caches report {@link SharedIndexInformer#hasSynced()}.
+ * Only then are cross-handlers attached and a one-time reconciliation sweep emitted.
+ * This avoids races where pod {@code onAdd} runs before the service cache is populated.
  */
 @Component
 @ConditionalOnProperty(name = "metis.sensor.enabled", havingValue = "true", matchIfMissing = false)
 public class BindingSensor implements KubernetesSensor {
 
     private static final Logger log = LoggerFactory.getLogger(BindingSensor.class);
-
-    private static final String CNEE_CONTAINS      = "contains";
-    private static final String CNEE_IS_HOSTED_ON  = "isHostedOn";
+    private static final long SYNC_POLL_MS = 100;
+    private static final long SYNC_TIMEOUT_MS = 60_000;
 
     private final KubernetesClient client;
     private final MetisProperties properties;
@@ -44,7 +55,10 @@ public class BindingSensor implements KubernetesSensor {
     private final IriFactory iriFactory;
     private final String cneeNamespace;
 
-    private final List<SharedIndexInformer<?>> informers = new ArrayList<>();
+    private final List<SharedIndexInformer<Pod>> podInformers = new ArrayList<>();
+    private final List<SharedIndexInformer<Service>> svcInformers = new ArrayList<>();
+
+    private ScheduledExecutorService syncExecutor;
 
     public BindingSensor(KubernetesClient client,
                          MetisProperties properties,
@@ -68,6 +82,12 @@ public class BindingSensor implements KubernetesSensor {
                 ? properties.sensor().namespaces()
                 : List.of();
 
+        syncExecutor = Executors.newSingleThreadScheduledExecutor(r -> {
+            Thread t = new Thread(r, "binding-sensor-sync");
+            t.setDaemon(true);
+            return t;
+        });
+
         if (namespaces.isEmpty()) {
             startForNamespace(null);
             log.info("BindingSensor watching all namespaces");
@@ -81,12 +101,21 @@ public class BindingSensor implements KubernetesSensor {
 
     @Override
     public void stop() {
-        for (SharedIndexInformer<?> informer : informers) {
+        if (syncExecutor != null) {
+            syncExecutor.shutdownNow();
+        }
+        for (SharedIndexInformer<?> informer : podInformers) {
             try { informer.stop(); } catch (Exception e) {
-                log.warn("BindingSensor error stopping informer: {}", e.getMessage());
+                log.warn("BindingSensor error stopping pod informer: {}", e.getMessage());
             }
         }
-        informers.clear();
+        for (SharedIndexInformer<?> informer : svcInformers) {
+            try { informer.stop(); } catch (Exception e) {
+                log.warn("BindingSensor error stopping service informer: {}", e.getMessage());
+            }
+        }
+        podInformers.clear();
+        svcInformers.clear();
         log.info("BindingSensor stopped");
     }
 
@@ -101,45 +130,82 @@ public class BindingSensor implements KubernetesSensor {
                 ? client.services().inNamespace(namespace)
                 : client.services().inAnyNamespace();
 
-        // Watch pods — emit pod↔node and pod↔service bindings
-        SharedIndexInformer<Pod> podInformer = podOp.inform(new ResourceEventHandler<>() {
+        SharedIndexInformer<Service> svcInformer = svcOp.inform();
+        SharedIndexInformer<Pod> podInformer = podOp.inform();
+        svcInformers.add(svcInformer);
+        podInformers.add(podInformer);
+
+        // Wait for both caches to sync before attaching cross-handlers.
+        // This eliminates the race where pod onAdd fires against an empty service cache.
+        syncExecutor.execute(() -> waitForSyncAndAttach(podInformer, svcInformer, namespace));
+    }
+
+    /**
+     * Polls until both informers report synced, then attaches event handlers
+     * and emits a one-time reconciliation sweep over existing data.
+     */
+    private void waitForSyncAndAttach(SharedIndexInformer<Pod> podInformer,
+                                      SharedIndexInformer<Service> svcInformer,
+                                      String namespace) {
+        long deadline = System.currentTimeMillis() + SYNC_TIMEOUT_MS;
+        while (System.currentTimeMillis() < deadline) {
+            if (podInformer.hasSynced() && svcInformer.hasSynced()) {
+                log.info("BindingSensor caches synced [namespace={}] — attaching handlers",
+                        namespace == null ? "<all>" : namespace);
+                attachHandlers(podInformer, svcInformer);
+                reconcileExisting(podInformer.getIndexer(), svcInformer.getIndexer());
+                return;
+            }
+            try {
+                Thread.sleep(SYNC_POLL_MS);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                return;
+            }
+        }
+        log.warn("BindingSensor timed out waiting for cache sync [namespace={}] — attaching handlers anyway",
+                namespace == null ? "<all>" : namespace);
+        attachHandlers(podInformer, svcInformer);
+        reconcileExisting(podInformer.getIndexer(), svcInformer.getIndexer());
+    }
+
+    private void attachHandlers(SharedIndexInformer<Pod> podInformer,
+                                SharedIndexInformer<Service> svcInformer) {
+        podInformer.addEventHandler(new ResourceEventHandler<>() {
             @Override
             public void onAdd(Pod pod) {
                 emitPodNodeBinding(pod);
-                emitPodServiceBindings(pod, namespace);
+                emitPodServiceBindings(pod, svcInformer.getIndexer());
             }
 
             @Override
             public void onUpdate(Pod oldPod, Pod newPod) {
-                // Re-emit if node assignment changed (pod rescheduled)
                 String oldNode = nodeName(oldPod);
                 String newNode = nodeName(newPod);
                 if (newNode != null && !newNode.equals(oldNode)) {
                     emitPodNodeBinding(newPod);
                 }
+                if (!Objects.equals(oldPod.getMetadata().getLabels(), newPod.getMetadata().getLabels())) {
+                    emitPodServiceBindings(newPod, svcInformer.getIndexer());
+                }
             }
 
             @Override
             public void onDelete(Pod pod, boolean deletedFinalStateUnknown) {
-                // Deletion is handled by PodSensor — KnowledgeBaseWriter removes all triples
+                // Deletion handled by PodSensor — KnowledgeBaseWriter.deleteEntity removes all triples
             }
         });
 
-        podInformer.start();
-        informers.add(podInformer);
-
-        // Watch services — emit service↔pod bindings for existing pods
-        SharedIndexInformer<Service> svcInformer = svcOp.inform(new ResourceEventHandler<>() {
+        svcInformer.addEventHandler(new ResourceEventHandler<>() {
             @Override
             public void onAdd(Service svc) {
-                emitServicePodBindings(svc, namespace);
+                emitServicePodBindings(svc, podInformer.getIndexer());
             }
 
             @Override
             public void onUpdate(Service oldSvc, Service newSvc) {
-                // Re-emit if selector changed
                 if (!selectorsEqual(oldSvc, newSvc)) {
-                    emitServicePodBindings(newSvc, namespace);
+                    emitServicePodBindings(newSvc, podInformer.getIndexer());
                 }
             }
 
@@ -148,9 +214,19 @@ public class BindingSensor implements KubernetesSensor {
                 // Deletion handled by ServiceSensor
             }
         });
+    }
 
-        svcInformer.start();
-        informers.add(svcInformer);
+    /**
+     * One-time sweep over already-cached pods and services after sync barrier passes,
+     * to catch all bindings that existed before the sensor started.
+     */
+    private void reconcileExisting(Indexer<Pod> podCache, Indexer<Service> serviceCache) {
+        for (Pod pod : podCache.list()) {
+            emitPodNodeBinding(pod);
+            emitPodServiceBindings(pod, serviceCache);
+        }
+        log.info("BindingSensor reconciliation complete [pods={}, services={}]",
+                podCache.list().size(), serviceCache.list().size());
     }
 
     // -------------------------------------------------------------------------
@@ -162,55 +238,52 @@ public class BindingSensor implements KubernetesSensor {
 
         String ns      = pod.getMetadata().getNamespace();
         String podName = pod.getMetadata().getName();
-        String podIri  = iriFactory.namespacedIri("Pod", ns, podName);
-        String nodeIri = iriFactory.clusterScopedIri("Node", node);
+        String podIri  = iriFactory.namespacedIri(CneeOntology.KIND_POD, ns, podName);
+        String nodeIri = iriFactory.clusterScopedIri(CneeOntology.KIND_NODE, node);
 
-        emitRelationship(podIri, CNEE_IS_HOSTED_ON, nodeIri);
+        emitRelationship(podIri, CneeOntology.PROP_IS_HOSTED_ON, nodeIri);
         log.debug("BindingSensor: pod {}/{} isHostedOn node {}", ns, podName, node);
     }
 
     // -------------------------------------------------------------------------
-    // Pod → Services (check all services in namespace for matching selector)
+    // Pod → Services — read from informer cache (no API call)
 
-    private void emitPodServiceBindings(Pod pod, String namespace) {
+    private void emitPodServiceBindings(Pod pod, Indexer<Service> serviceCache) {
         String ns      = pod.getMetadata().getNamespace();
         String podName = pod.getMetadata().getName();
         Map<String, String> podLabels = pod.getMetadata().getLabels();
         if (podLabels == null || podLabels.isEmpty()) return;
 
-        List<Service> services = namespace != null
-                ? client.services().inNamespace(ns).list().getItems()
-                : client.services().inNamespace(ns).list().getItems();
+        for (Service svc : serviceCache.list()) {
+            if (!ns.equals(svc.getMetadata().getNamespace())) continue;
+            if (!selectorMatches(svc, podLabels)) continue;
 
-        for (Service svc : services) {
-            if (selectorMatches(svc, podLabels)) {
-                String svcIri = iriFactory.namespacedIri("Service", ns, svc.getMetadata().getName());
-                String podIri = iriFactory.namespacedIri("Pod", ns, podName);
-                emitRelationship(svcIri, CNEE_CONTAINS, podIri);
-                log.debug("BindingSensor: service {}/{} contains pod {}", ns, svc.getMetadata().getName(), podName);
-            }
+            String svcIri = iriFactory.namespacedIri(CneeOntology.KIND_SERVICE, ns, svc.getMetadata().getName());
+            String podIri = iriFactory.namespacedIri(CneeOntology.KIND_POD, ns, podName);
+            emitRelationship(svcIri, CneeOntology.PROP_CONTAINS, podIri);
+            log.debug("BindingSensor: service {}/{} contains pod {}", ns, svc.getMetadata().getName(), podName);
         }
     }
 
     // -------------------------------------------------------------------------
-    // Service → Pods (check all pods in namespace for matching labels)
+    // Service → Pods — read from informer cache (no API call)
 
-    private void emitServicePodBindings(Service svc, String namespace) {
+    private void emitServicePodBindings(Service svc, Indexer<Pod> podCache) {
         Map<String, String> selector = selector(svc);
         if (selector == null || selector.isEmpty()) return;
 
         String ns      = svc.getMetadata().getNamespace();
         String svcName = svc.getMetadata().getName();
-        String svcIri  = iriFactory.namespacedIri("Service", ns, svcName);
+        String svcIri  = iriFactory.namespacedIri(CneeOntology.KIND_SERVICE, ns, svcName);
 
-        List<Pod> pods = client.pods().inNamespace(ns).list().getItems();
-        for (Pod pod : pods) {
+        for (Pod pod : podCache.list()) {
+            if (!ns.equals(pod.getMetadata().getNamespace())) continue;
             Map<String, String> podLabels = pod.getMetadata().getLabels();
-            if (podLabels != null && podLabels.entrySet().containsAll(selector.entrySet())) {
-                String podIri = iriFactory.namespacedIri("Pod", ns, pod.getMetadata().getName());
-                emitRelationship(svcIri, CNEE_CONTAINS, podIri);
-                log.debug("BindingSensor: service {}/{} contains pod {}", ns, svcName, pod.getMetadata().getName());
-            }
+            if (podLabels == null || !podLabels.entrySet().containsAll(selector.entrySet())) continue;
+
+            String podIri = iriFactory.namespacedIri(CneeOntology.KIND_POD, ns, pod.getMetadata().getName());
+            emitRelationship(svcIri, CneeOntology.PROP_CONTAINS, podIri);
+            log.debug("BindingSensor: service {}/{} contains pod {}", ns, svcName, pod.getMetadata().getName());
         }
     }
 
@@ -244,10 +317,6 @@ public class BindingSensor implements KubernetesSensor {
     }
 
     private static boolean selectorsEqual(Service a, Service b) {
-        Map<String, String> sa = selector(a);
-        Map<String, String> sb = selector(b);
-        if (sa == null && sb == null) return true;
-        if (sa == null || sb == null) return false;
-        return sa.equals(sb);
+        return Objects.equals(selector(a), selector(b));
     }
 }

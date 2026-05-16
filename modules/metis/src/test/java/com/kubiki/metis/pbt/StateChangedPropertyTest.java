@@ -6,7 +6,7 @@ import com.kubiki.metis.config.MetisProperties;
 import com.kubiki.metis.grpc.StateChangedEvent;
 import com.kubiki.metis.knowledge.KnowledgeBaseException;
 import com.kubiki.metis.knowledge.KnowledgeBaseWriter;
-import com.kubiki.metis.knowledge.OntologyRegistry;
+import com.kubiki.metis.sensor.IriFactory;
 import net.jqwik.api.*;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.ValueFactory;
@@ -42,7 +42,7 @@ class StateChangedPropertyTest {
 
     /**
      * Builds a KnowledgeBaseWriter backed by the given in-memory repository.
-     * OntologyRegistry is constructed with a minimal MetisProperties stub.
+     * IriFactory is constructed with a minimal MetisProperties stub.
      */
     private KnowledgeBaseWriter writerFor(Repository repo) {
         MetisProperties props = new MetisProperties(
@@ -50,7 +50,7 @@ class StateChangedPropertyTest {
                 new MetisProperties.Ontology(CNEE_NAMESPACE),
                 new MetisProperties.Palamedes("localhost", 50051), null
         );
-        OntologyRegistry registry = new OntologyRegistry(props);
+        IriFactory registry = new IriFactory(props);
         return new KnowledgeBaseWriter(repo, registry);
     }
 

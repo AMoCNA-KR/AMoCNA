@@ -2,13 +2,10 @@ package com.kubiki.metis.sensor;
 
 import com.google.protobuf.Timestamp;
 import com.kubiki.metis.config.MetisProperties;
-import com.kubiki.metis.grpc.IngestResponse;
-import com.kubiki.metis.grpc.SensorBatch;
 import com.kubiki.metis.grpc.SensorEvent;
 import com.kubiki.metis.ingestion.SensorEventProcessor;
 import com.kubiki.metis.ingestion.model.HandlerResult;
 import com.kubiki.metis.ingestion.model.ProcessResult;
-import com.kubiki.metis.notification.PalamedesNotifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -25,8 +22,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Buffers {@link SensorEvent}s produced by {@link KubernetesSensor} implementations
- * and flushes them as {@link SensorBatch}es directly to the in-process
- * {@link SensorEventProcessor} — no network hop required.
+ * and flushes them as batches directly to the in-process {@link SensorEventProcessor}.
  *
  * <p>A batch is flushed when either:
  * <ul>
@@ -40,7 +36,6 @@ public class SensorEventPublisher {
     private static final Logger log = LoggerFactory.getLogger(SensorEventPublisher.class);
 
     private final SensorEventProcessor processor;
-    private final PalamedesNotifier notifier;
     private final int batchSize;
     private final long flushIntervalMs;
     private final String sensorHostname;
@@ -49,19 +44,14 @@ public class SensorEventPublisher {
     private final ReentrantLock lock = new ReentrantLock();
     private ScheduledExecutorService scheduler;
 
-    public SensorEventPublisher(SensorEventProcessor processor,
-                                PalamedesNotifier notifier,
-                                MetisProperties properties) {
+    public SensorEventPublisher(SensorEventProcessor processor, MetisProperties properties) {
         this.processor = processor;
-        this.notifier = notifier;
         this.batchSize = properties.sensor().batchSize();
         this.flushIntervalMs = properties.sensor().flushIntervalMs();
         this.sensorHostname = resolveHostname();
     }
 
-    /**
-     * Start the periodic flush scheduler. Called by {@link SensorOrchestrator}.
-     */
+    /** Start the periodic flush scheduler. Called by {@link SensorOrchestrator}. */
     void startScheduler() {
         scheduler = Executors.newSingleThreadScheduledExecutor(r -> {
             Thread t = new Thread(r, "sensor-flush");
@@ -72,12 +62,18 @@ public class SensorEventPublisher {
         log.info("SensorEventPublisher started [batchSize={}, flushIntervalMs={}]", batchSize, flushIntervalMs);
     }
 
-    /**
-     * Stop the scheduler and flush any remaining buffered events.
-     */
+    /** Stop the scheduler and flush any remaining buffered events. */
     void stopScheduler() {
         if (scheduler != null) {
             scheduler.shutdown();
+            try {
+                if (!scheduler.awaitTermination(5, TimeUnit.SECONDS)) {
+                    scheduler.shutdownNow();
+                }
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                scheduler.shutdownNow();
+            }
         }
         flush();
         log.info("SensorEventPublisher stopped");
@@ -85,58 +81,47 @@ public class SensorEventPublisher {
 
     /**
      * Enqueue a sensor event. Triggers an immediate flush if the buffer is full.
-     *
-     * @param event the event to publish; must not be {@code null}
      */
     public void publish(SensorEvent event) {
+        boolean shouldFlush;
         lock.lock();
         try {
             buffer.add(event);
-            if (buffer.size() >= batchSize) {
-                flushUnderLock();
-            }
+            shouldFlush = buffer.size() >= batchSize;
         } finally {
             lock.unlock();
+        }
+        if (shouldFlush) {
+            flush();
         }
     }
 
     // -------------------------------------------------------------------------
 
+    /**
+     * Atomically swaps the buffer and processes the swapped batch outside the lock,
+     * so producers (sensor threads) are never blocked during SPARQL writes.
+     */
     private void flush() {
+        List<SensorEvent> batch;
         lock.lock();
         try {
-            flushUnderLock();
+            if (buffer.isEmpty()) return;
+            batch = new ArrayList<>(buffer);
+            buffer.clear();
         } finally {
             lock.unlock();
         }
-    }
 
-    /** Must be called with {@link #lock} held. */
-    private void flushUnderLock() {
-        if (buffer.isEmpty()) return;
-
-        List<SensorEvent> batch = new ArrayList<>(buffer);
-        buffer.clear();
-
+        // Lock released — network I/O happens here without blocking publishers.
         String correlationId = buildCorrelationId();
-        SensorBatch sensorBatch = SensorBatch.newBuilder()
-                .setCorrelationId(correlationId)
-                .addAllEvents(batch)
-                .build();
-
-        // In-process call — no gRPC network overhead
         try {
-            ProcessResult result = processor.processBatch(sensorBatch.getEventsList(), correlationId);
+            ProcessResult result = processor.processBatch(batch, correlationId);
 
             HandlerResult firstSuccess = result.firstSuccess();
             if (firstSuccess != null) {
                 log.info("Palamedes should be notified [correlationId={}, resourceIri={}, ontologyType={}, changeKind={}]",
                         correlationId, firstSuccess.resourceIri(), firstSuccess.ontologyType(), firstSuccess.changeKind());
-                // notifier.notify(
-                //         firstSuccess.resourceIri(),
-                //         firstSuccess.ontologyType(),
-                //         firstSuccess.changeKind(),
-                //         correlationId);
             }
 
             log.debug("Sensor batch flushed [correlationId={}, events={}, processed={}, failed={}]",
@@ -166,9 +151,7 @@ public class SensorEventPublisher {
         }
     }
 
-    /**
-     * Wraps a {@link SensorEvent} with the current timestamp.
-     */
+    /** Wraps a {@link SensorEvent.Builder} with the current timestamp. */
     public static SensorEvent withTimestamp(SensorEvent.Builder builder) {
         Instant now = Instant.now();
         return builder

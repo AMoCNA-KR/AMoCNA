@@ -6,7 +6,7 @@ import com.kubiki.metis.config.MetisProperties;
 import com.kubiki.metis.grpc.*;
 import com.kubiki.metis.knowledge.KnowledgeBaseException;
 import com.kubiki.metis.knowledge.KnowledgeBaseWriter;
-import com.kubiki.metis.knowledge.OntologyRegistry;
+import com.kubiki.metis.sensor.IriFactory;
 import net.jqwik.api.*;
 import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
@@ -38,8 +38,8 @@ class NoRawMetricValuesPropertyTest {
 
         final List<String> capturedSparql = new ArrayList<>();
 
-        CapturingKnowledgeBaseWriter(Repository repository, OntologyRegistry ontologyRegistry) {
-            super(repository, ontologyRegistry);
+        CapturingKnowledgeBaseWriter(Repository repository, IriFactory iriFactory) {
+            super(repository, iriFactory);
         }
 
         @Override
@@ -61,7 +61,7 @@ class NoRawMetricValuesPropertyTest {
                 new MetisProperties.Ontology(CNEE),
                 new MetisProperties.Palamedes("localhost", 50051), null
         );
-        OntologyRegistry registry = new OntologyRegistry(props);
+        IriFactory registry = new IriFactory(props);
         return new CapturingKnowledgeBaseWriter(repo, registry);
     }
 

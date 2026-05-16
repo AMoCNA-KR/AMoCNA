@@ -49,7 +49,7 @@ class PalamededsTriggerPropertyTest {
      * <p><b>Validates: Requirements 10.1, 10.3</b>
      */
     @Property(tries = 100)
-    void triggerCalledExactlyOnceForBatchWithAtLeastOneSuccess(
+    void triggerNeverCalledWhilePalamedesIsLogOnly(
             @ForAll("validEntityDiscoveredBatches") SensorBatch batch) {
 
         // Arrange
@@ -224,18 +224,24 @@ class PalamededsTriggerPropertyTest {
             ReasonerServiceGrpc.ReasonerServiceBlockingStub stub,
             KnowledgeBaseWriter mockWriter) {
 
+        com.kubiki.metis.config.MetisProperties props = new com.kubiki.metis.config.MetisProperties(
+                new com.kubiki.metis.config.MetisProperties.GraphDB("http://x", "test", 1000),
+                new com.kubiki.metis.config.MetisProperties.Ontology(CNEE_NS),
+                new com.kubiki.metis.config.MetisProperties.Palamedes("x", 1),
+                null);
+        com.kubiki.metis.sensor.IriFactory iriFactory = new com.kubiki.metis.sensor.IriFactory(props);
+
         // Real handlers wired with the mock writer
         List<SensorEventHandler> handlers = new ArrayList<>();
         handlers.add(new EntityDiscoveredHandler(mockWriter));
         handlers.add(new RelationshipAssertedHandler(mockWriter));
         handlers.add(new StateChangedHandler(mockWriter));
         handlers.add(new EntityDeletedHandler(mockWriter));
-        handlers.add(new MetricMetadataRegisteredHandler(mockWriter));
+        handlers.add(new MetricMetadataRegisteredHandler(mockWriter, iriFactory));
 
         SensorEventProcessor processor = new SensorEventProcessor(handlers);
-        PalamedesNotifier notifier = new PalamedesNotifier(stub);
 
-        return new SensorIngestionGrpcService(processor, notifier);
+        return new SensorIngestionGrpcService(processor);
     }
 
     // -------------------------------------------------------------------------

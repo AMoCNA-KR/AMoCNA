@@ -1,10 +1,10 @@
 package com.kubiki.metis.sensor.kubernetes;
 
-import com.kubiki.metis.config.MetisProperties;
+import com.kubiki.metis.grpc.*;
+import com.kubiki.metis.knowledge.CneeOntology;
 import com.kubiki.metis.sensor.IriFactory;
 import com.kubiki.metis.sensor.KubernetesSensor;
 import com.kubiki.metis.sensor.SensorEventPublisher;
-import com.kubiki.metis.grpc.*;
 import io.fabric8.kubernetes.api.model.Node;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.informers.ResourceEventHandler;
@@ -21,7 +21,7 @@ import org.springframework.stereotype.Component;
  *   <li>{@link EntityDeletedEvent} — on node delete</li>
  * </ul>
  *
- * <p>CNEEOnt type: {@code cnee:ExecutionEnvironment}
+ * <p>CNEEOnt type: {@code cnee:Node}.
  *
  * <p>Nodes are cluster-scoped so this sensor does not extend
  * {@link AbstractNamespacedSensor} — it manages a single informer directly.
@@ -31,7 +31,7 @@ import org.springframework.stereotype.Component;
 public class NodeSensor implements KubernetesSensor {
 
     private static final Logger log = LoggerFactory.getLogger(NodeSensor.class);
-    private static final String ONTOLOGY_TYPE_LOCAL = "Node";
+    private static final String ONTOLOGY_TYPE_LOCAL = CneeOntology.CLASS_NODE;
 
     private final KubernetesClient client;
     private final SensorEventPublisher publisher;
@@ -40,7 +40,6 @@ public class NodeSensor implements KubernetesSensor {
     private SharedIndexInformer<Node> informer;
 
     public NodeSensor(KubernetesClient client,
-                      MetisProperties properties,
                       SensorEventPublisher publisher,
                       IriFactory iriFactory) {
         this.client = client;
@@ -91,7 +90,7 @@ public class NodeSensor implements KubernetesSensor {
 
     private void onNodeAdded(Node node) {
         String name = node.getMetadata().getName();
-        String iri  = iriFactory.clusterScopedIri("Node", name);
+        String iri  = iriFactory.clusterScopedIri(CneeOntology.KIND_NODE, name);
         String type = iriFactory.typeIri(ONTOLOGY_TYPE_LOCAL);
 
         EntityDiscoveredEvent discovered = EntityDiscoveredEvent.newBuilder()
@@ -109,7 +108,7 @@ public class NodeSensor implements KubernetesSensor {
 
     private void onNodeDeleted(Node node) {
         String name = node.getMetadata().getName();
-        String iri  = iriFactory.clusterScopedIri("Node", name);
+        String iri  = iriFactory.clusterScopedIri(CneeOntology.KIND_NODE, name);
         String type = iriFactory.typeIri(ONTOLOGY_TYPE_LOCAL);
 
         EntityDeletedEvent deleted = EntityDeletedEvent.newBuilder()
