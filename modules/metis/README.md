@@ -1,343 +1,220 @@
 # Metis — Monitor Module
 
-Metis is the **Monitor** phase of the AMoCNA (Autonomic Management of Cloud-Native Applications) MRE-K autonomic loop. It receives structural discovery events from sensors over gRPC, translates them into SPARQL updates against a GraphDB knowledge base, and triggers the Palamedes reasoning module after each successful batch.
-
-Metis does **not** store raw metric values (CPU, memory, latency). Those live exclusively in Prometheus TSDB. Metis only persists structural and topological knowledge: entity types, relationships, lifecycle states, and metric endpoint metadata.
+Metis is the **Monitor** phase of the AMoCNA MRE-K autonomic loop. It watches a Kubernetes cluster, translates structural events into SPARQL updates against a GraphDB knowledge base, and notifies the reasoning module after each successful update.
 
 ---
 
-## Table of Contents
-
-- [Architecture](#architecture)
-- [Prerequisites](#prerequisites)
-- [Configuration](#configuration)
-- [Building](#building)
-- [Docker](#docker)
-- [Running](#running)
-- [Testing](#testing)
-- [gRPC API](#grpc-api)
-- [Package Structure](#package-structure)
-
----
-
-## Architecture
+## How it works
 
 ```
-Sensors
-  │  IngestBatch (gRPC, port 50052)
-  ▼
-SensorIngestionGrpcService
-  │
-  ├─► SensorEventProcessor
-  │     └─► SensorEventHandler (one per event type)
-  │           └─► KnowledgeBaseWriter ──► GraphDB (SPARQL over HTTP)
-  │
-  └─► PalamedesNotifier ──► Palamedes ReasonerService (gRPC, port 50051)
+Kubernetes API
+      │  (Fabric8 informers — event-driven, no polling)
+      ▼
+Built-in Sensors
+  PodSensor / ServiceSensor / NodeSensor / BindingSensor
+      │
+      ▼  in-process
+SensorEventProcessor ──► KnowledgeBaseWriter ──► GraphDB (SPARQL)
+      │
+      └──► PalamedesNotifier ──► Palamedes
+
+External sensors ──gRPC:50052──► SensorIngestionGrpcService ──► same pipeline
 ```
 
-Five event types are supported, each handled by a dedicated handler:
-
-| Event | Handler | Graph operation |
-|---|---|---|
-| `EntityDiscoveredEvent` | `EntityDiscoveredHandler` | INSERT entity triples |
-| `RelationshipAssertedEvent` | `RelationshipAssertedHandler` | INSERT relationship + inverse/symmetric triples |
-| `StateChangedEvent` | `StateChangedHandler` | Atomic DELETE/INSERT for `hasCurrentState` |
-| `EntityDeletedEvent` | `EntityDeletedHandler` | DELETE all triples for the entity |
-| `MetricMetadataRegisteredEvent` | `MetricMetadataRegisteredHandler` | INSERT metric endpoint metadata |
+Sensors are **event-driven** — they react instantly when Kubernetes resources change. Events are buffered for up to `flush-interval-ms` (default 500ms) then written to GraphDB as a batch.
 
 ---
 
-## Prerequisites
+## Built-in sensors
 
-| Requirement | Version |
+| Sensor | Watches | CNEEOnt type | Events emitted |
+|---|---|---|---|
+| `PodSensor` | Pods | `cnee:ExecutionUnit` | EntityDiscovered, StateChanged, EntityDeleted |
+| `ServiceSensor` | Services | `cnee:Service` | EntityDiscovered, EntityDeleted |
+| `NodeSensor` | Nodes | `cnee:Node` | EntityDiscovered, EntityDeleted |
+| `BindingSensor` | Pods + Services | — | RelationshipAsserted (`cnee:contains`, `cnee:isHostedOn`) |
+
+### Pod state mapping
+
+| Kubernetes phase | CNEEOnt state |
 |---|---|
-| Java | 25 |
-| Maven | 3.9+ |
-| GraphDB | 10.8.x (or compatible RDF4J 4.3.x endpoint) |
-| Palamedes | running and reachable on the configured host/port |
-| `protoc` | resolved automatically by `protobuf-maven-plugin` |
+| Pending | `cnee:ExecutionUnitPending` |
+| Running | `cnee:ExecutionUnitRunning` |
+| Failed | `cnee:ExecutionUnitFailed` |
+| Succeeded | `cnee:ExecutionUnitSucceeded` |
+| Unknown | `cnee:Unknown` |
+
+### IRI scheme
+
+```
+Pods / Services:  cnee:Pod_<namespace>_<name>       e.g. cnee:Pod_default_my-pod-abc
+Nodes:            cnee:Node_<name>                  e.g. cnee:Node_kube-worker-1
+```
 
 ---
 
 ## Configuration
 
-All properties are under the `metis` prefix in `application.yml`.
+All properties use the `metis.*` prefix. Override via environment variables using uppercase with underscores (e.g. `METIS_GRAPHDB_URL`).
 
 ```yaml
 grpc:
   server:
-    port: 50052          # gRPC server port for incoming sensor events
+    port: 50052             # gRPC port for external sensors
 
 metis:
   graphdb:
-    url: "http://graphdb:7200"   # GraphDB base URL
-    repositoryId: "amocna"       # Repository name
-    timeoutMs: 5000              # Connect + read timeout in milliseconds
+    url: "http://graphdb:7200"
+    repositoryId: "amocna"
+    timeoutMs: 5000
   ontology:
     cneeNamespace: "http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt#"
   palamedes:
-    host: "palamedes"    # Palamedes service hostname
-    port: 50051          # Palamedes gRPC port
+    host: "palamedes"
+    port: 50051
+  sensor:
+    enabled: true
+    namespaces: []          # empty = all namespaces; e.g. [default, hephaestus-business]
+    batch-size: 50
+    flush-interval-ms: 500
 ```
 
-Override any property via environment variable using Spring's relaxed binding, e.g.:
-
-```bash
-METIS_GRAPHDB_URL=http://localhost:7200 \
-METIS_PALAMEDES_HOST=localhost \
-java -jar metis.jar
-```
-
-Or pass them as JVM arguments:
-
-```bash
-java -Dmetis.graphdb.url=http://localhost:7200 \
-     -Dmetis.palamedes.host=localhost \
-     -jar metis.jar
-```
+When `sensor.enabled=false`, no Kubernetes client is created — Metis runs without cluster access (useful for local dev and CI).
 
 ---
 
-## Building
+## Build
 
-Proto stubs are generated from `../../schema/metis.proto` and `../../schema/palamedes.proto` at compile time by `protobuf-maven-plugin`. Run from the `modules/metis` directory:
+Requires Java 25, Maven 3.9+. Proto stubs are generated from `../../schema/` at compile time.
 
 ```bash
-# Compile and package (skipping tests)
+cd modules/metis
 mvn package -DskipTests
-
-# Compile only
-mvn compile
 ```
 
-The fat JAR is produced at `target/metis-0.0.1-SNAPSHOT.jar`.
+### Docker
 
-> **Note:** The build requires `protoc` and the gRPC Java plugin. Both are downloaded automatically by the Maven plugin — no manual installation needed.
-
----
-
-## Docker
-
-The Dockerfile is a two-stage build. Stage 1 compiles the JAR inside a Maven container (including proto code generation from `../../schema/`). Stage 2 produces a lean JRE-only runtime image.
-
-The build context must be the **repo root** so that both `schema/` and `modules/metis/` are available to the builder stage. The `build.sh` script handles this automatically.
-
-### Build the image
+Build context must be the repo root (so `schema/` is available):
 
 ```bash
-# From the modules/metis directory
+# From modules/metis
 ./build.sh
 
-# Or from the repo root
-scripts/build_all.sh          # builds all modules including metis
-```
-
-The default registry prefix is `sglomski`. Override it with the `REGISTRY` env var:
-
-```bash
-REGISTRY=myregistry ./build.sh
-```
-
-### Push to a registry
-
-```bash
+# Push to registry
 ./build.sh --push
 
-# With a custom registry
+# Custom registry
 REGISTRY=myregistry ./build.sh --push
 ```
 
-### Run the container
-
-```bash
-docker run -p 50052:50052 \
-  -e METIS_GRAPHDB_URL=http://graphdb:7200 \
-  -e METIS_PALAMEDES_HOST=palamedes \
-  sglomski/metis:latest
-```
-
-Pass any Spring property as an environment variable using uppercase with underscores (Spring's relaxed binding), or as a `JAVA_TOOL_OPTIONS` JVM argument:
-
-```bash
-docker run -p 50052:50052 \
-  -e JAVA_TOOL_OPTIONS="-Dmetis.graphdb.url=http://graphdb:7200 -Dmetis.palamedes.host=palamedes" \
-  sglomski/metis:latest
-```
-
 ---
 
-## Running
-
-### Locally (JAR)
+## Run locally
 
 ```bash
-# With default config (expects GraphDB at graphdb:7200 and Palamedes at palamedes:50051)
-java -jar target/metis-0.0.1-SNAPSHOT.jar
-
-# Pointing at local services
 java -Dmetis.graphdb.url=http://localhost:7200 \
      -Dmetis.palamedes.host=localhost \
+     -Dmetis.sensor.namespaces=hephaestus-business \
      -jar target/metis-0.0.1-SNAPSHOT.jar
 ```
 
-### With Maven (dev mode)
-
-```bash
-mvn spring-boot:run \
-  -Dspring-boot.run.jvmArguments="-Dmetis.graphdb.url=http://localhost:7200 -Dmetis.palamedes.host=localhost"
-```
-
-Once started, Metis listens for gRPC connections on port **50052** (configurable via `grpc.server.port`).
+Kubernetes credentials are resolved automatically by Fabric8: in-cluster service account → `KUBECONFIG` env var → `~/.kube/config`.
 
 ---
 
-## Testing
-
-All tests run with a single command from the `modules/metis` directory:
+## Test
 
 ```bash
 mvn test
 ```
 
-This runs both property-based tests and integration tests. No external services are required — GraphDB is simulated by WireMock and Palamedes by an in-process gRPC server.
-
-### Test layout
-
-```
-src/test/java/com/kubiki/metis/
-├── pbt/                          # Property-based tests (jqwik, 100 tries each)
-│   ├── NoRawMetricValuesPropertyTest     # P1: no ^^xsd:double or ^^xsd:float in any SPARQL
-│   ├── EntityDiscoveredPropertyTest      # P2: mandatory triples + CNEEOnt type conformance
-│   ├── StateChangedPropertyTest          # P3: exactly one hasCurrentState triple after each change
-│   ├── InversePropertyTest               # P4: inverse triples for contains/isPartOf/hosts/isHostedOn
-│   ├── SymmetricPropertyTest             # P5: both directions of communicatesWith
-│   ├── PalamededsTriggerPropertyTest     # P6: triggerUpdate called once per successful batch
-│   └── IdempotencyPropertyTest           # P7: triple count unchanged after re-sending same event
-└── integration/
-    ├── SensorIngestionGrpcServiceIT      # Full Spring context + WireMock GraphDB
-    └── PalamedesNotifierIT               # In-process gRPC Palamedes stub
-```
-
-### Property-based tests (PBT)
-
-The PBT suite uses [jqwik](https://jqwik.net/) 1.9.1. Each `@Property` method runs 100 randomised trials plus edge cases. Tests instantiate `KnowledgeBaseWriter` directly against a `SailRepository(MemoryStore)` — no Spring context, no network.
+No external services needed — GraphDB is simulated by WireMock, Palamedes by an in-process gRPC server, sensors are disabled via `application-test.yml`.
 
 ```bash
-# Run only PBT tests
+# PBT only
 mvn test -Dtest="*PropertyTest"
 
-# Run a single property test
-mvn test -Dtest="StateChangedPropertyTest"
-```
-
-jqwik stores its seed database in `.jqwik-database` at the module root. To reproduce a specific failing seed:
-
-```bash
-mvn test -Dtest="IdempotencyPropertyTest" -Djqwik.seeds.fixed=<seed>
-```
-
-### Integration tests
-
-Integration tests use `@SpringBootTest(webEnvironment = NONE)` with `@ActiveProfiles("test")`. The `application-test.yml` profile wires WireMock ports into the Spring context automatically.
-
-```bash
-# Run only integration tests
+# Integration only
 mvn test -Dtest="*IT"
 ```
 
-### Running a specific test class
+---
+
+## Deploy to Kubernetes
+
+### 1. Deploy GraphDB
 
 ```bash
-mvn test -Dtest="InversePropertyTest,SensorIngestionGrpcServiceIT"
+bash Deployment/graphdb/k8s/deploy.sh
 ```
 
----
+Access the workbench, create a repository with ID `amocna`, and import the CNEEOnt ontology manually.
 
-## gRPC API
+```bash
+# Port-forward for browser access
+kubectl port-forward svc/graphdb 7200:7200 -n graphdb
+```
 
-The proto source lives in `../../schema/metis.proto`. The generated service is `SensorIngestionService` with a single RPC:
+### 2. Deploy the business demo (target namespace)
 
-```protobuf
-service SensorIngestionService {
-  rpc IngestBatch (SensorBatch) returns (IngestResponse);
+```bash
+kubectl apply -f Deployment/business-demo/
+```
+
+### 3. Deploy Metis
+
+```bash
+bash Deployment/metis-demo/deploy.sh
+```
+
+This creates the `metis` namespace, a ServiceAccount with cluster-wide read access to pods/services/nodes, the Metis deployment, and a ClusterIP service.
+
+### 4. Verify
+
+```bash
+kubectl logs -f deployment/metis -n metis
+```
+
+Expected output within a few seconds:
+```
+INFO  PodSensor watching namespaces: [hephaestus-business]
+INFO  ServiceSensor watching namespaces: [hephaestus-business]
+INFO  Palamedes should be notified [correlationId=..., resourceIri=cnee:Pod_..., changeKind=CREATED]
+```
+
+Query GraphDB to confirm triples were written:
+
+```sparql
+PREFIX cnee: <http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt#>
+PREFIX rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+
+SELECT ?individual ?type WHERE {
+  ?individual rdf:type ?type .
+  FILTER(STRSTARTS(STR(?individual), STR(cnee:)))
 }
+ORDER BY ?type
 ```
 
-**`SensorBatch`** — one or more events plus a correlation ID (max 128 chars).
+### 5. Trigger sensor events
 
-**`SensorEvent`** — a `oneof` carrying exactly one of:
-- `EntityDiscoveredEvent` — new entity with type, ID, name, and optional properties
-- `RelationshipAssertedEvent` — subject/predicate/object triple
-- `StateChangedEvent` — new lifecycle state for an entity
-- `EntityDeletedEvent` — remove all triples for an entity
-- `MetricMetadataRegisteredEvent` — metric endpoint URL and name (no numeric values)
+```bash
+# Scale up — new pods → EntityDiscovered + StateChanged + RelationshipAsserted
+kubectl scale deployment business-demo -n hephaestus-business --replicas=3
 
-**`IngestResponse`** fields:
-
-| Field | Type | Description |
-|---|---|---|
-| `accepted` | bool | `true` if the batch was processed without a system-level failure |
-| `correlation_id` | string | Echoes the request correlation ID |
-| `processed_count` | int32 | Number of events successfully written to GraphDB |
-| `message` | string | Human-readable summary or error description |
-
-**gRPC status codes:**
-
-| Scenario | Status |
-|---|---|
-| Batch processed (even if some events failed validation) | `OK` |
-| GraphDB unavailable | `UNAVAILABLE` |
-| Unexpected internal error | `INTERNAL` |
-| `correlation_id` > 128 chars | `OK` with `accepted = false` |
+# Scale down — pods deleted → EntityDeleted
+kubectl scale deployment business-demo -n hephaestus-business --replicas=1
+```
 
 ---
 
-## Kubernetes Sensor Layer
+## Adding a new sensor
 
-Metis includes a built-in sensor layer that watches a Kubernetes cluster and automatically feeds events into the ingestion pipeline. It runs inside the same JVM — no separate process or network hop.
+1. Create a class in `com.kubiki.metis.sensor.kubernetes`
+2. Extend `AbstractNamespacedSensor` (for namespaced resources) or implement `KubernetesSensor` directly (for cluster-scoped)
+3. Annotate with `@Component` and `@ConditionalOnProperty(name = "metis.sensor.enabled", havingValue = "true")`
+4. Inject `SensorEventPublisher` and call `publisher.publish(...)` from your informer callbacks
 
-### How it works
-
-1. On startup, `SensorOrchestrator` starts all `KubernetesSensor` beans (if `metis.sensor.enabled=true`).
-2. Each sensor creates a Fabric8 `SharedIndexInformer` for its resource type. Informers reconnect automatically on failure.
-3. Callbacks translate Kubernetes events into `SensorEvent` protos and hand them to `SensorEventPublisher`.
-4. `SensorEventPublisher` buffers events and flushes them as a `SensorBatch` directly to `SensorEventProcessor` — in-process, no gRPC overhead.
-
-### Built-in sensors
-
-| Sensor | Watches | Emits |
-|---|---|---|
-| `PodSensor` | Pods | `EntityDiscovered`, `StateChanged`, `EntityDeleted` |
-| `ServiceSensor` | Services | `EntityDiscovered`, `EntityDeleted` |
-| `NodeSensor` | Nodes (cluster-scoped) | `EntityDiscovered`, `EntityDeleted` |
-| `BindingSensor` | Pods + Services | `RelationshipAsserted` (pod↔service `cnee:contains`, pod↔node `cnee:isHostedOn`) |
-
-### Configuration
-
-```yaml
-metis:
-  sensor:
-    enabled: true
-    namespaces: []          # empty = all namespaces; e.g. [default, production]
-    batch-size: 50          # max events per flush
-    flush-interval-ms: 500  # flush every 500ms even if batch isn't full
-```
-
-Kubernetes credentials are resolved automatically by Fabric8:
-1. In-cluster service account (`/var/run/secrets/kubernetes.io/serviceaccount`)
-2. `KUBECONFIG` environment variable
-3. `~/.kube/config`
-
-When `metis.sensor.enabled=false` (the default in the test profile), no Kubernetes client is created — Metis runs fine without cluster access.
-
-### Adding a new sensor
-
-1. Create a class in `com.kubiki.metis.sensor.kubernetes` (or any sub-package).
-2. Implement `KubernetesSensor` (or extend `AbstractNamespacedSensor` for namespaced resources).
-3. Annotate with `@Component` and `@ConditionalOnProperty(name = "metis.sensor.enabled", havingValue = "true")`.
-4. Inject `SensorEventPublisher` and call `publisher.publish(...)` from your informer callbacks.
-
-That's it — `SensorOrchestrator` picks it up automatically. No other wiring needed.
+Spring auto-discovers it — no other wiring needed.
 
 ```java
 @Component
@@ -358,8 +235,9 @@ public class DeploymentSensor extends AbstractNamespacedSensor {
 
     @Override
     protected SharedIndexInformer<Deployment> createInformer(KubernetesClient client, String namespace) {
-        var op = namespace != null ? client.apps().deployments().inNamespace(namespace)
-                                   : client.apps().deployments().inAnyNamespace();
+        var op = namespace != null
+                ? client.apps().deployments().inNamespace(namespace)
+                : client.apps().deployments().inAnyNamespace();
         return op.inform(new ResourceEventHandler<>() {
             @Override public void onAdd(Deployment d) { /* publish EntityDiscoveredEvent */ }
             @Override public void onUpdate(Deployment o, Deployment n) { }
@@ -371,45 +249,45 @@ public class DeploymentSensor extends AbstractNamespacedSensor {
 
 ---
 
-## Package Structure
+## Palamedes notification
+
+Palamedes notification is currently in **log-only mode** — after each successful batch, Metis logs what it would notify but does not make the gRPC call. This avoids errors when Palamedes is not yet deployed.
+
+To enable: uncomment the `notifier.notify(...)` calls in `SensorEventPublisher` and `SensorIngestionGrpcService`, then update `METIS_PALAMEDES_HOST` in the deployment.
+
+---
+
+## Package structure
 
 ```
 com.kubiki.metis
 ├── MetisApplication.java
 ├── config/
-│   ├── MetisProperties.java        # @ConfigurationProperties(prefix = "metis")
-│   ├── GraphDBConfig.java          # RDF4J HTTPRepository bean
-│   ├── GrpcClientConfig.java       # Palamedes ManagedChannel + blocking stub beans
-│   └── KubernetesClientConfig.java # Fabric8 KubernetesClient bean (conditional on sensor.enabled)
+│   ├── MetisProperties.java          # all configuration properties
+│   ├── GraphDBConfig.java            # RDF4J HTTPRepository bean
+│   ├── GrpcClientConfig.java         # Palamedes channel + stub beans
+│   └── KubernetesClientConfig.java   # Fabric8 client (conditional on sensor.enabled)
 ├── grpc/
-│   └── SensorIngestionGrpcService.java   # @GrpcService entry point
+│   └── SensorIngestionGrpcService.java   # external gRPC entry point
 ├── ingestion/
-│   ├── SensorEventProcessor.java   # Dispatches events to handlers, aggregates ProcessResult
-│   ├── handler/
-│   │   ├── SensorEventHandler.java         # Interface
-│   │   ├── EntityDiscoveredHandler.java
-│   │   ├── RelationshipAssertedHandler.java
-│   │   ├── StateChangedHandler.java
-│   │   ├── EntityDeletedHandler.java
-│   │   └── MetricMetadataRegisteredHandler.java
-│   └── model/
-│       ├── HandlerResult.java      # Per-event result (success/failure/graphDbFailure)
-│       └── ProcessResult.java      # Aggregated batch result
+│   ├── SensorEventProcessor.java     # dispatches events to handlers
+│   ├── handler/                      # one handler per event type
+│   └── model/                        # HandlerResult, ProcessResult
 ├── knowledge/
-│   ├── KnowledgeBaseWriter.java    # Builds and executes SPARQL updates
-│   ├── KnowledgeBaseException.java # Checked exception for GraphDB failures
-│   └── OntologyRegistry.java       # CNEEOnt IRI factory
+│   ├── KnowledgeBaseWriter.java      # builds and executes SPARQL updates
+│   ├── KnowledgeBaseException.java
+│   └── OntologyRegistry.java
 ├── notification/
-│   └── PalamedesNotifier.java      # Fire-and-forget TriggerUpdate gRPC call
+│   └── PalamedesNotifier.java        # fire-and-forget TriggerUpdate (currently log-only)
 └── sensor/
-    ├── KubernetesSensor.java        # Extension point interface — implement to add a sensor
-    ├── SensorOrchestrator.java      # Starts/stops all KubernetesSensor beans on app lifecycle
-    ├── SensorEventPublisher.java    # Buffers events and flushes batches in-process
-    ├── IriFactory.java              # CNEEOnt IRI construction from k8s resource names
+    ├── KubernetesSensor.java          # extension point interface
+    ├── SensorOrchestrator.java        # starts/stops all sensors on app lifecycle
+    ├── SensorEventPublisher.java      # buffers and flushes event batches
+    ├── IriFactory.java                # CNEEOnt IRI construction
     └── kubernetes/
-        ├── AbstractNamespacedSensor.java  # Base class for namespace-aware sensors
-        ├── PodSensor.java                 # Pods → EntityDiscovered/StateChanged/EntityDeleted
-        ├── ServiceSensor.java             # Services → EntityDiscovered/EntityDeleted
-        ├── NodeSensor.java                # Nodes → EntityDiscovered/EntityDeleted
-        └── BindingSensor.java             # pod↔service contains, pod↔node isHostedOn
+        ├── AbstractNamespacedSensor.java
+        ├── PodSensor.java
+        ├── ServiceSensor.java
+        ├── NodeSensor.java
+        └── BindingSensor.java
 ```

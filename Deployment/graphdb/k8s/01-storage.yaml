@@ -10,7 +10,7 @@ spec:
   persistentVolumeReclaimPolicy: Retain
   storageClassName: local-storage
   local:
-    path: /data/graphdb          # created on the node by the deploy script
+    path: /data/graphdb
   nodeAffinity:
     required:
       nodeSelectorTerms:
@@ -18,7 +18,7 @@ spec:
             - key: kubernetes.io/hostname
               operator: In
               values:
-                - kube-worker-0  # change if you want a different node
+                - kube-worker-0
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim

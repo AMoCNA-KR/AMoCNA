@@ -27,7 +27,7 @@ spec:
             - name: METIS_GRAPHDB_REPOSITORYID
               value: "amocna"
             - name: METIS_PALAMEDES_HOST
-              value: "localhost"   # no Palamedes yet — notifier will log errors but not crash
+              value: "localhost"   # no Palamedes yet change in future
             - name: METIS_PALAMEDES_PORT
               value: "50051"
             - name: METIS_SENSOR_ENABLED
