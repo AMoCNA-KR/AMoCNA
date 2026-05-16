@@ -82,11 +82,13 @@ public class SensorIngestionGrpcService
             // Notify Palamedes if at least one event was successfully written
             HandlerResult firstSuccess = processResult.firstSuccess();
             if (firstSuccess != null) {
-                notifier.notify(
-                        firstSuccess.resourceIri(),
-                        firstSuccess.ontologyType(),
-                        firstSuccess.changeKind(),
-                        correlationId);
+                log.info("Palamedes should be notified [correlationId={}, resourceIri={}, ontologyType={}, changeKind={}]",
+                        correlationId, firstSuccess.resourceIri(), firstSuccess.ontologyType(), firstSuccess.changeKind());
+                // notifier.notify(
+                //         firstSuccess.resourceIri(),
+                //         firstSuccess.ontologyType(),
+                //         firstSuccess.changeKind(),
+                //         correlationId);
             }
 
             // Build response

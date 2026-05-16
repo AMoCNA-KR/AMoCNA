@@ -130,11 +130,13 @@ public class SensorEventPublisher {
 
             HandlerResult firstSuccess = result.firstSuccess();
             if (firstSuccess != null) {
-                notifier.notify(
-                        firstSuccess.resourceIri(),
-                        firstSuccess.ontologyType(),
-                        firstSuccess.changeKind(),
-                        correlationId);
+                log.info("Palamedes should be notified [correlationId={}, resourceIri={}, ontologyType={}, changeKind={}]",
+                        correlationId, firstSuccess.resourceIri(), firstSuccess.ontologyType(), firstSuccess.changeKind());
+                // notifier.notify(
+                //         firstSuccess.resourceIri(),
+                //         firstSuccess.ontologyType(),
+                //         firstSuccess.changeKind(),
+                //         correlationId);
             }
 
             log.debug("Sensor batch flushed [correlationId={}, events={}, processed={}, failed={}]",

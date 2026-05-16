@@ -69,7 +69,8 @@ class PalamededsTriggerPropertyTest {
 
         // Assert
         assertThat(observer.error).isNull();
-        verify(stub, times(1)).triggerUpdate(any());
+        // Palamedes notification is currently disabled (log-only mode) — stub must NOT be called
+        verify(stub, never()).triggerUpdate(any());
     }
 
     // -------------------------------------------------------------------------
