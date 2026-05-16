@@ -6,22 +6,20 @@ Metis is the **Monitor** phase of the AMoCNA MRE-K autonomic loop. It watches a 
 
 ## How it works
 
-```
-Kubernetes API
-      │  (Fabric8 informers — event-driven, no polling)
-      ▼
-Built-in Sensors
-  PodSensor / ServiceSensor / NodeSensor / BindingSensor
-      │
-      ▼  in-process
-SensorEventProcessor ──► KnowledgeBaseWriter ──► GraphDB (SPARQL)
-      │
-      └──► PalamedesNotifier ──► Palamedes
-
-External sensors ──gRPC:50052──► SensorIngestionGrpcService ──► same pipeline
+```mermaid
+flowchart LR
+    K8S[Kubernetes API] --> S[Sensors]
+    S --> P[Publisher]
+    P --> W[Writer]
+    W --> G[GraphDB]
 ```
 
-Sensors are **event-driven** — they react instantly when Kubernetes resources change. Events are buffered for up to `flush-interval-ms` (default 500ms) then written to GraphDB as a batch.
+1. **Sensors** watch the Kubernetes API via Fabric8 informers — event-driven, no polling
+2. **Publisher** buffers events for up to 500ms then flushes them as a batch
+3. **Writer** translates each event into a SPARQL update
+4. **GraphDB** stores the resulting RDF triples
+
+External sensors can also push events via gRPC on port 50052 — they enter the same pipeline at the Publisher stage.
 
 ---
 
