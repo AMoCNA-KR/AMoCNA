@@ -3,69 +3,69 @@ SELECT DISTINCT ?action ?intent ?target ?protocol ?instruction ?method ?payload 
        ?postId ?postType ?postPolicy 
        ?step ?compensation 
        ?functionalIntent ?layerBoundary ?costValue WHERE { 
-  VALUES ?root { ${actionIri} }
+  VALUES ?root { ${IRI::actionId} }
   
   # 1. Discover all action nodes in the hierarchy.
-  ?root (moam:isDecomposedInto|moam:hasCompensation|a/(moam:isDecomposedInto|moam:hasCompensation))* ?action .
+  ?root (${PREFIX::ACTIONS_PREFIX}:isDecomposedInto|${PREFIX::ACTIONS_PREFIX}:hasCompensation|a/(${PREFIX::ACTIONS_PREFIX}:isDecomposedInto|${PREFIX::ACTIONS_PREFIX}:hasCompensation))* ?action .
   
   # 2. Identify all types (intents) for each node.
   ?action a ?intent .
   
   # 3. Resolve properties with Blueprint Inheritance.
-  OPTIONAL { ?action moam:targetsEntity ?target } . 
+  OPTIONAL { ?action ${PREFIX::ACTIONS_PREFIX}:targetsEntity ?target } . 
   
   # Action Classification
-  OPTIONAL { ?action moam:hasFunctionalIntent ?f1 } .
-  OPTIONAL { ?intent moam:hasFunctionalIntent ?f2 } .
+  OPTIONAL { ?action ${PREFIX::ACTIONS_PREFIX}:hasFunctionalIntent ?f1 } .
+  OPTIONAL { ?intent ${PREFIX::ACTIONS_PREFIX}:hasFunctionalIntent ?f2 } .
   BIND(COALESCE(?f1, ?f2) AS ?functionalIntent) .
 
-  OPTIONAL { ?action moam:hasLayerBoundary ?l1 } .
-  OPTIONAL { ?intent moam:hasLayerBoundary ?l2 } .
+  OPTIONAL { ?action ${PREFIX::ACTIONS_PREFIX}:hasLayerBoundary ?l1 } .
+  OPTIONAL { ?intent ${PREFIX::ACTIONS_PREFIX}:hasLayerBoundary ?l2 } .
   BIND(COALESCE(?l1, ?l2) AS ?layerBoundary) .
 
   OPTIONAL { 
-    ?action moam:hasExecutionCost ?c1 .
-    ?c1 moam:costValue ?v1 .
+    ?action ${PREFIX::ACTIONS_PREFIX}:hasExecutionCost ?c1 .
+    ?c1 ${PREFIX::ACTIONS_PREFIX}:costValue ?v1 .
   } .
   OPTIONAL {
-    ?intent moam:hasExecutionCost ?c2 .
-    ?c2 moam:costValue ?v2 .
+    ?intent ${PREFIX::ACTIONS_PREFIX}:hasExecutionCost ?c2 .
+    ?c2 ${PREFIX::ACTIONS_PREFIX}:costValue ?v2 .
   } .
   BIND(COALESCE(?v1, ?v2) AS ?costValue) .
 
   # Protocol Details
-  OPTIONAL { ?action moam:hasExecutionProtocol ?p1 } .
-  OPTIONAL { ?intent moam:hasExecutionProtocol ?p2 } .
+  OPTIONAL { ?action ${PREFIX::ACTIONS_PREFIX}:hasExecutionProtocol ?p1 } .
+  OPTIONAL { ?intent ${PREFIX::ACTIONS_PREFIX}:hasExecutionProtocol ?p2 } .
   BIND(COALESCE(?p1, ?p2) AS ?protocol) .
 
-  OPTIONAL { ?action moam:hasExecutionInstruction ?i1 } .
-  OPTIONAL { ?intent moam:hasExecutionInstruction ?i2 } .
+  OPTIONAL { ?action ${PREFIX::ACTIONS_PREFIX}:hasExecutionInstruction ?i1 } .
+  OPTIONAL { ?intent ${PREFIX::ACTIONS_PREFIX}:hasExecutionInstruction ?i2 } .
   BIND(COALESCE(?i1, ?i2) AS ?instruction) .
 
-  OPTIONAL { ?action moam:hasHttpMethod ?m1 } .
-  OPTIONAL { ?intent moam:hasHttpMethod ?m2 } .
+  OPTIONAL { ?action ${PREFIX::ACTIONS_PREFIX}:hasHttpMethod ?m1 } .
+  OPTIONAL { ?intent ${PREFIX::ACTIONS_PREFIX}:hasHttpMethod ?m2 } .
   BIND(COALESCE(?m1, ?m2) AS ?method) .
 
-  OPTIONAL { ?action moam:hasExpectedStatusCode ?s1 } .
-  OPTIONAL { ?intent moam:hasExpectedStatusCode ?s2 } .
+  OPTIONAL { ?action ${PREFIX::ACTIONS_PREFIX}:hasExpectedStatusCode ?s1 } .
+  OPTIONAL { ?intent ${PREFIX::ACTIONS_PREFIX}:hasExpectedStatusCode ?s2 } .
   BIND(COALESCE(?s1, ?s2) AS ?expectedStatusCode) .
 
   # 4. Conditions
   OPTIONAL { 
-    ?action moam:hasPreCondition ?preId . 
+    ?action ${PREFIX::ACTIONS_PREFIX}:hasPreCondition ?preId . 
     ?preId a ?preType . 
-    ?preId moam:policyQueryString ?prePolicy . 
+    ?preId ${PREFIX::ACTIONS_PREFIX}:policyQueryString ?prePolicy . 
   } . 
   OPTIONAL { 
-    ?action moam:hasPostCondition ?postId . 
+    ?action ${PREFIX::ACTIONS_PREFIX}:hasPostCondition ?postId . 
     ?postId a ?postType . 
-    ?postId moam:policyQueryString ?postPolicy . 
+    ?postId ${PREFIX::ACTIONS_PREFIX}:policyQueryString ?postPolicy . 
   } . 
   
   # 5. Decomposition Links
-  OPTIONAL { ?action moam:isDecomposedInto ?s1 } .
-  OPTIONAL { ?intent moam:isDecomposedInto ?s2 } .
+  OPTIONAL { ?action ${PREFIX::ACTIONS_PREFIX}:isDecomposedInto ?s1 } .
+  OPTIONAL { ?intent ${PREFIX::ACTIONS_PREFIX}:isDecomposedInto ?s2 } .
   BIND(COALESCE(?s1, ?s2) AS ?step) .
   
-  OPTIONAL { ?step moam:hasCompensation ?compensation } . 
+  OPTIONAL { ?step ${PREFIX::ACTIONS_PREFIX}:hasCompensation ?compensation } . 
 }

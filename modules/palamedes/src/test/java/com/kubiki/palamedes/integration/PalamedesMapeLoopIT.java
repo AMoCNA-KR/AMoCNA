@@ -2,11 +2,7 @@ package com.kubiki.palamedes.integration;
 
 import com.kubiki.palamedes.knowledge.OntologyRegistry;
 import com.kubiki.palamedes.knowledge.GraphDBGateway;
-import com.kubiki.palamedes.knowledge.StateRepository;
-import com.kubiki.palamedes.model.ActionMessage;
-import com.kubiki.palamedes.model.ActionStatusUpdate;
-import com.kubiki.palamedes.model.ExecutionStatus;
-import com.kubiki.palamedes.model.WorkflowState;
+import com.kubiki.palamedes.model.*;
 import com.kubiki.palamedes.pipeline.MapePipeline;
 import com.kubiki.palamedes.saga.SagaManager;
 import org.eclipse.rdf4j.model.IRI;
@@ -17,7 +13,6 @@ import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
 import org.eclipse.rdf4j.sail.memory.MemoryStore;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -93,33 +88,33 @@ class PalamedesMapeLoopIT {
         IRI intent = vf.createIRI("http://test/RestartAction");
         
         try (RepositoryConnection conn = inMemoryRepo.getConnection()) {
-            conn.add(pod, registry.cnee("hasCurrentState"), state);
+            conn.add(pod, registry.resourcesOntology("hasCurrentState"), state);
             conn.add(state, RDF.TYPE, anomalyType);
-            conn.add(pod, registry.cnee("resourceName"), vf.createLiteral("pod1"));
+            conn.add(pod, registry.resourcesOntology("resourceName"), vf.createLiteral("pod1"));
             
             IRI restriction = vf.createIRI("http://test/rest1");
             conn.add(anomalyType, org.eclipse.rdf4j.model.vocabulary.RDFS.SUBCLASSOF, restriction);
             conn.add(restriction, RDF.TYPE, org.eclipse.rdf4j.model.vocabulary.OWL.RESTRICTION);
-            conn.add(restriction, org.eclipse.rdf4j.model.vocabulary.OWL.ONPROPERTY, registry.bridge("isResolvedByIntent"));
+            conn.add(restriction, org.eclipse.rdf4j.model.vocabulary.OWL.ONPROPERTY, registry.bridgeOntology("isResolvedByIntent"));
             conn.add(restriction, org.eclipse.rdf4j.model.vocabulary.OWL.SOMEVALUESFROM, intent);
             
             // Blueprint details for mapping
-            conn.add(intent, RDF.TYPE, registry.moam("SimpleAction"));
-            conn.add(intent, registry.moam("hasExecutionProtocol"), vf.createLiteral("REST"));
-            conn.add(intent, registry.moam("hasExecutionInstruction"), vf.createLiteral("http://restart/{resourceName}"));
-            conn.add(intent, registry.moam("hasExpectedStatusCode"), vf.createLiteral("200", org.eclipse.rdf4j.model.vocabulary.XSD.INTEGER));
+            conn.add(intent, RDF.TYPE, registry.actionsOntology("SimpleAction"));
+            conn.add(intent, registry.actionsOntology("hasExecutionProtocol"), vf.createLiteral("REST"));
+            conn.add(intent, registry.actionsOntology("hasExecutionInstruction"), vf.createLiteral("http://restart/{resourceName}"));
+            conn.add(intent, registry.actionsOntology("hasExpectedStatusCode"), vf.createLiteral("200", org.eclipse.rdf4j.model.vocabulary.XSD.INTEGER));
             
             // Industrial Classification Properties
-            conn.add(intent, registry.moam("hasFunctionalIntent"), vf.createIRI("http://test/Intent_Lifecycle"));
-            conn.add(intent, registry.moam("hasLayerBoundary"), vf.createIRI("http://test/Layer_Containerization"));
+            conn.add(intent, registry.actionsOntology("hasFunctionalIntent"), vf.createIRI("http://test/Intent_Lifecycle"));
+            conn.add(intent, registry.actionsOntology("hasLayerBoundary"), vf.createIRI("http://test/Layer_Containerization"));
             IRI cost = vf.createIRI("http://test/Cost_Low");
-            conn.add(intent, registry.moam("hasExecutionCost"), cost);
-            conn.add(cost, registry.moam("costValue"), vf.createLiteral("1.5", org.eclipse.rdf4j.model.vocabulary.XSD.FLOAT));
+            conn.add(intent, registry.actionsOntology("hasExecutionCost"), cost);
+            conn.add(cost, registry.actionsOntology("costValue"), vf.createLiteral("1.5", org.eclipse.rdf4j.model.vocabulary.XSD.FLOAT));
         }
 
         mapePipeline.run(); 
         
-        List<GraphDBGateway.ActiveActionSummary> active = gateway.findActiveActions();
+        List<ActiveActionSummary> active = gateway.findActiveActions();
         assertEquals(1, active.size());
         assertEquals("State_Planned", active.get(0).stateFragment());
         IRI actionIri = active.get(0).actionIri();
@@ -149,42 +144,42 @@ class PalamedesMapeLoopIT {
         IRI step2 = vf.createIRI("http://test/Step2");
 
         try (RepositoryConnection conn = inMemoryRepo.getConnection()) {
-            conn.add(pod, registry.cnee("hasCurrentState"), state);
+            conn.add(pod, registry.resourcesOntology("hasCurrentState"), state);
             conn.add(state, RDF.TYPE, anomalyType);
-            conn.add(pod, registry.cnee("resourceName"), vf.createLiteral("pod3"));
+            conn.add(pod, registry.resourcesOntology("resourceName"), vf.createLiteral("pod3"));
             
             IRI restriction = vf.createIRI("http://test/rest3");
             conn.add(anomalyType, org.eclipse.rdf4j.model.vocabulary.RDFS.SUBCLASSOF, restriction);
             conn.add(restriction, RDF.TYPE, org.eclipse.rdf4j.model.vocabulary.OWL.RESTRICTION);
-            conn.add(restriction, org.eclipse.rdf4j.model.vocabulary.OWL.ONPROPERTY, registry.bridge("isResolvedByIntent"));
+            conn.add(restriction, org.eclipse.rdf4j.model.vocabulary.OWL.ONPROPERTY, registry.bridgeOntology("isResolvedByIntent"));
             conn.add(restriction, org.eclipse.rdf4j.model.vocabulary.OWL.SOMEVALUESFROM, intent);
             
-            conn.add(intent, RDF.TYPE, registry.moam("ComplexWorkflow"));
-            conn.add(intent, registry.moam("isDecomposedInto"), step1);
-            conn.add(intent, registry.moam("isDecomposedInto"), step2);
+            conn.add(intent, RDF.TYPE, registry.actionsOntology("ComplexWorkflow"));
+            conn.add(intent, registry.actionsOntology("isDecomposedInto"), step1);
+            conn.add(intent, registry.actionsOntology("isDecomposedInto"), step2);
             
             // Classification for Parent
-            conn.add(intent, registry.moam("hasFunctionalIntent"), vf.createIRI("http://test/Intent_Scaling"));
+            conn.add(intent, registry.actionsOntology("hasFunctionalIntent"), vf.createIRI("http://test/Intent_Scaling"));
             
             // Step 1 details
-            conn.add(step1, RDF.TYPE, registry.moam("SimpleAction"));
-            conn.add(step1, registry.moam("hasExecutionProtocol"), vf.createLiteral("REST"));
-            conn.add(step1, registry.moam("hasExecutionInstruction"), vf.createLiteral("http://step1"));
-            conn.add(step1, registry.moam("hasExpectedStatusCode"), vf.createLiteral("200", org.eclipse.rdf4j.model.vocabulary.XSD.INTEGER));
+            conn.add(step1, RDF.TYPE, registry.actionsOntology("SimpleAction"));
+            conn.add(step1, registry.actionsOntology("hasExecutionProtocol"), vf.createLiteral("REST"));
+            conn.add(step1, registry.actionsOntology("hasExecutionInstruction"), vf.createLiteral("http://step1"));
+            conn.add(step1, registry.actionsOntology("hasExpectedStatusCode"), vf.createLiteral("200", org.eclipse.rdf4j.model.vocabulary.XSD.INTEGER));
 
             // Step 2 details
-            conn.add(step2, RDF.TYPE, registry.moam("SimpleAction"));
-            conn.add(step2, registry.moam("hasExecutionProtocol"), vf.createLiteral("REST"));
-            conn.add(step2, registry.moam("hasExecutionInstruction"), vf.createLiteral("http://step2"));
-            conn.add(step2, registry.moam("hasExpectedStatusCode"), vf.createLiteral("200", org.eclipse.rdf4j.model.vocabulary.XSD.INTEGER));
+            conn.add(step2, RDF.TYPE, registry.actionsOntology("SimpleAction"));
+            conn.add(step2, registry.actionsOntology("hasExecutionProtocol"), vf.createLiteral("REST"));
+            conn.add(step2, registry.actionsOntology("hasExecutionInstruction"), vf.createLiteral("http://step2"));
+            conn.add(step2, registry.actionsOntology("hasExpectedStatusCode"), vf.createLiteral("200", org.eclipse.rdf4j.model.vocabulary.XSD.INTEGER));
         }
 
         mapePipeline.run(); 
         
-        List<GraphDBGateway.ActiveActionSummary> active = gateway.findActiveActions();
+        List<ActiveActionSummary> active = gateway.findActiveActions();
         assertTrue(active.size() >= 2);
         
-        final List<GraphDBGateway.ActiveActionSummary> activeActionsAfterPlan = active;
+        final List<ActiveActionSummary> activeActionsAfterPlan = active;
         IRI child1Iri = activeActionsAfterPlan.stream()
             .filter(a -> a.stateFragment().equals("State_Initial"))
             .findFirst()

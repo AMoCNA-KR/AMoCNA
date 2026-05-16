@@ -1,6 +1,6 @@
-DELETE { ?action moam:hasCurrentState ${fromState} . }
-INSERT { ?action moam:hasCurrentState ${toState} . }
+DELETE { ?action ${PREFIX::ACTIONS_PREFIX}:hasCurrentState ${IRI::fromState} . }
+INSERT { ?action ${PREFIX::ACTIONS_PREFIX}:hasCurrentState ${IRI::toState} . }
 WHERE { 
-  ?action moam:hasCurrentState ${fromState} .
-  FILTER(?action = ${actionId})
+  ?action ${PREFIX::ACTIONS_PREFIX}:hasCurrentState ${IRI::fromState} .
+  FILTER(?action = ${IRI::actionId})
 }

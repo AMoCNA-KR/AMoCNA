@@ -1,5 +1,5 @@
 
 SELECT DISTINCT ?dependent
 WHERE {
-  ?dependent moam:dependsOn ${actionIri} .
+  ?dependent ${PREFIX::ACTIONS_PREFIX}:dependsOn ${IRI::actionId} .
 }

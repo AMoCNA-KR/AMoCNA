@@ -1,7 +1,7 @@
 
 SELECT DISTINCT ?window ?lastTransition
 WHERE {
-  ?action moam:idempotencyWindowSeconds ?window .
-  ?action moam:hasLastTransitionTimestamp ?lastTransition .
-  FILTER(?action = ${actionIri})
+  ?action ${PREFIX::ACTIONS_PREFIX}:idempotencyWindowSeconds ?window .
+  ?action ${PREFIX::ACTIONS_PREFIX}:hasLastTransitionTimestamp ?lastTransition .
+  FILTER(?action = ${IRI::actionId})
 }

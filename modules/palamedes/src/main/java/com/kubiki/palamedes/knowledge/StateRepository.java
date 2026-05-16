@@ -1,6 +1,7 @@
 package com.kubiki.palamedes.knowledge;
 
 import com.kubiki.palamedes.model.WorkflowState;
+import com.kubiki.palamedes.templating.types.IriType;
 import org.eclipse.rdf4j.model.IRI;
 import org.springframework.stereotype.Repository;
 
@@ -18,19 +19,12 @@ public class StateRepository {
         this.ontologyRegistry = ontologyRegistry;
     }
 
-    /**
-     * Performs an atomic state transition for an action.
-     * @param actionId The IRI of the action.
-     * @param from The current state to transition from.
-     * @param to The target state to transition to.
-     * @return true if the transition succeeded, false if the action was not in the 'from' state.
-     */
     public boolean transition(IRI actionId, WorkflowState from, WorkflowState to) {
         String sparql = sparqlQueryBuilder.builder()
                 .template("atomic-transition")
-                .variable("actionId", actionId)
-                .variable("fromState", ontologyRegistry.moam(from.getFragment()))
-                .variable("toState", ontologyRegistry.moam(to.getFragment()))
+                .variable(new IriType("actionId", actionId))
+                .variable(new IriType("fromState", ontologyRegistry.actionsOntology(from.getFragment())))
+                .variable(new IriType("toState", ontologyRegistry.actionsOntology(to.getFragment())))
                 .build();
 
         return sparqlClient.executeUpdateWithSuccess(sparql);

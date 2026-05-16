@@ -1,12 +1,12 @@
 
 SELECT DISTINCT ?action ?resource ?resourceName ?state
 WHERE {
-  ?action moam:hasCurrentState ?stateIri .
-  ?action moam:targetsEntity ?resource .
-  ?resource cnee:resourceName ?resourceName .
+  ?action ${PREFIX::ACTIONS_PREFIX}:hasCurrentState ?stateIri .
+  ?action ${PREFIX::ACTIONS_PREFIX}:targetsEntity ?resource .
+  ?resource ${PREFIX::RESOURCES_PREFIX}:resourceName ?resourceName .
   
   # Filter for non-terminal states
-  FILTER(?stateIri IN (moam:State_Initial, moam:State_Planned, moam:State_Validated, moam:State_InProgress, moam:State_Compensating))
+  FILTER(?stateIri IN (${PREFIX::ACTIONS_PREFIX}:State_Initial, ${PREFIX::ACTIONS_PREFIX}:State_Planned, ${PREFIX::ACTIONS_PREFIX}:State_Validated, ${PREFIX::ACTIONS_PREFIX}:State_InProgress, ${PREFIX::ACTIONS_PREFIX}:State_Compensating))
   
   BIND(REPLACE(STR(?stateIri), "^.*#", "") AS ?state)
 }
