@@ -31,7 +31,7 @@ import org.springframework.stereotype.Component;
 public class NodeSensor implements KubernetesSensor {
 
     private static final Logger log = LoggerFactory.getLogger(NodeSensor.class);
-    private static final String ONTOLOGY_TYPE_LOCAL = "ExecutionEnvironment";
+    private static final String ONTOLOGY_TYPE_LOCAL = "Node";
 
     private final KubernetesClient client;
     private final SensorEventPublisher publisher;
