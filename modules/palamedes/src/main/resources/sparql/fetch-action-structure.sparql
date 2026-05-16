@@ -1,19 +1,19 @@
 SELECT DISTINCT ?action ?intent ?target ?protocol ?instruction ?method ?payload ?expectedStatusCode
-       ?preId ?preType ?prePolicy 
-       ?postId ?postType ?postPolicy 
-       ?step ?compensation 
-       ?functionalIntent ?layerBoundary ?costValue WHERE { 
+    ?preId ?preType ?prePolicy
+    ?postId ?postType ?postPolicy
+    ?step ?compensation
+    ?functionalIntent ?layerBoundary ?costValue WHERE {
   VALUES ?root { ${IRI::actionId} }
-  
+
   # 1. Discover all action nodes in the hierarchy.
   ?root (${PREFIX::ACTIONS_PREFIX}:isDecomposedInto|${PREFIX::ACTIONS_PREFIX}:hasCompensation|a/(${PREFIX::ACTIONS_PREFIX}:isDecomposedInto|${PREFIX::ACTIONS_PREFIX}:hasCompensation))* ?action .
-  
+
   # 2. Identify all types (intents) for each node.
   ?action a ?intent .
-  
+
   # 3. Resolve properties with Blueprint Inheritance.
-  OPTIONAL { ?action ${PREFIX::ACTIONS_PREFIX}:targetsEntity ?target } . 
-  
+  OPTIONAL { ?action ${PREFIX::ACTIONS_PREFIX}:targetsEntity ?target } .
+
   # Action Classification
   OPTIONAL { ?action ${PREFIX::ACTIONS_PREFIX}:hasFunctionalIntent ?f1 } .
   OPTIONAL { ?intent ${PREFIX::ACTIONS_PREFIX}:hasFunctionalIntent ?f2 } .
@@ -23,7 +23,7 @@ SELECT DISTINCT ?action ?intent ?target ?protocol ?instruction ?method ?payload 
   OPTIONAL { ?intent ${PREFIX::ACTIONS_PREFIX}:hasLayerBoundary ?l2 } .
   BIND(COALESCE(?l1, ?l2) AS ?layerBoundary) .
 
-  OPTIONAL { 
+  OPTIONAL {
     ?action ${PREFIX::ACTIONS_PREFIX}:hasExecutionCost ?c1 .
     ?c1 ${PREFIX::ACTIONS_PREFIX}:costValue ?v1 .
   } .
@@ -51,21 +51,31 @@ SELECT DISTINCT ?action ?intent ?target ?protocol ?instruction ?method ?payload 
   BIND(COALESCE(?s1, ?s2) AS ?expectedStatusCode) .
 
   # 4. Conditions
-  OPTIONAL { 
-    ?action ${PREFIX::ACTIONS_PREFIX}:hasPreCondition ?preId . 
-    ?preId a ?preType . 
-    ?preId ${PREFIX::ACTIONS_PREFIX}:policyQueryString ?prePolicy . 
-  } . 
-  OPTIONAL { 
-    ?action ${PREFIX::ACTIONS_PREFIX}:hasPostCondition ?postId . 
-    ?postId a ?postType . 
-    ?postId ${PREFIX::ACTIONS_PREFIX}:policyQueryString ?postPolicy . 
-  } . 
-  
+  OPTIONAL {
+    { ?action ${PREFIX::ACTIONS_PREFIX}:hasPreCondition ?preId . }
+    UNION
+    { ?intent ${PREFIX::ACTIONS_PREFIX}:hasPreCondition ?preId . }
+    ?preId a ?preType .
+    ?preId ${PREFIX::ACTIONS_PREFIX}:policyQueryString ?prePolicy .
+  } .
+  OPTIONAL {
+    { ?action ${PREFIX::ACTIONS_PREFIX}:hasPostCondition ?postId . }
+    UNION
+    { ?intent ${PREFIX::ACTIONS_PREFIX}:hasPostCondition ?postId . }
+    ?postId a ?postType .
+    ?postId ${PREFIX::ACTIONS_PREFIX}:policyQueryString ?postPolicy .
+  } .
+
   # 5. Decomposition Links
   OPTIONAL { ?action ${PREFIX::ACTIONS_PREFIX}:isDecomposedInto ?s1 } .
   OPTIONAL { ?intent ${PREFIX::ACTIONS_PREFIX}:isDecomposedInto ?s2 } .
   BIND(COALESCE(?s1, ?s2) AS ?step) .
-  
-  OPTIONAL { ?step ${PREFIX::ACTIONS_PREFIX}:hasCompensation ?compensation } . 
+
+  # 6. Compensations
+  OPTIONAL {
+    { ?step ${PREFIX::ACTIONS_PREFIX}:hasCompensation ?compensation . }
+    UNION
+    { ?step a ?stepIntent .
+    ?stepIntent ${PREFIX::ACTIONS_PREFIX}:hasCompensation ?compensation . }
+  } .
 }
