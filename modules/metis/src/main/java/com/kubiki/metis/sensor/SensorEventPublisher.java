@@ -6,6 +6,7 @@ import com.kubiki.metis.grpc.SensorEvent;
 import com.kubiki.metis.ingestion.SensorEventProcessor;
 import com.kubiki.metis.ingestion.model.HandlerResult;
 import com.kubiki.metis.ingestion.model.ProcessResult;
+import com.kubiki.metis.notification.PalamedesNotifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -36,6 +37,7 @@ public class SensorEventPublisher {
     private static final Logger log = LoggerFactory.getLogger(SensorEventPublisher.class);
 
     private final SensorEventProcessor processor;
+    private final PalamedesNotifier notifier;
     private final int batchSize;
     private final long flushIntervalMs;
     private final String sensorHostname;
@@ -44,8 +46,11 @@ public class SensorEventPublisher {
     private final ReentrantLock lock = new ReentrantLock();
     private ScheduledExecutorService scheduler;
 
-    public SensorEventPublisher(SensorEventProcessor processor, MetisProperties properties) {
+    public SensorEventPublisher(SensorEventProcessor processor,
+                                PalamedesNotifier notifier,
+                                MetisProperties properties) {
         this.processor = processor;
+        this.notifier = notifier;
         this.batchSize = properties.sensor().batchSize();
         this.flushIntervalMs = properties.sensor().flushIntervalMs();
         this.sensorHostname = resolveHostname();
@@ -120,8 +125,11 @@ public class SensorEventPublisher {
 
             HandlerResult firstSuccess = result.firstSuccess();
             if (firstSuccess != null) {
-                log.info("Palamedes should be notified [correlationId={}, resourceIri={}, ontologyType={}, changeKind={}]",
-                        correlationId, firstSuccess.resourceIri(), firstSuccess.ontologyType(), firstSuccess.changeKind());
+                notifier.notify(
+                        firstSuccess.resourceIri(),
+                        firstSuccess.ontologyType(),
+                        firstSuccess.changeKind(),
+                        correlationId);
             }
 
             log.debug("Sensor batch flushed [correlationId={}, events={}, processed={}, failed={}]",

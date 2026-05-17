@@ -26,10 +26,10 @@ spec:
               value: "http://graphdb.graphdb.svc.cluster.local:7200"
             - name: METIS_GRAPHDB_REPOSITORYID
               value: "amocna"
-            - name: METIS_PALAMEDES_HOST
-              value: "localhost"   # no Palamedes yet change in future
-            - name: METIS_PALAMEDES_PORT
-              value: "50051"
+            - name: RABBITMQ_HOST
+              value: "rabbitmq.palamedes.svc.cluster.local"
+            - name: RABBITMQ_PORT
+              value: "5672"
             - name: METIS_SENSOR_ENABLED
               value: "true"
             - name: METIS_SENSOR_NAMESPACES

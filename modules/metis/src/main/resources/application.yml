@@ -6,6 +6,11 @@ spring:
     active: dev
   main:
     web-application-type: none
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USER:guest}
+    password: ${RABBITMQ_PASS:guest}
 
 grpc:
   server:
@@ -18,9 +23,6 @@ metis:
     timeoutMs: 5000
   ontology:
     cneeNamespace: "http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt#"
-  palamedes:
-    host: "palamedes"
-    port: 50051
   sensor:
     enabled: true
     namespaces: []          # empty = watch all namespaces; e.g. [default, production]
