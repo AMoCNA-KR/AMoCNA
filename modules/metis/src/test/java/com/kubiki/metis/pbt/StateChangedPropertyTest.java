@@ -48,7 +48,7 @@ class StateChangedPropertyTest {
         MetisProperties props = new MetisProperties(
                 new MetisProperties.GraphDB("http://localhost:7200", "test", 5000),
                 new MetisProperties.Ontology(CNEE_NAMESPACE),
-                new MetisProperties.Palamedes("localhost", 50051), null
+                null
         );
         IriFactory registry = new IriFactory(props);
         return new KnowledgeBaseWriter(repo, registry);

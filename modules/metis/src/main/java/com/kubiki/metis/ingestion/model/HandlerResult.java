@@ -1,7 +1,5 @@
 package com.kubiki.metis.ingestion.model;
 
-import com.kubiki.palamedes.grpc.ChangeKind;
-
 /**
  * Result returned by a {@link com.kubiki.metis.ingestion.handler.SensorEventHandler}
  * after processing a single {@code SensorEvent}.
@@ -13,23 +11,27 @@ public record HandlerResult(
         boolean success,
         String resourceIri,
         String ontologyType,
-        ChangeKind changeKind,
+        String changeKind,
         String failureReason,
         boolean graphDbFailed
 ) {
 
+    /** Change kind constants — matches the values Palamedes expects. */
+    public static final String CREATED       = "CREATED";
+    public static final String UPDATED       = "UPDATED";
+    public static final String STATE_CHANGED = "STATE_CHANGED";
+    public static final String DELETED       = "DELETED";
+
     /**
      * Creates a successful result carrying the IRI, ontology type, and change kind
-     * that will be forwarded to Palamedes.
+     * that will be forwarded to Palamedes via RabbitMQ.
      */
-    public static HandlerResult success(String resourceIri, String ontologyType, ChangeKind changeKind) {
+    public static HandlerResult success(String resourceIri, String ontologyType, String changeKind) {
         return new HandlerResult(true, resourceIri, ontologyType, changeKind, null, false);
     }
 
     /**
      * Creates a validation failure result. All IRI / type / kind fields are {@code null}.
-     *
-     * @param reason human-readable description of why the event could not be processed
      */
     public static HandlerResult failure(String reason) {
         return new HandlerResult(false, null, null, null, reason, false);
@@ -37,9 +39,6 @@ public record HandlerResult(
 
     /**
      * Creates a GraphDB failure result indicating the knowledge base was unavailable.
-     * All IRI / type / kind fields are {@code null}.
-     *
-     * @param reason human-readable description of the GraphDB error
      */
     public static HandlerResult graphDbFailure(String reason) {
         return new HandlerResult(false, null, null, null, reason, true);

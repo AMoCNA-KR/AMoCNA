@@ -5,7 +5,7 @@ import com.kubiki.metis.grpc.SensorEvent;
 import com.kubiki.metis.ingestion.model.HandlerResult;
 import com.kubiki.metis.knowledge.KnowledgeBaseException;
 import com.kubiki.metis.knowledge.KnowledgeBaseWriter;
-import com.kubiki.palamedes.grpc.ChangeKind;
+
 import org.springframework.stereotype.Component;
 
 /**
@@ -43,7 +43,7 @@ public class RelationshipAssertedHandler implements SensorEventHandler {
 
         try {
             writer.assertRelationship(rel);
-            return HandlerResult.success(subjectIri, predicate, ChangeKind.UPDATED);
+            return HandlerResult.success(subjectIri, predicate, HandlerResult.UPDATED);
         } catch (KnowledgeBaseException e) {
             return e.getCause() != null
                     ? HandlerResult.graphDbFailure(e.getMessage())

@@ -9,14 +9,11 @@ import java.util.List;
 public record MetisProperties(
         @NestedConfigurationProperty GraphDB graphdb,
         @NestedConfigurationProperty Ontology ontology,
-        @NestedConfigurationProperty Palamedes palamedes,
         @NestedConfigurationProperty Sensor sensor
 ) {
     public record GraphDB(String url, String repositoryId, int timeoutMs) {}
 
     public record Ontology(String cneeNamespace) {}
-
-    public record Palamedes(String host, int port) {}
 
     /**
      * Configuration for the built-in Kubernetes sensor layer.

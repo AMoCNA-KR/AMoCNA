@@ -5,7 +5,7 @@ import com.kubiki.metis.grpc.StateChangedEvent;
 import com.kubiki.metis.ingestion.model.HandlerResult;
 import com.kubiki.metis.knowledge.KnowledgeBaseException;
 import com.kubiki.metis.knowledge.KnowledgeBaseWriter;
-import com.kubiki.palamedes.grpc.ChangeKind;
+
 import org.springframework.stereotype.Component;
 
 /**
@@ -44,7 +44,7 @@ public class StateChangedHandler implements SensorEventHandler {
 
         try {
             writer.changeState(stateChanged);
-            return HandlerResult.success(resourceIri, newStateIri, ChangeKind.STATE_CHANGED);
+            return HandlerResult.success(resourceIri, newStateIri, HandlerResult.STATE_CHANGED);
         } catch (KnowledgeBaseException e) {
             return e.getCause() != null
                     ? HandlerResult.graphDbFailure(e.getMessage())

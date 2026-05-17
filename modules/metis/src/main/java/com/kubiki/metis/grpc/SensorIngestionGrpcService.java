@@ -3,6 +3,7 @@ package com.kubiki.metis.grpc;
 import com.kubiki.metis.ingestion.SensorEventProcessor;
 import com.kubiki.metis.ingestion.model.HandlerResult;
 import com.kubiki.metis.ingestion.model.ProcessResult;
+import com.kubiki.metis.notification.PalamedesNotifier;
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
 import net.devh.boot.grpc.server.service.GrpcService;
@@ -33,9 +34,12 @@ public class SensorIngestionGrpcService
     private static final int MAX_CORRELATION_ID_LENGTH = 128;
 
     private final SensorEventProcessor processor;
+    private final PalamedesNotifier notifier;
 
-    public SensorIngestionGrpcService(SensorEventProcessor processor) {
+    public SensorIngestionGrpcService(SensorEventProcessor processor,
+                                      PalamedesNotifier notifier) {
         this.processor = processor;
+        this.notifier = notifier;
     }
 
     @Override
@@ -73,8 +77,11 @@ public class SensorIngestionGrpcService
 
             HandlerResult firstSuccess = processResult.firstSuccess();
             if (firstSuccess != null) {
-                log.info("Palamedes should be notified [correlationId={}, resourceIri={}, ontologyType={}, changeKind={}]",
-                        correlationId, firstSuccess.resourceIri(), firstSuccess.ontologyType(), firstSuccess.changeKind());
+                notifier.notify(
+                        firstSuccess.resourceIri(),
+                        firstSuccess.ontologyType(),
+                        firstSuccess.changeKind(),
+                        correlationId);
             }
 
             boolean batchWasEmpty = request.getEventsList().isEmpty();

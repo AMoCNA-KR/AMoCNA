@@ -7,7 +7,7 @@ import com.kubiki.metis.knowledge.CneeOntology;
 import com.kubiki.metis.knowledge.KnowledgeBaseException;
 import com.kubiki.metis.knowledge.KnowledgeBaseWriter;
 import com.kubiki.metis.sensor.IriFactory;
-import com.kubiki.palamedes.grpc.ChangeKind;
+
 import org.springframework.stereotype.Component;
 
 /**
@@ -46,7 +46,7 @@ public class MetricMetadataRegisteredHandler implements SensorEventHandler {
         try {
             writer.registerMetricMetadata(metricEvent);
             String metricTypeIri = iriFactory.typeIri(CneeOntology.CLASS_METRIC);
-            return HandlerResult.success(resourceIri, metricTypeIri, ChangeKind.UPDATED);
+            return HandlerResult.success(resourceIri, metricTypeIri, HandlerResult.UPDATED);
         } catch (KnowledgeBaseException e) {
             return e.getCause() != null
                     ? HandlerResult.graphDbFailure(e.getMessage())

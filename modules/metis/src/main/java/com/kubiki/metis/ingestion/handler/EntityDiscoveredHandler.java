@@ -4,7 +4,7 @@ import com.kubiki.metis.grpc.SensorEvent;
 import com.kubiki.metis.ingestion.model.HandlerResult;
 import com.kubiki.metis.knowledge.KnowledgeBaseException;
 import com.kubiki.metis.knowledge.KnowledgeBaseWriter;
-import com.kubiki.palamedes.grpc.ChangeKind;
+
 import org.springframework.stereotype.Component;
 
 /**
@@ -36,7 +36,7 @@ public class EntityDiscoveredHandler implements SensorEventHandler {
 
         try {
             writer.insertEntity(event.getEntityDiscovered());
-            return HandlerResult.success(resourceIri, ontologyType, ChangeKind.CREATED);
+            return HandlerResult.success(resourceIri, ontologyType, HandlerResult.CREATED);
         } catch (KnowledgeBaseException e) {
             return e.getCause() != null
                     ? HandlerResult.graphDbFailure(e.getMessage())

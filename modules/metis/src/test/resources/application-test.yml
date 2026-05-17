@@ -5,8 +5,12 @@ metis:
     timeoutMs: 1000
   ontology:
     cneeNamespace: "http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt#"
-  palamedes:
-    host: "localhost"
-    port: ${wiremock.grpc.port}
   sensor:
     enabled: false
+
+spring:
+  rabbitmq:
+    host: localhost
+    port: 0
+  autoconfigure:
+    exclude: org.springframework.boot.autoconfigure.amqp.RabbitAutoConfiguration
