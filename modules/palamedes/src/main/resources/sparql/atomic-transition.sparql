@@ -1,0 +1,6 @@
+DELETE { ?action ${PREFIX::ACTIONS_PREFIX}:hasCurrentState ${IRI::fromState} . }
+INSERT { ?action ${PREFIX::ACTIONS_PREFIX}:hasCurrentState ${IRI::toState} . }
+WHERE { 
+  ?action ${PREFIX::ACTIONS_PREFIX}:hasCurrentState ${IRI::fromState} .
+  FILTER(?action = ${IRI::actionId})
+}

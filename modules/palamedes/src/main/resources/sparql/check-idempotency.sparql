@@ -1,0 +1,7 @@
+
+SELECT DISTINCT ?window ?lastTransition
+WHERE {
+  ?action ${PREFIX::ACTIONS_PREFIX}:idempotencyWindowSeconds ?window .
+  ?action ${PREFIX::ACTIONS_PREFIX}:hasLastTransitionTimestamp ?lastTransition .
+  FILTER(?action = ${IRI::actionId})
+}
