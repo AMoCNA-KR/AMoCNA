@@ -4,6 +4,7 @@ import com.kubiki.daedalus.annotation.DaedalusRepository;
 import com.kubiki.daedalus.context.GlobalTemplateContext;
 import com.kubiki.daedalus.core.Formatter;
 import com.kubiki.daedalus.proxy.DaedalusInvocationHandler;
+import lombok.SneakyThrows;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.support.BeanDefinitionBuilder;
@@ -14,6 +15,8 @@ import org.springframework.core.type.filter.AnnotationTypeFilter;
 import java.lang.reflect.Proxy;
 
 public class DaedalusBeanRegistrar {
+
+    @SneakyThrows
     public void registerRepositories(BeanDefinitionRegistry registry, GlobalTemplateContext context, String basePackage) {
         var scanner = new ClassPathScanningCandidateComponentProvider(false) {
             @Override
@@ -22,37 +25,35 @@ public class DaedalusBeanRegistrar {
             }
         };
         scanner.addIncludeFilter(new AnnotationTypeFilter(DaedalusRepository.class));
+
         for (BeanDefinition bd : scanner.findCandidateComponents(basePackage)) {
-            try {
-                Class<?> clazz = Class.forName(bd.getBeanClassName());
-                String beanName = clazz.getSimpleName();
-                if (registry.containsBeanDefinition(beanName)) {
-                    continue;
-                }
-                @SuppressWarnings("unchecked")
-                Class<Object> repoClass = (Class<Object>) clazz;
-                registry.registerBeanDefinition(beanName, BeanDefinitionBuilder.genericBeanDefinition(repoClass, () -> {
-                    GlobalTemplateContext effectiveContext = context;
-                    Formatter effectiveFormatter = null;
-                    if (registry instanceof BeanFactory bf) {
-                        if (effectiveContext == null) {
-                            try {
-                                effectiveContext = bf.getBean(GlobalTemplateContext.class);
-                            } catch (Exception e) {
-                                effectiveContext = (GlobalTemplateContext) bf.getBean(GlobalTemplateContext.class.getName());
-                            }
-                        }
+            Class<?> clazz = Class.forName(bd.getBeanClassName());
+            String beanName = clazz.getSimpleName();
+            if (registry.containsBeanDefinition(beanName)) {
+                continue;
+            }
+            @SuppressWarnings("unchecked")
+            Class<Object> repoClass = (Class<Object>) clazz;
+
+            registry.registerBeanDefinition(beanName, BeanDefinitionBuilder.genericBeanDefinition(repoClass, () -> {
+                GlobalTemplateContext effectiveContext = context;
+                Formatter effectiveFormatter = null;
+                if (registry instanceof BeanFactory bf) {
+                    if (effectiveContext == null) {
                         try {
-                            effectiveFormatter = bf.getBean(Formatter.class);
+                            effectiveContext = bf.getBean(GlobalTemplateContext.class);
                         } catch (Exception e) {
-                            effectiveFormatter = (Formatter) bf.getBean(Formatter.class.getName());
+                            effectiveContext = (GlobalTemplateContext) bf.getBean(GlobalTemplateContext.class.getName());
                         }
                     }
-                    return Proxy.newProxyInstance(clazz.getClassLoader(), new Class[]{clazz}, new DaedalusInvocationHandler(clazz, effectiveContext, effectiveFormatter));
-                }).getBeanDefinition());
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
+                    try {
+                        effectiveFormatter = bf.getBean(Formatter.class);
+                    } catch (Exception e) {
+                        effectiveFormatter = (Formatter) bf.getBean(Formatter.class.getName());
+                    }
+                }
+                return Proxy.newProxyInstance(clazz.getClassLoader(), new Class[]{clazz}, new DaedalusInvocationHandler(clazz, effectiveContext, effectiveFormatter));
+            }).getBeanDefinition());
         }
     }
 }

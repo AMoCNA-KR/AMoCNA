@@ -6,8 +6,6 @@ import java.util.regex.Pattern;
 @UtilityClass
 public class DaedalusConstants {
     // Delimiters
-    public static final String BEGIN_OF_VARIABLE = "${";
-    public static final String END_OF_VARIABLE = "}";
     public static final String DEFAULT_VALUE_SEPARATOR = ":-";
     
     // Formatting

@@ -26,14 +26,12 @@ public class Formatter {
     public String format(Object value, TemplateType explicitType) {
         if (value == null) return EMPTY_STRING;
 
-        ValueFormatter formatter = null;
+        ValueFormatter formatter;
         if (explicitType != null) {
             formatter = annotationRegistry.get(explicitType);
         } else {
-            // Try exact match
             formatter = typeRegistry.get(value.getClass());
             if (formatter == null) {
-                // Try hierarchy
                 for (var entry : typeRegistry.entrySet()) {
                     if (entry.getKey().isAssignableFrom(value.getClass())) {
                         formatter = entry.getValue();
@@ -47,6 +45,6 @@ public class Formatter {
             return formatter.format(value);
         }
 
-        return value.toString(); // Final fallback
+        return value.toString();
     }
 }

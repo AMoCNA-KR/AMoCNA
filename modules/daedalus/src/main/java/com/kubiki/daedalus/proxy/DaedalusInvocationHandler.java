@@ -58,17 +58,19 @@ public class DaedalusInvocationHandler implements InvocationHandler {
     public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
         List<TemplateToken> tokens = methodTemplates.get(method);
         if (tokens == null) {
-            if (method.getName().equals(EQUALS_METHOD)) {
-                if (args[0] == null) return false;
-                if (!Proxy.isProxyClass(args[0].getClass())) return false;
-                InvocationHandler handler = Proxy.getInvocationHandler(args[0]);
-                return this.equals(handler);
-            }
-            if (method.getName().equals(HASH_CODE_METHOD)) {
-                return System.identityHashCode(proxy);
-            }
-            if (method.getName().equals(TO_STRING_METHOD)) {
-                return PROXY_PREFIX + interfaceClass.getSimpleName() + PROXY_SUFFIX;
+            switch (method.getName()) {
+                case EQUALS_METHOD -> {
+                    if (args[0] == null) return false;
+                    if (!Proxy.isProxyClass(args[0].getClass())) return false;
+                    InvocationHandler handler = Proxy.getInvocationHandler(args[0]);
+                    return this.equals(handler);
+                }
+                case HASH_CODE_METHOD -> {
+                    return System.identityHashCode(proxy);
+                }
+                case TO_STRING_METHOD -> {
+                    return PROXY_PREFIX + interfaceClass.getSimpleName() + PROXY_SUFFIX;
+                }
             }
             throw new DaedalusException("Method not annotated with @Template: " + method.getName());
         }

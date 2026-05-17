@@ -5,6 +5,8 @@ import com.kubiki.daedalus.annotation.TemplateType;
 import com.kubiki.daedalus.context.GlobalTemplateContext;
 import com.kubiki.daedalus.exception.HydrationException;
 import com.kubiki.daedalus.exception.TemplateMappingException;
+import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
@@ -12,18 +14,12 @@ import java.util.List;
 import java.util.Map;
 
 @Service
+@RequiredArgsConstructor
 public class DefaultDaedalusHydrator implements DaedalusHydrator {
     private final TemplateParser parser;
     private final Formatter formatter;
     private final GlobalTemplateContext globalContext;
     private final ObjectMapper objectMapper;
-
-    public DefaultDaedalusHydrator(TemplateParser parser, Formatter formatter, GlobalTemplateContext globalContext, ObjectMapper objectMapper) {
-        this.parser = parser;
-        this.formatter = formatter;
-        this.globalContext = globalContext;
-        this.objectMapper = objectMapper;
-    }
 
     @Override
     public String hydrate(String template, Map<String, Object> data) {
@@ -38,15 +34,15 @@ public class DefaultDaedalusHydrator implements DaedalusHydrator {
 
         StringBuilder sb = new StringBuilder();
         for (TemplateToken token : tokens) {
-            if (token instanceof TemplateToken.StaticToken s) {
-                sb.append(s.text());
-            } else if (token instanceof TemplateToken.VariableToken v) {
-                String val = values.get(v.name());
+            if (token instanceof TemplateToken.StaticToken(String text)) {
+                sb.append(text);
+            } else if (token instanceof TemplateToken.VariableToken(String name, String defaultValue)) {
+                String val = values.get(name);
                 if (val == null) {
-                    val = v.defaultValue();
+                    val = defaultValue;
                 }
                 if (val == null) {
-                    throw new HydrationException("Missing variable: " + v.name());
+                    throw new HydrationException("Missing variable: " + name);
                 }
                 sb.append(val);
             }
@@ -55,15 +51,12 @@ public class DefaultDaedalusHydrator implements DaedalusHydrator {
     }
 
     @Override
+    @SneakyThrows
     public <T> T hydrateAndMap(String template, Map<String, Object> data, Class<T> targetClass) {
         String hydrated = hydrate(template, data);
         if (targetClass.equals(String.class)) {
             return (T) hydrated;
         }
-        try {
-            return objectMapper.readValue(hydrated, targetClass);
-        } catch (Exception e) {
-            throw new TemplateMappingException("Failed to map hydrated template to " + targetClass.getSimpleName(), e);
-        }
+        return objectMapper.readValue(hydrated, targetClass);
     }
 }
