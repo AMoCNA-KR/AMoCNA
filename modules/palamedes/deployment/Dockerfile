@@ -13,7 +13,7 @@ COPY modules/palamedes/src ./src
 
 RUN mvn clean package -DskipTests
 
-FROM eclipse-temurin:25-jre as runtime
+FROM eclipse-temurin:25-jre AS runtime
 WORKDIR /app
 COPY --from=builder /app/modules/palamedes/target/palamedes-0.0.1-SNAPSHOT.jar app.jar
 

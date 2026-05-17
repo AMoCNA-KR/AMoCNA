@@ -10,30 +10,72 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * AnomalyAgent (MAPE-Analyze):
- * Scans for resources in AnomalyState and creates remediation workflows in State_Initial.
+ * Scans for resources in AnomalyState and creates remediation workflows.
+ *
+ * <h2>Triggering strategy</h2>
+ * <ul>
+ *   <li><b>Event-driven:</b> {@link #analyze()} is called by
+ *       {@link com.kubiki.palamedes.listener.GraphUpdateListener} immediately
+ *       when a graph-update message arrives from Metis via RabbitMQ.</li>
+ *   <li><b>Fallback poll:</b> If no graph-update message has been received for
+ *       10 minutes, the scheduled {@link #fallbackAnalyze()} fires to catch
+ *       any missed events (e.g. after a RabbitMQ outage).</li>
+ * </ul>
  */
 @Service
 @RequiredArgsConstructor
 public class AnomalyAgent {
     private static final Logger log = LoggerFactory.getLogger(AnomalyAgent.class);
 
+    /** 10 minutes in milliseconds — fallback poll interval. */
+    private static final long FALLBACK_INTERVAL_MS = 10 * 60 * 1000;
+
     private final GraphDBGateway gateway;
     private final ActionUtils utils;
 
-    @Scheduled(fixedRate = 5000)
+    /** Timestamp of the last event-driven analysis run. */
+    private final AtomicLong lastTriggerTime = new AtomicLong(System.currentTimeMillis());
+
+    /**
+     * Primary entry point — called by {@link com.kubiki.palamedes.listener.GraphUpdateListener}
+     * on each graph-update message from Metis.
+     */
     public void analyze() {
+        lastTriggerTime.set(System.currentTimeMillis());
+        doAnalyze();
+    }
+
+    /**
+     * Fallback scheduler — runs every 10 minutes but only executes the analysis
+     * if no event-driven trigger has occurred within the last 10 minutes.
+     * This catches anomalies that might have been missed due to messaging outages.
+     */
+    @Scheduled(fixedRate = FALLBACK_INTERVAL_MS)
+    public void fallbackAnalyze() {
+        long elapsed = System.currentTimeMillis() - lastTriggerTime.get();
+        if (elapsed >= FALLBACK_INTERVAL_MS) {
+            log.info("No graph-update received for {}min — running fallback anomaly scan",
+                    elapsed / 60_000);
+            doAnalyze();
+        } else {
+            log.debug("Fallback poll skipped — last trigger was {}s ago", elapsed / 1000);
+        }
+    }
+
+    private void doAnalyze() {
         log.debug("Scanning for cluster anomalies...");
-        
+
         List<AnomalyTarget> anomalies = gateway.findAnomalies();
-        
+
         for (var anomaly : anomalies) {
             log.info("Anomaly detected: resource {} needs {}", anomaly.resourceName(), anomaly.intentIri());
-            
+
             String actionId = utils.generateActionId();
-            
+
             gateway.createActionWorkflow(anomaly.resourceIri(), anomaly.intentIri(), actionId);
         }
     }

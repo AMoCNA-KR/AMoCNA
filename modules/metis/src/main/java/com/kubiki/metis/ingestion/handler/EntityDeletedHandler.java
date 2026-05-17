@@ -4,7 +4,7 @@ import com.kubiki.metis.grpc.SensorEvent;
 import com.kubiki.metis.ingestion.model.HandlerResult;
 import com.kubiki.metis.knowledge.KnowledgeBaseException;
 import com.kubiki.metis.knowledge.KnowledgeBaseWriter;
-import com.kubiki.palamedes.grpc.ChangeKind;
+
 import org.springframework.stereotype.Component;
 
 /**
@@ -42,7 +42,7 @@ public class EntityDeletedHandler implements SensorEventHandler {
 
         try {
             writer.deleteEntity(entityDeleted);
-            return HandlerResult.success(resourceIri, ontologyType, ChangeKind.DELETED);
+            return HandlerResult.success(resourceIri, ontologyType, HandlerResult.DELETED);
         } catch (KnowledgeBaseException e) {
             return e.getCause() != null
                     ? HandlerResult.graphDbFailure(e.getMessage())

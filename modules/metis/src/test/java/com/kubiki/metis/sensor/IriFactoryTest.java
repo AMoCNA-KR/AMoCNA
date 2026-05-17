@@ -21,7 +21,6 @@ class IriFactoryTest {
         MetisProperties props = new MetisProperties(
                 new MetisProperties.GraphDB("http://x", "test", 1000),
                 new MetisProperties.Ontology(CNEE),
-                new MetisProperties.Palamedes("x", 1),
                 new MetisProperties.Sensor(true, java.util.List.of(), 50, 500));
         factory = new IriFactory(props);
     }
