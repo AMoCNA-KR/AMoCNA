@@ -1,3 +1,4 @@
+${SPARQL_PREFIXES}
 
 SELECT DISTINCT ?dependent
 WHERE {

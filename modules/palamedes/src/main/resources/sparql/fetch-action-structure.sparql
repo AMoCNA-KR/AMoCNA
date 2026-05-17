@@ -1,3 +1,4 @@
+${SPARQL_PREFIXES}
 SELECT DISTINCT ?action ?intent ?target ?protocol ?instruction ?method ?payload ?expectedStatusCode
     ?preId ?preType ?prePolicy
     ?postId ?postType ?postPolicy

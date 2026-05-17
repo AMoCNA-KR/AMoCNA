@@ -19,4 +19,17 @@ public interface SparqlRepository {
 
     @Template(resource = "sparql/find-active-actions.sparql")
     String findActiveActions();
+
+    @Template(resource = "sparql/fetch-action-structure.sparql")
+    String fetchActionStructure(@Type(TemplateType.IRI) @Bind("IRI::actionId") String actionId);
+
+    @Template(resource = "sparql/check-idempotency.sparql")
+    String checkIdempotency(@Type(TemplateType.IRI) @Bind("IRI::actionId") String actionId);
+
+    @Template(resource = "sparql/atomic-transition.sparql")
+    String atomicTransition(
+            @Type(TemplateType.IRI) @Bind("IRI::actionId") String actionId,
+            @Type(TemplateType.IRI) @Bind("IRI::fromState") String fromState,
+            @Type(TemplateType.IRI) @Bind("IRI::toState") String toState
+    );
 }

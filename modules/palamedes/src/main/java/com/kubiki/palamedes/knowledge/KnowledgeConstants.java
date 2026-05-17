@@ -1,21 +1,15 @@
-package com.kubiki.palamedes.templating;
+package com.kubiki.palamedes.knowledge;
 
 import lombok.experimental.UtilityClass;
 
 @UtilityClass
-public class TemplatingConstants {
+public class KnowledgeConstants {
     public static final String BEGIN_OF_VARIABLE = "${";
     public static final String END_OF_VARIABLE = "}";
-    public static final String ESCAPED_APOSTROPHE = "\"";
-    public static final String BEGIN_OF_IRI_VARIABLE = "<";
-    public static final String END_OF_IRI_VARIABLE = ">";
-    public static final String SPARQL_PREFIX = "PREFIX ";
-    public static final String TYPE_INDICATOR = "::";
 
     public static final String ACTIONS_PREFIX_VARIABLE = "ACTIONS_PREFIX";
     public static final String RESOURCES_PREFIX_VARIABLE = "RESOURCES_PREFIX";
     public static final String BRIDGE_PREFIX_VARIABLE = "BRIDGE_PREFIX";
-
 
     public static final String STATE_INITIAL = "STATE_INITIAL";
     public static final String STATE_PLANNED = "STATE_PLANNED";
@@ -40,5 +34,4 @@ public class TemplatingConstants {
     public static final String PROPERTIES_SUCCEEDED_STATE_NAME = "succeeded";
     public static final String PROPERTIES_FAILED_STATE_NAME = "failed";
     public static final String PROPERTIES_COMPENSATING_STATE_NAME = "compensating";
-
 }

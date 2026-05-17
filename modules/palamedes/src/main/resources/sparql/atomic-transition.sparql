@@ -1,3 +1,4 @@
+${SPARQL_PREFIXES}
 DELETE { ?action ${PREFIX::ACTIONS_PREFIX}:hasCurrentState ${IRI::fromState} . }
 INSERT { ?action ${PREFIX::ACTIONS_PREFIX}:hasCurrentState ${IRI::toState} . }
 WHERE { 

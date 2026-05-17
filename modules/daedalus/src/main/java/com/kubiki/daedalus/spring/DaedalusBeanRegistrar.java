@@ -24,9 +24,13 @@ public class DaedalusBeanRegistrar {
         for (BeanDefinition bd : scanner.findCandidateComponents(basePackage)) {
             try {
                 Class<?> clazz = Class.forName(bd.getBeanClassName());
+                String beanName = clazz.getSimpleName();
+                if (registry.containsBeanDefinition(beanName)) {
+                    continue;
+                }
                 @SuppressWarnings("unchecked")
                 Class<Object> repoClass = (Class<Object>) clazz;
-                registry.registerBeanDefinition(clazz.getSimpleName(), BeanDefinitionBuilder.genericBeanDefinition(repoClass, () -> {
+                registry.registerBeanDefinition(beanName, BeanDefinitionBuilder.genericBeanDefinition(repoClass, () -> {
                     GlobalTemplateContext effectiveContext = context;
                     if (effectiveContext == null && registry instanceof BeanFactory bf) {
                         try {

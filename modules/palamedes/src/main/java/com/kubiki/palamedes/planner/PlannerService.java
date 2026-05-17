@@ -8,8 +8,8 @@ import org.springframework.stereotype.Service;
 
 import java.util.Map;
 
-import static com.kubiki.palamedes.templating.TemplatingConstants.BEGIN_OF_VARIABLE;
-import static com.kubiki.palamedes.templating.TemplatingConstants.END_OF_VARIABLE;
+import static com.kubiki.palamedes.knowledge.KnowledgeConstants.BEGIN_OF_VARIABLE;
+import static com.kubiki.palamedes.knowledge.KnowledgeConstants.END_OF_VARIABLE;
 
 @Service
 public class PlannerService {

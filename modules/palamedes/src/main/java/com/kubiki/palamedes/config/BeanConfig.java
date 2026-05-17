@@ -8,7 +8,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 
-import static com.kubiki.palamedes.templating.TemplatingConstants.*;
+import static com.kubiki.palamedes.knowledge.KnowledgeConstants.*;
 
 @Configuration
 @Import(DaedalusAutoConfiguration.class)
@@ -22,6 +22,19 @@ public class BeanConfig {
     @Bean
     public CommandLineRunner initDaedalus(GlobalTemplateContext ctx, PalamedesProperties properties) {
         return args -> {
+            String prefixes = String.format(
+                    "PREFIX %s: <%s>\n" +
+                    "PREFIX %s: <%s>\n" +
+                    "PREFIX %s: <%s>\n" +
+                    "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n" +
+                    "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>\n" +
+                    "PREFIX owl: <http://www.w3.org/2002/07/owl#>\n",
+                    properties.ontology().actionsPrefix(), properties.ontology().actionsNamespace(),
+                    properties.ontology().resourcesPrefix(), properties.ontology().resourcesNamespace(),
+                    properties.ontology().bridgePrefix(), properties.ontology().bridgeNamespace()
+            );
+            ctx.set("SPARQL_PREFIXES", prefixes);
+
             ctx.set("PREFIX::" + ACTIONS_PREFIX_VARIABLE, properties.ontology().actionsPrefix());
             ctx.set("PREFIX::" + RESOURCES_PREFIX_VARIABLE, properties.ontology().resourcesPrefix());
             ctx.set("PREFIX::" + BRIDGE_PREFIX_VARIABLE, properties.ontology().bridgePrefix());
