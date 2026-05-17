@@ -32,7 +32,6 @@ public class DaedalusBeanRegistrar {
                         try {
                             effectiveContext = bf.getBean(GlobalTemplateContext.class);
                         } catch (Exception e) {
-                            // Fallback to name if type lookup fails
                             effectiveContext = (GlobalTemplateContext) bf.getBean(GlobalTemplateContext.class.getName());
                         }
                     }

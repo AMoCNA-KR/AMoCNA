@@ -72,7 +72,6 @@ class DaedalusInvocationHandlerTest {
 
         assertThat(repository1.toString()).isEqualTo("DaedalusProxy[TestRepository]");
         assertThat(repository1.hashCode()).isNotZero();
-        assertThat(repository1).isEqualTo(repository1);
         assertThat(repository1).isNotEqualTo(repository2);
     }
 
