@@ -1,0 +1,46 @@
+package com.kubiki.daedalus.spring;
+
+import com.kubiki.daedalus.annotation.DaedalusRepository;
+import com.kubiki.daedalus.context.GlobalTemplateContext;
+import com.kubiki.daedalus.proxy.DaedalusInvocationHandler;
+import org.springframework.beans.factory.BeanFactory;
+import org.springframework.beans.factory.config.BeanDefinition;
+import org.springframework.beans.factory.support.BeanDefinitionBuilder;
+import org.springframework.beans.factory.support.BeanDefinitionRegistry;
+import org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider;
+import org.springframework.core.type.filter.AnnotationTypeFilter;
+
+import java.lang.reflect.Proxy;
+
+public class DaedalusBeanRegistrar {
+    public void registerRepositories(BeanDefinitionRegistry registry, GlobalTemplateContext context, String basePackage) {
+        var scanner = new ClassPathScanningCandidateComponentProvider(false) {
+            @Override
+            protected boolean isCandidateComponent(org.springframework.beans.factory.annotation.AnnotatedBeanDefinition beanDefinition) {
+                return beanDefinition.getMetadata().isInterface() && beanDefinition.getMetadata().isIndependent();
+            }
+        };
+        scanner.addIncludeFilter(new AnnotationTypeFilter(DaedalusRepository.class));
+        for (BeanDefinition bd : scanner.findCandidateComponents(basePackage)) {
+            try {
+                Class<?> clazz = Class.forName(bd.getBeanClassName());
+                @SuppressWarnings("unchecked")
+                Class<Object> repoClass = (Class<Object>) clazz;
+                registry.registerBeanDefinition(clazz.getSimpleName(), BeanDefinitionBuilder.genericBeanDefinition(repoClass, () -> {
+                    GlobalTemplateContext effectiveContext = context;
+                    if (effectiveContext == null && registry instanceof BeanFactory bf) {
+                        try {
+                            effectiveContext = bf.getBean(GlobalTemplateContext.class);
+                        } catch (Exception e) {
+                            // Fallback to name if type lookup fails
+                            effectiveContext = (GlobalTemplateContext) bf.getBean(GlobalTemplateContext.class.getName());
+                        }
+                    }
+                    return Proxy.newProxyInstance(clazz.getClassLoader(), new Class[]{clazz}, new DaedalusInvocationHandler(clazz, effectiveContext));
+                }).getBeanDefinition());
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+}
