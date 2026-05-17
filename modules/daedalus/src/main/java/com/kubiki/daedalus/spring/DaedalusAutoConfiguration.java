@@ -1,8 +1,12 @@
 package com.kubiki.daedalus.spring;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kubiki.daedalus.annotation.EnableDaedalusRepositories;
 import com.kubiki.daedalus.context.GlobalTemplateContext;
+import com.kubiki.daedalus.core.DaedalusHydrator;
+import com.kubiki.daedalus.core.DefaultDaedalusHydrator;
 import com.kubiki.daedalus.core.Formatter;
+import com.kubiki.daedalus.core.TemplateParser;
 import com.kubiki.daedalus.core.format.CollectionFormatter;
 import com.kubiki.daedalus.core.format.IriFormatter;
 import com.kubiki.daedalus.core.format.LiteralFormatter;
@@ -30,6 +34,16 @@ public class DaedalusAutoConfiguration implements ImportBeanDefinitionRegistrar 
                     BeanDefinitionBuilder.genericBeanDefinition(GlobalTemplateContext.class).getBeanDefinition());
         }
 
+        if (!registry.containsBeanDefinition(ObjectMapper.class.getName())) {
+            registry.registerBeanDefinition(ObjectMapper.class.getName(),
+                    BeanDefinitionBuilder.genericBeanDefinition(ObjectMapper.class).getBeanDefinition());
+        }
+
+        if (!registry.containsBeanDefinition(TemplateParser.class.getName())) {
+            registry.registerBeanDefinition(TemplateParser.class.getName(),
+                    BeanDefinitionBuilder.genericBeanDefinition(TemplateParser.class).getBeanDefinition());
+        }
+
         // Register default formatters
         registerFormatter(registry, IriFormatter.class);
         registerFormatter(registry, LiteralFormatter.class);
@@ -39,6 +53,11 @@ public class DaedalusAutoConfiguration implements ImportBeanDefinitionRegistrar 
         if (!registry.containsBeanDefinition(Formatter.class.getName())) {
             registry.registerBeanDefinition(Formatter.class.getName(),
                     BeanDefinitionBuilder.genericBeanDefinition(Formatter.class).getBeanDefinition());
+        }
+
+        if (!registry.containsBeanDefinition(DaedalusHydrator.class.getName())) {
+            registry.registerBeanDefinition(DaedalusHydrator.class.getName(),
+                    BeanDefinitionBuilder.genericBeanDefinition(DefaultDaedalusHydrator.class).getBeanDefinition());
         }
 
         Set<String> basePackages = getBasePackages(importingClassMetadata);

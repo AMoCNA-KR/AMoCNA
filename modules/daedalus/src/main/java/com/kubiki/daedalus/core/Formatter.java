@@ -26,14 +26,27 @@ public class Formatter {
     public String format(Object value, TemplateType explicitType) {
         if (value == null) return EMPTY_STRING;
 
-        ValueFormatter formatter = (explicitType != null)
-                ? annotationRegistry.get(explicitType)
-                : typeRegistry.get(value.getClass());
+        ValueFormatter formatter = null;
+        if (explicitType != null) {
+            formatter = annotationRegistry.get(explicitType);
+        } else {
+            // Try exact match
+            formatter = typeRegistry.get(value.getClass());
+            if (formatter == null) {
+                // Try hierarchy
+                for (var entry : typeRegistry.entrySet()) {
+                    if (entry.getKey().isAssignableFrom(value.getClass())) {
+                        formatter = entry.getValue();
+                        break;
+                    }
+                }
+            }
+        }
 
         if (formatter != null) {
             return formatter.format(value);
         }
 
-        return value.toString(); // Fallback
+        return value.toString(); // Final fallback
     }
 }

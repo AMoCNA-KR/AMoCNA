@@ -15,7 +15,9 @@ public class LiteralFormatter implements ValueFormatter<Object> {
         return value != null ? value.toString() : "";
     }
     @Override
-    public Class<Object> getSupportedType() { return null; }
+    public Class<Object> getSupportedType() { 
+        return null; 
+    }
     @Override
     public TemplateType getAnnotationType() { return TemplateType.LITERAL; }
 }

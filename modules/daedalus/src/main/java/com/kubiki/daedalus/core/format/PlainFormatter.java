@@ -11,7 +11,9 @@ public class PlainFormatter implements ValueFormatter<Object> {
         return value != null ? value.toString() : "";
     }
     @Override
-    public Class<Object> getSupportedType() { return null; }
+    public Class<Object> getSupportedType() { 
+        return (Class) String.class; 
+    }
     @Override
     public TemplateType getAnnotationType() { return TemplateType.PLAIN; }
 }
