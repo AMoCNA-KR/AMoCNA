@@ -1,0 +1,4 @@
+SELECT ?compensationIntent WHERE {
+    ${IRI::actionId} a ?intent .
+    ?intent ${PREFIX::ACTIONS_PREFIX}:hasCompensation ?compensationIntent .
+}

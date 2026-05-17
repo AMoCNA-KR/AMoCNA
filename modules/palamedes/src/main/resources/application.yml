@@ -1,0 +1,48 @@
+spring:
+  application:
+    name: palamedes
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USER:guest}
+    password: ${RABBITMQ_PASS:guest}
+
+server:
+  port: ${SERVER_PORT:8081}
+
+palamedes:
+  graphdb:
+    url: ${GRAPHDB_URL:http://localhost:7200}
+    repository-id: ${GRAPHDB_REPO:amocna}
+    timeout-ms: ${GRAPHDB_TIMEOUT:5000}
+  ontology:
+    actions-namespace: ${ONTOLOGY_ACTIONS:http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#}
+    resources-namespace: ${ONTOLOGY_RESOURCES:http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/}
+    bridge-namespace: ${ONTOLOGY_BRIDGE:http://www.semanticweb.org/patryk/ontologies/2026/4/BridgeOnt#}
+    states:
+      initial: "State_Initial"
+      planned: "State_Planned"
+      validated: "State_Validated"
+      in-progress: "State_InProgress"
+      succeeded: "State_Succeeded"
+      failed: "State_Failed"
+      compensating: "State_Compensating"
+    actions-prefix: "moam"
+    resources-prefix: "cnee"
+    bridge-prefix: "bridge"
+  prometheus:
+    url: ${PROMETHEUS_URL:http://localhost:9090}
+  engine:
+    pipeline-rate-ms: 5000
+    default-idempotency-seconds: 300
+  utilities:
+    step-prefix: "step-"
+    action-prefix: "action-"
+    compensation-prefix: "compensation-"
+    size-of-generated-uuid: 12
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus

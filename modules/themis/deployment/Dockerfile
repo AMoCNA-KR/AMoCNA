@@ -2,9 +2,6 @@
 FROM maven:3.9-eclipse-temurin-25 AS builder
 WORKDIR /app
 
-# Copy the schema directory (required for gRPC stubs)
-COPY schema/ schema/
-
 # Copy the themis module structure
 COPY modules/themis/pom.xml modules/themis/
 WORKDIR /app/modules/themis
@@ -23,6 +20,5 @@ EXPOSE 8080 50051
 
 ENV SPRING_PROFILES_ACTIVE=dev
 ENV SPRING_RABBITMQ_HOST=rabbitmq
-ENV THEMIS_GRAPHDB_URL=http://graphdb:7200
 
 ENTRYPOINT ["java", "-jar", "app.jar"]

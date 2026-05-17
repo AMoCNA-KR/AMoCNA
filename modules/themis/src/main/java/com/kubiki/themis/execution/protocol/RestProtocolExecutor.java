@@ -1,5 +1,6 @@
 package com.kubiki.themis.execution.protocol;
 
+import com.kubiki.themis.config.ThemisProperties;
 import com.kubiki.themis.execution.ProtocolExecutor;
 import com.kubiki.themis.model.*;
 import org.slf4j.Logger;
@@ -9,22 +10,22 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpServerErrorException;
+import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClient;
-
-import java.util.Map;
-import java.util.UUID;
 
 /**
  * Generic REST Protocol Interpreter.
- * Ingests URL templates from GraphDB and executes them.
+ * Executes hydrated REST requests with granular feedback.
  */
 @Component
 public class RestProtocolExecutor implements ProtocolExecutor {
     private static final Logger log = LoggerFactory.getLogger(RestProtocolExecutor.class);
     private final RestClient restClient;
+    private final ThemisProperties themisProperties;
 
-    public RestProtocolExecutor(RestClient.Builder restClientBuilder) {
+    public RestProtocolExecutor(RestClient.Builder restClientBuilder, ThemisProperties themisProperties) {
         this.restClient = restClientBuilder.build();
+        this.themisProperties = themisProperties;
     }
 
     @Override
@@ -33,28 +34,30 @@ public class RestProtocolExecutor implements ProtocolExecutor {
     }
 
     @Override
-    public ExecutionResult execute(ActionData action, UUID executionId) {
-        if (!(action instanceof ActionData.SimpleAction simpleAction)) {
-            log.error("Action {} is not a SimpleAction", action.id());
-            return ExecutionResult.failure(500, "Not a SimpleAction");
-        }
-        return doExecute(simpleAction.instruction(), simpleAction.data(), simpleAction.method(), simpleAction.payload(), action.id().toString(), executionId.toString(), simpleAction.expectedStatusCode());
-    }
-
-    @Override
     public ExecutionResult executeStateless(ActionMessage action) {
-        return doExecute(action.instruction(), action.data(), action.method(), action.payload(), action.actionId(), "stateless", action.expectedStatusCode());
+        return doExecute(action);
     }
 
-    private ExecutionResult doExecute(String urlTemplate, Map<String, String> variables, HttpMethod method, String rawPayload, String actionId, String logContextId, int expectedStatusCode) {
-        variables = variables != null ? variables : Map.of();
-        HttpMethod httpMethod = method != null ? method : HttpMethod.GET;
-        String payload = rawPayload != null ? hydrate(rawPayload, variables) : null;
+    private ExecutionResult doExecute(ActionMessage action) {
+        HttpMethod httpMethod = action.method() != null ? HttpMethod.valueOf(action.method().toUpperCase()) : HttpMethod.GET;
+        String url = action.instruction();
+        String payload = action.payload();
+        int expectedStatusCode = action.expectedStatusCode();
 
-        log.info("Executing REST {} request to {} for {}", httpMethod, urlTemplate, logContextId);
+        log.info("Executing REST {} request to {} for action {}", httpMethod, url, action.actionId());
 
         try {
-            RestClient.RequestBodySpec request = restClient.method(httpMethod).uri(urlTemplate, variables);
+            RestClient.RequestBodySpec request = restClient.method(httpMethod).uri(url);
+
+            // Auth Injection
+            if ("BearerToken".equalsIgnoreCase(action.authMechanism())) {
+                String token = themisProperties.secret().bearerToken();
+                if (token != null && !token.isEmpty()) {
+                    request.header("Authorization", "Bearer " + token);
+                } else {
+                    log.warn("BearerToken requested but themis.secret.bearer-token is missing");
+                }
+            }
 
             if (payload != null && !payload.isEmpty()) {
                 request.body(payload);
@@ -62,24 +65,28 @@ public class RestProtocolExecutor implements ProtocolExecutor {
 
             ResponseEntity<Void> response = request.retrieve().toBodilessEntity();
             int observed = response.getStatusCode().value();
-            return new ExecutionResult(observed, observed == expectedStatusCode, null);
-        } catch (HttpClientErrorException | HttpServerErrorException e) {
-            int observed = e.getStatusCode().value();
-            log.error("REST action {} failed with status {}: {}", actionId, observed, e.getMessage());
-            return new ExecutionResult(observed, observed == expectedStatusCode, e.getMessage());
-        } catch (Exception e) {
-            log.error("Failed to execute REST action {} (context {}): {}", actionId, logContextId, e.getMessage());
-            return ExecutionResult.failure(500, e.getMessage());
-        }
-    }
+            
+            if (observed == expectedStatusCode) {
+                return ExecutionResult.success(observed);
+            } else {
+                return ExecutionResult.failure(observed, "Unexpected status code: " + observed, ExecutionStatus.FAILED_HTTP);
+            }
 
-    private String hydrate(String template, Map<String, String> data) {
-        if (template == null) return null;
-        String result = template;
-        for (var entry : data.entrySet()) {
-            result = result.replace("{" + entry.getKey() + "}", entry.getValue());
+        } catch (HttpClientErrorException e) {
+            int observed = e.getStatusCode().value();
+            log.error("REST action {} failed with client error {}: {}", action.actionId(), observed, e.getMessage());
+            ExecutionStatus status = (observed == 401 || observed == 403) ? ExecutionStatus.FAILED_AUTH : ExecutionStatus.FAILED_HTTP;
+            return ExecutionResult.failure(observed, e.getMessage(), status);
+        } catch (HttpServerErrorException e) {
+            int observed = e.getStatusCode().value();
+            log.error("REST action {} failed with server error {}: {}", action.actionId(), observed, e.getMessage());
+            return ExecutionResult.failure(observed, e.getMessage(), ExecutionStatus.FAILED_HTTP);
+        } catch (ResourceAccessException e) {
+            log.error("REST action {} failed with timeout or connection error: {}", action.actionId(), e.getMessage());
+            return ExecutionResult.failure(504, e.getMessage(), ExecutionStatus.FAILED_TIMEOUT);
+        } catch (Exception e) {
+            log.error("Failed to execute REST action {}: {}", action.actionId(), e.getMessage());
+            return ExecutionResult.failure(500, e.getMessage(), ExecutionStatus.FAILED_INTERNAL);
         }
-        return result;
     }
 }
-
