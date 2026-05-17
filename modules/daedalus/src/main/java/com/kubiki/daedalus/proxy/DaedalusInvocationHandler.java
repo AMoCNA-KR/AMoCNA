@@ -12,17 +12,20 @@ import com.kubiki.daedalus.core.TemplateToken;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
+import java.lang.reflect.Proxy;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 public class DaedalusInvocationHandler implements InvocationHandler {
+    private final Class<?> interfaceClass;
     private final Map<Method, List<TemplateToken>> methodTemplates = new HashMap<>();
     private final GlobalTemplateContext globalContext;
     private final Formatter formatter = new Formatter();
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     public DaedalusInvocationHandler(Class<?> interfaceClass, GlobalTemplateContext globalContext) {
+        this.interfaceClass = interfaceClass;
         this.globalContext = globalContext;
         TemplateParser parser = new TemplateParser();
         for (Method method : interfaceClass.getMethods()) {
@@ -45,9 +48,17 @@ public class DaedalusInvocationHandler implements InvocationHandler {
     public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
         List<TemplateToken> tokens = methodTemplates.get(method);
         if (tokens == null) {
-             // Handle Object methods (toString, hashCode, equals)
-            if (method.getDeclaringClass().equals(Object.class)) {
-                return method.invoke(this, args);
+            if (method.getName().equals("equals")) {
+                if (args[0] == null) return false;
+                if (!Proxy.isProxyClass(args[0].getClass())) return false;
+                InvocationHandler handler = Proxy.getInvocationHandler(args[0]);
+                return this.equals(handler);
+            }
+            if (method.getName().equals("hashCode")) {
+                return System.identityHashCode(proxy);
+            }
+            if (method.getName().equals("toString")) {
+                return "DaedalusProxy[" + interfaceClass.getSimpleName() + "]";
             }
             throw new RuntimeException("Method not annotated with @Template: " + method.getName());
         }

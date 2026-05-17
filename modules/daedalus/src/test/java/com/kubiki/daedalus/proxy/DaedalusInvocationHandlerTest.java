@@ -22,6 +22,8 @@ class DaedalusInvocationHandlerTest {
         globalContext.set("GLOBAL_VAR", "GlobalValue");
     }
 
+    public record TestPojo(String id, String name, boolean active) {}
+
     public interface TestRepository {
         @Template(resource = "templates/test-template.txt")
         String greet(@Type(TemplateType.PLAIN) @Bind("name") String name, @Type(TemplateType.PLAIN) @Bind("place") String place);
@@ -31,15 +33,14 @@ class DaedalusInvocationHandlerTest {
 
         @Template(resource = "templates/test-template.txt")
         String greetMissingBind(String name, String place);
+
+        @Template(resource = "templates/test-pojo.json")
+        TestPojo createPojo(@Type(TemplateType.PLAIN) @Bind("id") String id, @Type(TemplateType.PLAIN) @Bind("name") String name, @Type(TemplateType.PLAIN) @Bind("active") boolean active);
     }
 
     @Test
     void shouldHydrateTemplateWithPlainValues() {
-        TestRepository repository = (TestRepository) Proxy.newProxyInstance(
-                TestRepository.class.getClassLoader(),
-                new Class[]{TestRepository.class},
-                new DaedalusInvocationHandler(TestRepository.class, globalContext)
-        );
+        TestRepository repository = createRepository();
 
         String result = repository.greet("Alice", "Wonderland");
 
@@ -48,14 +49,38 @@ class DaedalusInvocationHandlerTest {
 
     @Test
     void shouldHydrateTemplateWithLiteralValues() {
-        TestRepository repository = (TestRepository) Proxy.newProxyInstance(
-                TestRepository.class.getClassLoader(),
-                new Class[]{TestRepository.class},
-                new DaedalusInvocationHandler(TestRepository.class, globalContext)
-        );
+        TestRepository repository = createRepository();
 
         String result = repository.greetLiteral("Alice", "Wonderland");
 
         assertThat(result).isEqualTo("Hello \"Alice\", welcome to \"Wonderland\"!\nGlobal: GlobalValue\n");
+    }
+
+    @Test
+    void shouldHydrateAndConvertPojo() {
+        TestRepository repository = createRepository();
+
+        TestPojo pojo = repository.createPojo("123", "ItemName", true);
+
+        assertThat(pojo).isEqualTo(new TestPojo("123", "ItemName", true));
+    }
+
+    @Test
+    void shouldHandleObjectMethods() {
+        TestRepository repository1 = createRepository();
+        TestRepository repository2 = createRepository();
+
+        assertThat(repository1.toString()).isEqualTo("DaedalusProxy[TestRepository]");
+        assertThat(repository1.hashCode()).isNotZero();
+        assertThat(repository1).isEqualTo(repository1);
+        assertThat(repository1).isNotEqualTo(repository2);
+    }
+
+    private TestRepository createRepository() {
+        return (TestRepository) Proxy.newProxyInstance(
+                TestRepository.class.getClassLoader(),
+                new Class[]{TestRepository.class},
+                new DaedalusInvocationHandler(TestRepository.class, globalContext)
+        );
     }
 }
