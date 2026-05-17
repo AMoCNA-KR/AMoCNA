@@ -3,6 +3,10 @@ package com.kubiki.daedalus.spring;
 import com.kubiki.daedalus.annotation.EnableDaedalusRepositories;
 import com.kubiki.daedalus.context.GlobalTemplateContext;
 import com.kubiki.daedalus.core.Formatter;
+import com.kubiki.daedalus.core.format.CollectionFormatter;
+import com.kubiki.daedalus.core.format.IriFormatter;
+import com.kubiki.daedalus.core.format.LiteralFormatter;
+import com.kubiki.daedalus.core.format.PlainFormatter;
 import org.springframework.beans.factory.support.BeanDefinitionBuilder;
 import org.springframework.beans.factory.support.BeanDefinitionRegistry;
 import org.springframework.context.annotation.Configuration;
@@ -25,6 +29,12 @@ public class DaedalusAutoConfiguration implements ImportBeanDefinitionRegistrar 
             registry.registerBeanDefinition(GlobalTemplateContext.class.getName(),
                     BeanDefinitionBuilder.genericBeanDefinition(GlobalTemplateContext.class).getBeanDefinition());
         }
+
+        // Register default formatters
+        registerFormatter(registry, IriFormatter.class);
+        registerFormatter(registry, LiteralFormatter.class);
+        registerFormatter(registry, PlainFormatter.class);
+        registerFormatter(registry, CollectionFormatter.class);
 
         if (!registry.containsBeanDefinition(Formatter.class.getName())) {
             registry.registerBeanDefinition(Formatter.class.getName(),
@@ -49,5 +59,12 @@ public class DaedalusAutoConfiguration implements ImportBeanDefinitionRegistrar 
             return new HashSet<>(Arrays.asList(attributes.getStringArray("basePackages")));
         }
         return new HashSet<>();
+    }
+
+    private void registerFormatter(BeanDefinitionRegistry registry, Class<?> formatterClass) {
+        if (!registry.containsBeanDefinition(formatterClass.getName())) {
+            registry.registerBeanDefinition(formatterClass.getName(),
+                    BeanDefinitionBuilder.genericBeanDefinition(formatterClass).getBeanDefinition());
+        }
     }
 }

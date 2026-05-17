@@ -1,6 +1,10 @@
 package com.kubiki.daedalus.core;
 
 import com.kubiki.daedalus.annotation.TemplateType;
+import com.kubiki.daedalus.core.format.CollectionFormatter;
+import com.kubiki.daedalus.core.format.IriFormatter;
+import com.kubiki.daedalus.core.format.LiteralFormatter;
+import com.kubiki.daedalus.core.format.PlainFormatter;
 import org.junit.jupiter.api.Test;
 import java.util.Arrays;
 import java.util.Collections;
@@ -8,7 +12,12 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class FormatterTest {
-    private final Formatter formatter = new Formatter(Collections.emptyList());
+    private final Formatter formatter = new Formatter(Arrays.asList(
+            new IriFormatter(),
+            new LiteralFormatter(),
+            new PlainFormatter(),
+            new CollectionFormatter()
+    ));
 
     @Test
     public void testCustomFormatter() {

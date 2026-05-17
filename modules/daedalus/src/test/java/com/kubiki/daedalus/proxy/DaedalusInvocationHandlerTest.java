@@ -5,11 +5,17 @@ import com.kubiki.daedalus.annotation.Template;
 import com.kubiki.daedalus.annotation.TemplateType;
 import com.kubiki.daedalus.annotation.Type;
 import com.kubiki.daedalus.context.GlobalTemplateContext;
+import com.kubiki.daedalus.core.Formatter;
+import com.kubiki.daedalus.core.format.CollectionFormatter;
+import com.kubiki.daedalus.core.format.IriFormatter;
+import com.kubiki.daedalus.core.format.LiteralFormatter;
+import com.kubiki.daedalus.core.format.PlainFormatter;
 import com.kubiki.daedalus.exception.HydrationException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Proxy;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -17,11 +23,18 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 class DaedalusInvocationHandlerTest {
 
     private GlobalTemplateContext globalContext;
+    private Formatter formatter;
 
     @BeforeEach
     void setUp() {
         globalContext = new GlobalTemplateContext();
         globalContext.set("GLOBAL_VAR", "GlobalValue");
+        formatter = new Formatter(List.of(
+                new IriFormatter(),
+                new LiteralFormatter(),
+                new PlainFormatter(),
+                new CollectionFormatter()
+        ));
     }
 
     public record TestPojo(String id, String name, boolean active) {}
@@ -100,7 +113,7 @@ class DaedalusInvocationHandlerTest {
         return (TestRepository) Proxy.newProxyInstance(
                 TestRepository.class.getClassLoader(),
                 new Class[]{TestRepository.class},
-                new DaedalusInvocationHandler(TestRepository.class, globalContext)
+                new DaedalusInvocationHandler(TestRepository.class, globalContext, formatter)
         );
     }
 }
