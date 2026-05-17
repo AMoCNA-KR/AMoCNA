@@ -26,7 +26,7 @@ services:
       - "5672:5672"
       - "15672:15672"
     healthcheck:
-      test: ["CMD", "rabbitmq-diagnostics", "-q", "check_running"]
+      test: [ "CMD", "rabbitmq-diagnostics", "-q", "check_running" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -61,7 +61,7 @@ services:
     depends_on:
       - graphdb
     entrypoint:
-      ["/bin/sh", "-c", "apk add --no-cache curl && /provision-graphdb.sh"]
+      [ "/bin/sh", "-c", "apk add --no-cache curl && /provision-graphdb.sh" ]
 
 volumes:
   graphdb-data:

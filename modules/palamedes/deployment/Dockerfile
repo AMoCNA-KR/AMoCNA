@@ -2,8 +2,14 @@
 FROM maven:3.9-eclipse-temurin-25 AS builder
 WORKDIR /app
 
+# Install daedalus dependency first
+COPY modules/daedalus/pom.xml modules/daedalus/
+COPY modules/daedalus/src modules/daedalus/src/
+WORKDIR /app/modules/daedalus
+RUN mvn clean install -DskipTests
 
 # Copy the palamedes module structure
+WORKDIR /app
 COPY modules/palamedes/pom.xml modules/palamedes/
 WORKDIR /app/modules/palamedes
 RUN mvn dependency:go-offline
