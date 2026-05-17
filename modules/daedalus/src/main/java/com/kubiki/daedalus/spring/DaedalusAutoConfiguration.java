@@ -2,6 +2,7 @@ package com.kubiki.daedalus.spring;
 
 import com.kubiki.daedalus.annotation.EnableDaedalusRepositories;
 import com.kubiki.daedalus.context.GlobalTemplateContext;
+import com.kubiki.daedalus.core.Formatter;
 import org.springframework.beans.factory.support.BeanDefinitionBuilder;
 import org.springframework.beans.factory.support.BeanDefinitionRegistry;
 import org.springframework.context.annotation.Configuration;
@@ -23,6 +24,11 @@ public class DaedalusAutoConfiguration implements ImportBeanDefinitionRegistrar 
         if (!registry.containsBeanDefinition(GlobalTemplateContext.class.getName())) {
             registry.registerBeanDefinition(GlobalTemplateContext.class.getName(),
                     BeanDefinitionBuilder.genericBeanDefinition(GlobalTemplateContext.class).getBeanDefinition());
+        }
+
+        if (!registry.containsBeanDefinition(Formatter.class.getName())) {
+            registry.registerBeanDefinition(Formatter.class.getName(),
+                    BeanDefinitionBuilder.genericBeanDefinition(Formatter.class).getBeanDefinition());
         }
 
         Set<String> basePackages = getBasePackages(importingClassMetadata);

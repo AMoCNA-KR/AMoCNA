@@ -2,6 +2,7 @@ package com.kubiki.daedalus.spring;
 
 import com.kubiki.daedalus.annotation.DaedalusRepository;
 import com.kubiki.daedalus.context.GlobalTemplateContext;
+import com.kubiki.daedalus.core.Formatter;
 import com.kubiki.daedalus.proxy.DaedalusInvocationHandler;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.config.BeanDefinition;
@@ -32,14 +33,22 @@ public class DaedalusBeanRegistrar {
                 Class<Object> repoClass = (Class<Object>) clazz;
                 registry.registerBeanDefinition(beanName, BeanDefinitionBuilder.genericBeanDefinition(repoClass, () -> {
                     GlobalTemplateContext effectiveContext = context;
-                    if (effectiveContext == null && registry instanceof BeanFactory bf) {
+                    Formatter effectiveFormatter = null;
+                    if (registry instanceof BeanFactory bf) {
+                        if (effectiveContext == null) {
+                            try {
+                                effectiveContext = bf.getBean(GlobalTemplateContext.class);
+                            } catch (Exception e) {
+                                effectiveContext = (GlobalTemplateContext) bf.getBean(GlobalTemplateContext.class.getName());
+                            }
+                        }
                         try {
-                            effectiveContext = bf.getBean(GlobalTemplateContext.class);
+                            effectiveFormatter = bf.getBean(Formatter.class);
                         } catch (Exception e) {
-                            effectiveContext = (GlobalTemplateContext) bf.getBean(GlobalTemplateContext.class.getName());
+                            effectiveFormatter = (Formatter) bf.getBean(Formatter.class.getName());
                         }
                     }
-                    return Proxy.newProxyInstance(clazz.getClassLoader(), new Class[]{clazz}, new DaedalusInvocationHandler(clazz, effectiveContext));
+                    return Proxy.newProxyInstance(clazz.getClassLoader(), new Class[]{clazz}, new DaedalusInvocationHandler(clazz, effectiveContext, effectiveFormatter));
                 }).getBeanDefinition());
             } catch (Exception e) {
                 throw new RuntimeException(e);

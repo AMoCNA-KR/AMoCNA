@@ -3,11 +3,23 @@ package com.kubiki.daedalus.core;
 import com.kubiki.daedalus.annotation.TemplateType;
 import org.junit.jupiter.api.Test;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class FormatterTest {
-    private final Formatter formatter = new Formatter();
+    private final Formatter formatter = new Formatter(Collections.emptyList());
+
+    @Test
+    public void testCustomFormatter() {
+        ValueFormatter<String> custom = new ValueFormatter<>() {
+            @Override public String format(String value) { return "CUSTOM:" + value; }
+            @Override public Class<String> getSupportedType() { return String.class; }
+            @Override public TemplateType getAnnotationType() { return TemplateType.PLAIN; }
+        };
+        Formatter customFormatter = new Formatter(Collections.singletonList(custom));
+        assertEquals("CUSTOM:test", customFormatter.format("test", TemplateType.PLAIN));
+    }
 
     @Test
     public void testFormatLiteralString() {

@@ -1,31 +1,39 @@
 package com.kubiki.daedalus.core;
 
 import com.kubiki.daedalus.annotation.TemplateType;
-import java.util.Collection;
+import org.springframework.stereotype.Component;
+
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
-import static com.kubiki.daedalus.core.DaedalusConstants.*;
+import static com.kubiki.daedalus.core.DaedalusConstants.EMPTY_STRING;
 
+@Component
 public class Formatter {
-    public String format(Object value, TemplateType type) {
+    private final Map<Class<?>, ValueFormatter<?>> typeRegistry;
+    private final Map<TemplateType, ValueFormatter<?>> annotationRegistry;
+
+    public Formatter(List<ValueFormatter<?>> formatters) {
+        this.typeRegistry = formatters.stream()
+                .filter(f -> f.getSupportedType() != null)
+                .collect(Collectors.toMap(ValueFormatter::getSupportedType, f -> f, (f1, f2) -> f1));
+        this.annotationRegistry = formatters.stream()
+                .filter(f -> f.getAnnotationType() != null)
+                .collect(Collectors.toMap(ValueFormatter::getAnnotationType, f -> f, (f1, f2) -> f1));
+    }
+
+    public String format(Object value, TemplateType explicitType) {
         if (value == null) return EMPTY_STRING;
-        return switch (type) {
-            case IRI -> IRI_BEGIN + value.toString() + IRI_END;
-            case COLLECTION -> formatCollection((Collection<?>) value);
-            case LITERAL -> formatLiteral(value);
-            case PLAIN -> value.toString();
-        };
-    }
 
-    private String formatLiteral(Object value) {
-        if (value instanceof String) return QUOTE + value + QUOTE;
-        return value.toString();
-    }
+        ValueFormatter formatter = (explicitType != null)
+                ? annotationRegistry.get(explicitType)
+                : typeRegistry.get(value.getClass());
 
-    private String formatCollection(Collection<?> col) {
-        return col.stream()
-                .map(this::formatLiteral)
-                .collect(Collectors.joining(COLLECTION_SEPARATOR));
+        if (formatter != null) {
+            return formatter.format(value);
+        }
+
+        return value.toString(); // Fallback
     }
 }
-

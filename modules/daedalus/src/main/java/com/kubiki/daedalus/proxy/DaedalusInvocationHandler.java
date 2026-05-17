@@ -28,12 +28,13 @@ public class DaedalusInvocationHandler implements InvocationHandler {
     private final Class<?> interfaceClass;
     private final Map<Method, List<TemplateToken>> methodTemplates = new HashMap<>();
     private final GlobalTemplateContext globalContext;
-    private final Formatter formatter = new Formatter();
+    private final Formatter formatter;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    public DaedalusInvocationHandler(Class<?> interfaceClass, GlobalTemplateContext globalContext) {
+    public DaedalusInvocationHandler(Class<?> interfaceClass, GlobalTemplateContext globalContext, Formatter formatter) {
         this.interfaceClass = interfaceClass;
         this.globalContext = globalContext;
+        this.formatter = formatter;
         TemplateParser parser = new TemplateParser();
         for (Method method : interfaceClass.getMethods()) {
             Template templateAnn = method.getAnnotation(Template.class);
