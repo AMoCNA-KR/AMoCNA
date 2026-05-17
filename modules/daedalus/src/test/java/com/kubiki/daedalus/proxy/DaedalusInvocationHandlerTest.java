@@ -5,12 +5,14 @@ import com.kubiki.daedalus.annotation.Template;
 import com.kubiki.daedalus.annotation.TemplateType;
 import com.kubiki.daedalus.annotation.Type;
 import com.kubiki.daedalus.context.GlobalTemplateContext;
+import com.kubiki.daedalus.exception.HydrationException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Proxy;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class DaedalusInvocationHandlerTest {
 
@@ -36,6 +38,9 @@ class DaedalusInvocationHandlerTest {
 
         @Template(resource = "templates/test-pojo.json")
         TestPojo createPojo(@Type(TemplateType.PLAIN) @Bind("id") String id, @Type(TemplateType.PLAIN) @Bind("name") String name, @Type(TemplateType.PLAIN) @Bind("active") boolean active);
+
+        @Template(resource = "templates/test-default.txt")
+        String greetDefault(@Type(TemplateType.PLAIN) @Bind("name") String name);
     }
 
     @Test
@@ -63,6 +68,22 @@ class DaedalusInvocationHandlerTest {
         TestPojo pojo = repository.createPojo("123", "ItemName", true);
 
         assertThat(pojo).isEqualTo(new TestPojo("123", "ItemName", true));
+    }
+
+    @Test
+    void shouldHydrateTemplateWithDefaultValue() {
+        TestRepository repository = createRepository();
+
+        String result = repository.greetDefault("Alice");
+
+        assertThat(result).isEqualTo("Hello Alice, welcome to DefaultLand!\n");
+    }
+
+    @Test
+    void shouldThrowExceptionWhenVariableIsMissing() {
+        TestRepository repository = createRepository();
+
+        assertThrows(HydrationException.class, () -> repository.greetMissingBind("Alice", "Wonderland"));
     }
 
     @Test

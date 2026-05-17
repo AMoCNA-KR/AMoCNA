@@ -1,17 +1,16 @@
 package com.kubiki.palamedes.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.kubiki.daedalus.annotation.EnableDaedalusRepositories;
 import com.kubiki.daedalus.context.GlobalTemplateContext;
-import com.kubiki.daedalus.spring.DaedalusAutoConfiguration;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Import;
 
 import static com.kubiki.palamedes.knowledge.KnowledgeConstants.*;
 
 @Configuration
-@Import(DaedalusAutoConfiguration.class)
+@EnableDaedalusRepositories(basePackages = "com.kubiki.palamedes.knowledge")
 public class BeanConfig {
 
     @Bean
