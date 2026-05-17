@@ -6,6 +6,7 @@ import com.kubiki.daedalus.context.GlobalTemplateContext;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 
 import static com.kubiki.palamedes.knowledge.KnowledgeConstants.*;
 
@@ -14,6 +15,7 @@ import static com.kubiki.palamedes.knowledge.KnowledgeConstants.*;
 public class BeanConfig {
 
     @Bean
+    @Primary
     public ObjectMapper getObjectMapper() {
         return new ObjectMapper();
     }

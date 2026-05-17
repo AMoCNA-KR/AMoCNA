@@ -71,6 +71,12 @@
 
 		<!-- RDF4J / GraphDB -->
 		<dependency>
+			<groupId>com.kubiki</groupId>
+			<artifactId>daedalus</artifactId>
+			<version>0.0.1-SNAPSHOT</version>
+		</dependency>
+
+		<dependency>
 			<groupId>com.ontotext.graphdb</groupId>
 			<artifactId>graphdb-runtime</artifactId>
 			<version>${graphdb.version}</version>

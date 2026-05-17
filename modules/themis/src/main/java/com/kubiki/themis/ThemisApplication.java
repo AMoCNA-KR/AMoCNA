@@ -1,5 +1,6 @@
 package com.kubiki.themis;
 
+import com.kubiki.daedalus.annotation.EnableDaedalusRepositories;
 import com.kubiki.themis.config.ThemisProperties;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -9,8 +10,9 @@ import org.springframework.retry.annotation.EnableRetry;
 @SpringBootApplication
 @EnableRetry
 @EnableConfigurationProperties(ThemisProperties.class)
+@EnableDaedalusRepositories(basePackages = "com.kubiki.themis")
 public class ThemisApplication {
-    public static void main(String[] args) {
+    static void main(String[] args) {
         SpringApplication.run(ThemisApplication.class, args);
     }
 }
