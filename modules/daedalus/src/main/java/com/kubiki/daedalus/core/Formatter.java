@@ -8,9 +8,10 @@ public class Formatter {
     public String format(Object value, TemplateType type) {
         if (value == null) return "";
         return switch (type) {
-            case IRI -> "<" + value.toString() + ">";
+            case IRI -> "<" + value + ">";
             case COLLECTION -> formatCollection((Collection<?>) value);
             case LITERAL -> formatLiteral(value);
+            case PLAIN -> value.toString();
         };
     }
 
