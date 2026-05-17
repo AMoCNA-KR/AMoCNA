@@ -1,9 +1,9 @@
 #!/bin/bash
 set -e
 
-PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 IMAGE_NAME="metis"
-DOCKERFILE_PATH="modules/metis/Dockerfile"
+DOCKERFILE_PATH="modules/metis/deployment/Dockerfile"
 
 REGISTRY="${REGISTRY:-sglomski}"
 PUSH=false
