@@ -23,12 +23,14 @@ public class BeanConfig {
     public CommandLineRunner initDaedalus(GlobalTemplateContext ctx, PalamedesProperties properties) {
         return args -> {
             String prefixes = String.format(
-                    "PREFIX %s: <%s>\n" +
-                    "PREFIX %s: <%s>\n" +
-                    "PREFIX %s: <%s>\n" +
-                    "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n" +
-                    "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>\n" +
-                    "PREFIX owl: <http://www.w3.org/2002/07/owl#>\n",
+                    """
+                            PREFIX %s: <%s>
+                            PREFIX %s: <%s>
+                            PREFIX %s: <%s>
+                            PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+                            PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+                            PREFIX owl: <http://www.w3.org/2002/07/owl#>
+                            """,
                     properties.ontology().actionsPrefix(), properties.ontology().actionsNamespace(),
                     properties.ontology().resourcesPrefix(), properties.ontology().resourcesNamespace(),
                     properties.ontology().bridgePrefix(), properties.ontology().bridgeNamespace()
