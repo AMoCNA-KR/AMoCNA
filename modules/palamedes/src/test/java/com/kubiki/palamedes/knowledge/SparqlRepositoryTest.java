@@ -29,7 +29,14 @@ class SparqlRepositoryTest {
         String query = sparqlRepository.findAnomalies();
         
         assertThat(query).contains("SELECT DISTINCT ?resource");
-        // Verify global vars are hydrated if they were set by CommandLineRunner
-        // Note: CommandLineRunner might not have run in this test setup unless we trigger it
+    }
+
+    @Test
+    void shouldHydrateParameterizedQuery() {
+        String actionId = "http://example.org/action/123";
+        String query = sparqlRepository.findDependents(actionId);
+        
+        assertThat(query).contains("<" + actionId + ">");
+        assertThat(query).contains("dependsOn");
     }
 }
