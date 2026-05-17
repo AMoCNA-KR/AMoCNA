@@ -1,0 +1,12 @@
+metis:
+  graphdb:
+    url: "http://localhost:${wiremock.port}"
+    repositoryId: "test"
+    timeoutMs: 1000
+  ontology:
+    cneeNamespace: "http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt#"
+  palamedes:
+    host: "localhost"
+    port: ${wiremock.grpc.port}
+  sensor:
+    enabled: false

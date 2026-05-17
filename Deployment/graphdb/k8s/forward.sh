@@ -1,0 +1,1 @@
+kubectl port-forward svc/graphdb 7200:7200 -n graphdb
