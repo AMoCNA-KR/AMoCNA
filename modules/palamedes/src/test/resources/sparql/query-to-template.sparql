@@ -1,3 +1,4 @@
+${SPARQL_PREFIXES}
 SELECT DISTINCT ?resource ?resourceName ?intent
 WHERE {
     ?resource ${PREFIX::RESOURCES_PREFIX}:hasCurrentState ?state .

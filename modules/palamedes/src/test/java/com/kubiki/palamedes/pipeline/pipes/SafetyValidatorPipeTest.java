@@ -53,7 +53,7 @@ class SafetyValidatorPipeTest {
 
         boolean result = pipe.process(context);
 
-        assertFalse(result);
+        assertTrue(result);
         verify(stateRepository).transition(any(), eq(WorkflowState.PLANNED), eq(WorkflowState.VALIDATED));
     }
 }

@@ -14,6 +14,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 
 import java.util.List;
 
@@ -28,6 +29,7 @@ class SagaManagerTest {
     @Mock private ConditionFactory conditionFactory;
     @Mock private ActionUtils actionUtils;
     @Mock private WorkflowStateMapper mapper;
+    @Mock private ApplicationEventPublisher publisher;
 
     private SagaManager sagaManager;
     private final IRI actionIri = SimpleValueFactory.getInstance().createIRI("http://test/action1");
@@ -35,7 +37,7 @@ class SagaManagerTest {
 
     @BeforeEach
     void setUp() {
-        sagaManager = new SagaManager(actionUtils, gateway, stateRepository, registry, conditionFactory, mapper);
+        sagaManager = new SagaManager(actionUtils, gateway, stateRepository, registry, conditionFactory, mapper, publisher);
         when(registry.actionsOntology(anyString())).thenReturn(actionIri);
     }
 

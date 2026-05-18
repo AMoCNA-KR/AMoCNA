@@ -17,9 +17,8 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class StateRepositoryTest {
     @Mock private SparqlClient sparqlClient;
-    @Mock private SparqlQueryBuilder queryBuilder;
+    @Mock private SparqlRepository sparqlRepository;
     @Mock private OntologyRegistry registry;
-    @Mock private SparqlQueryBuilder.QueryBuilder builder;
     @Mock private WorkflowStateMapper mapper;
 
     private StateRepository repository;
@@ -27,15 +26,12 @@ class StateRepositoryTest {
 
     @BeforeEach
     void setUp() {
-        repository = new StateRepository(sparqlClient, queryBuilder, registry, mapper);
+        repository = new StateRepository(sparqlClient, sparqlRepository, registry, mapper);
     }
 
     @Test
     void shouldTransitionState() {
-        when(queryBuilder.builder()).thenReturn(builder);
-        when(builder.template(anyString())).thenReturn(builder);
-        when(builder.variable(any())).thenReturn(builder);
-        when(builder.build()).thenReturn("SPARQL");
+        when(sparqlRepository.atomicTransition(anyString(), anyString(), anyString())).thenReturn("SPARQL");
         when(sparqlClient.executeUpdateWithSuccess("SPARQL")).thenReturn(true);
         when(registry.actionsOntology(anyString())).thenReturn(SimpleValueFactory.getInstance().createIRI("http://test/State"));
 

@@ -32,4 +32,5 @@ replay_pid*
 
 knowledge/**/*
 Deployment/**/data/*
+*/**/target/**/*
 .kiro/

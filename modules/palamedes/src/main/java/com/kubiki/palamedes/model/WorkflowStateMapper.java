@@ -5,7 +5,7 @@ import org.springframework.stereotype.Component;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import static com.kubiki.palamedes.templating.TemplatingConstants.*;
+import static com.kubiki.palamedes.knowledge.KnowledgeConstants.*;
 
 @Component
 public class WorkflowStateMapper {

@@ -55,7 +55,7 @@ public class SafetyValidatorPipe implements MapePipe {
         if (success) {
             context.metadata().put("currentState", mapper.getFragment(WorkflowState.VALIDATED));
         }
-        return !success;
+        return success;
     }
 
     private boolean evaluatePreConditions(WorkflowContext context) {

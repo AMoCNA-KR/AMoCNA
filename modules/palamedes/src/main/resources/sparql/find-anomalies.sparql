@@ -1,7 +1,8 @@
+${SPARQL_PREFIXES}
 SELECT DISTINCT ?resource ?resourceName ?intent
 WHERE {
   # 1. Find resource and its current state
-  ?resource ${PREFIX::RESOURCES_PREFIX}:hasCurrentState ?state .
+  ?resource ${PREFIX::RESOURCES_PREFIX}:hasState ?state .
   ?state a ?anomalyType .
   ?resource ${PREFIX::RESOURCES_PREFIX}:resourceName ?resourceName .
   
@@ -15,7 +16,7 @@ WHERE {
   # 3. Filter out resources that already have an active action
   FILTER NOT EXISTS {
     ?action ${PREFIX::ACTIONS_PREFIX}:targetsEntity ?resource .
-    ?action ${PREFIX::ACTIONS_PREFIX}:hasCurrentState ?currentState .
+    ?action ${PREFIX::ACTIONS_PREFIX}:hasState ?currentState .
     # Filter for active states
     FILTER(?currentState IN (${PREFIX::ACTIONS_PREFIX}:${INDIVIDUAL::STATE_INITIAL}, ${PREFIX::ACTIONS_PREFIX}:${INDIVIDUAL::STATE_PLANNED}, ${PREFIX::ACTIONS_PREFIX}:${INDIVIDUAL::STATE_VALIDATED}, ${PREFIX::ACTIONS_PREFIX}:${INDIVIDUAL::STATE_INPROGRESS}, ${PREFIX::ACTIONS_PREFIX}:${INDIVIDUAL::STATE_COMPENSATING}))
 }

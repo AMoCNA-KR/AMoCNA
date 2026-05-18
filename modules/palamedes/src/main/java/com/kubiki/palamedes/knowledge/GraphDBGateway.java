@@ -1,7 +1,6 @@
 package com.kubiki.palamedes.knowledge;
 
 import com.kubiki.palamedes.model.*;
-import com.kubiki.palamedes.templating.types.IriType;
 import lombok.RequiredArgsConstructor;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
@@ -25,31 +24,29 @@ import java.util.stream.Stream;
 public class GraphDBGateway {
     private static final Logger log = LoggerFactory.getLogger(GraphDBGateway.class);
 
-    private static final String TEMPLATE_FETCH_ACTION_STRUCTURE = "fetch-action-structure";
     private static final String VAR_ACTION = "action";
-    private static final String VAR_ACTION_ID = "actionId";
     public static final String RESOURCE_IRI = "resource";
     public static final String ACTION_IRI = "action";
     public static final String INTENT_IRI = "intent";
 
     private final SparqlClient sparqlClient;
-    private final SparqlQueryBuilder sparqlQueryBuilder;
+    private final SparqlRepository sparqlRepository;
     private final ModelMapper modelMapper;
     private final WorkflowStateMapper workflowStateMapper;
     private final OntologyRegistry ontologyRegistry;
 
 
     public void transitionState(IRI actionId, String stateFragment) {
-        IRI hasCurrentState = ontologyRegistry.actionsOntology("hasCurrentState");
+        IRI hasState = ontologyRegistry.actionsOntology("hasState");
         IRI newState = ontologyRegistry.actionsOntology(stateFragment);
         IRI hasLastTransitionTimestamp = ontologyRegistry.actionsOntology("hasLastTransitionTimestamp");
 
         sparqlClient.executeWithConnection(conn -> {
             ValueFactory vf = conn.getValueFactory();
             conn.begin();
-            conn.remove(actionId, hasCurrentState, null);
+            conn.remove(actionId, hasState, null);
             conn.remove(actionId, hasLastTransitionTimestamp, null);
-            conn.add(actionId, hasCurrentState, newState);
+            conn.add(actionId, hasState, newState);
             conn.add(actionId, hasLastTransitionTimestamp, vf.createLiteral(OffsetDateTime.now().toString(), XSD.DATETIME));
             conn.commit();
             log.info("Transitioned action {} to {}", actionId, stateFragment);
@@ -58,7 +55,7 @@ public class GraphDBGateway {
 
     public void createActionWorkflow(IRI resourceIri, IRI intentIri, String actionId) {
         IRI actionIri = ontologyRegistry.actionsOntology(actionId);
-        IRI hasCurrentState = ontologyRegistry.actionsOntology("hasCurrentState");
+        IRI hasState = ontologyRegistry.actionsOntology("hasState");
         IRI stateInitial = ontologyRegistry.actionsOntology("State_Initial");
         IRI targetsEntity = ontologyRegistry.actionsOntology("targetsEntity");
         IRI hasActionID = ontologyRegistry.actionsOntology("hasActionID");
@@ -69,7 +66,7 @@ public class GraphDBGateway {
             conn.begin();
             conn.add(actionIri, RDF.TYPE, intentIri);
             conn.add(actionIri, RDF.TYPE, ontologyRegistry.actionsOntology("AutonomicAction"));
-            conn.add(actionIri, hasCurrentState, stateInitial);
+            conn.add(actionIri, hasState, stateInitial);
             conn.add(actionIri, targetsEntity, resourceIri);
             conn.add(actionIri, hasActionID, vf.createLiteral(actionId));
             conn.add(actionIri, hasLastTransitionTimestamp, vf.createLiteral(OffsetDateTime.now().toString(), XSD.DATETIME));
@@ -107,9 +104,9 @@ public class GraphDBGateway {
     }
 
     public WorkflowState getState(IRI actionIri) {
-        IRI hasCurrentState = ontologyRegistry.actionsOntology("hasCurrentState");
+        IRI hasState = ontologyRegistry.actionsOntology("hasState");
         return sparqlClient.executeWithConnection(conn -> {
-            var statements = conn.getStatements(actionIri, hasCurrentState, null);
+            var statements = conn.getStatements(actionIri, hasState, null);
             if (statements.hasNext()) {
                 IRI stateIri = (IRI) statements.next().getObject();
                 return workflowStateMapper.fromFragment(stateIri.getLocalName());
@@ -129,10 +126,7 @@ public class GraphDBGateway {
     }
 
     public ActionData fetchActionStructure(IRI actionId) {
-        String sparql = sparqlQueryBuilder.builder()
-                .template(TEMPLATE_FETCH_ACTION_STRUCTURE)
-                .variable(new IriType(VAR_ACTION_ID, actionId))
-                .build();
+        String sparql = sparqlRepository.fetchActionStructure(actionId.stringValue());
 
         return sparqlClient.executeQuery(sparql, stream -> {
             Map<IRI, List<BindingSet>> allBindings = stream.collect(
@@ -149,9 +143,7 @@ public class GraphDBGateway {
     }
 
     public List<ActiveActionSummary> findActiveActions() {
-        String sparql = sparqlQueryBuilder.builder()
-                .template("find-active-actions")
-                .build();
+        String sparql = sparqlRepository.findActiveActions();
 
         return sparqlClient.executeQuery(sparql, stream -> stream.map(bs -> new ActiveActionSummary(
                 (IRI) bs.getValue(ACTION_IRI),
@@ -162,10 +154,7 @@ public class GraphDBGateway {
     }
 
     public boolean isIdempotencyWindowOpen(IRI actionId) {
-        String sparql = sparqlQueryBuilder.builder()
-                .template("check-idempotency")
-                .variable(new IriType(VAR_ACTION_ID, actionId))
-                .build();
+        String sparql = sparqlRepository.checkIdempotency(actionId.stringValue());
 
         List<BindingSet> results = sparqlClient.executeQuery(sparql, stream -> stream.collect(Collectors.toList()));
         if (results.isEmpty()) return true; 
@@ -181,10 +170,7 @@ public class GraphDBGateway {
     }
 
     public IRI findCompensation(IRI actionId) {
-        String sparql = sparqlQueryBuilder.builder()
-                .template("find-compensation")
-                .variable(new IriType(VAR_ACTION_ID, actionId))
-                .build();
+        String sparql = sparqlRepository.findCompensation(actionId.stringValue());
         List<BindingSet> results = sparqlClient.executeQuery(sparql, Stream::toList);
         if (!results.isEmpty()) {
             return (IRI) results.getFirst().getValue("compensationIntent");
@@ -193,9 +179,7 @@ public class GraphDBGateway {
     }
 
     public List<AnomalyTarget> findAnomalies() {
-        String sparql = sparqlQueryBuilder.builder()
-                .template("find-anomalies")
-                .build();
+        String sparql = sparqlRepository.findAnomalies();
 
         return sparqlClient.executeQuery(sparql, stream -> stream.map(bs -> new AnomalyTarget(
                 (IRI) bs.getValue(RESOURCE_IRI),
@@ -205,10 +189,7 @@ public class GraphDBGateway {
     }
 
     public List<IRI> findDependents(IRI actionId) {
-        String sparql = sparqlQueryBuilder.builder()
-                .template("find-dependents")
-                .variable(new IriType(VAR_ACTION_ID, actionId))
-                .build();
+        String sparql = sparqlRepository.findDependents(actionId.stringValue());
 
         return sparqlClient.executeQuery(sparql, stream -> stream
                 .map(bs -> (IRI) bs.getValue("dependent"))

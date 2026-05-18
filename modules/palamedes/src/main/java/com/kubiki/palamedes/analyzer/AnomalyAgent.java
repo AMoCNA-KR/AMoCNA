@@ -2,10 +2,12 @@ package com.kubiki.palamedes.analyzer;
 
 import com.kubiki.palamedes.knowledge.GraphDBGateway;
 import com.kubiki.palamedes.model.AnomalyTarget;
+import com.kubiki.palamedes.pipeline.EngineWakeupEvent;
 import com.kubiki.palamedes.utils.ActionUtils;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -36,8 +38,7 @@ public class AnomalyAgent {
 
     private final GraphDBGateway gateway;
     private final ActionUtils utils;
-
-    /** Timestamp of the last event-driven analysis run. */
+    private final ApplicationEventPublisher publisher;
     private final AtomicLong lastTriggerTime = new AtomicLong(System.currentTimeMillis());
 
     /**
@@ -70,6 +71,7 @@ public class AnomalyAgent {
         log.debug("Scanning for cluster anomalies...");
 
         List<AnomalyTarget> anomalies = gateway.findAnomalies();
+        boolean stateChanged = false;
 
         for (var anomaly : anomalies) {
             log.info("Anomaly detected: resource {} needs {}", anomaly.resourceName(), anomaly.intentIri());
@@ -77,6 +79,11 @@ public class AnomalyAgent {
             String actionId = utils.generateActionId();
 
             gateway.createActionWorkflow(anomaly.resourceIri(), anomaly.intentIri(), actionId);
+            stateChanged = true;
+        }
+
+        if (stateChanged) {
+            publisher.publishEvent(new EngineWakeupEvent("New anomaly actions created"));
         }
     }
 }
