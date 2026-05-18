@@ -13,6 +13,7 @@ MODULES=(
     "Business-Demo/MetricExporter"
     "Business-Demo/KubernetesManagment"
     "modules/themis/deployment"
+    "modules/metis"
 )
 
 # Run each build script with provided arguments (e.g., --push)

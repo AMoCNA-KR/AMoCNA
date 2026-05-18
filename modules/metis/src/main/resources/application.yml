@@ -1,0 +1,30 @@
+spring:
+  threads:
+    virtual:
+      enabled: true
+  profiles:
+    active: dev
+  main:
+    web-application-type: none
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USER:guest}
+    password: ${RABBITMQ_PASS:guest}
+
+grpc:
+  server:
+    port: 50052
+
+metis:
+  graphdb:
+    url: "http://graphdb:7200"
+    repositoryId: "amocna"
+    timeoutMs: 5000
+  ontology:
+    cneeNamespace: "http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt#"
+  sensor:
+    enabled: true
+    namespaces: []          # empty = watch all namespaces; e.g. [default, production]
+    batch-size: 50
+    flush-interval-ms: 500
