@@ -46,6 +46,32 @@ public final class CneeOntology {
     public static final String STATE_UNKNOWN   = "Unknown";
 
     // -------------------------------------------------------------------------
+    // Container anomaly states — subclasses of both ContainerState and Anomaly.
+    // -------------------------------------------------------------------------
+
+    public static final String STATE_CONTAINER_CRASH_LOOP       = "ContainerCrashLoopBackOffState";
+    public static final String STATE_CONTAINER_LIVENESS_FAILED  = "ContainerLivenessProbeFailedState";
+    public static final String STATE_CONTAINER_READINESS_FAILED = "ContainerReadinessProbeFailedState";
+    public static final String STATE_CONTAINER_OOM_KILLED       = "ContainerOOMKilledState";
+    public static final String STATE_CONTAINER_CPU_THROTTLED    = "ContainerCPUThrottledState";
+    public static final String STATE_CONTAINER_MEMORY_LEAK      = "ContainerMemoryLeakDetectedState";
+
+    // -------------------------------------------------------------------------
+    // Pod anomaly states — subclasses of both ExecutionUnitState and Anomaly.
+    // -------------------------------------------------------------------------
+
+    public static final String STATE_POD_EVICTED = "ExecutionUnitEvictedState";
+    public static final String STATE_POD_PENDING = "ExecutionUnitPendingState";
+
+    // -------------------------------------------------------------------------
+    // Node anomaly states — subclasses of both NodeState and Anomaly.
+    // -------------------------------------------------------------------------
+
+    public static final String STATE_NODE_NOT_READY       = "NodeNotReadyState";
+    public static final String STATE_NODE_CPU_SATURATED   = "NodeCPUSaturatedState";
+    public static final String STATE_NODE_MEMORY_STARVED  = "NodeMemoryStarvedState";
+
+    // -------------------------------------------------------------------------
     // CNEEOnt object properties — local names.
     // -------------------------------------------------------------------------
 
