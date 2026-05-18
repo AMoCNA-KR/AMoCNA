@@ -8,11 +8,49 @@ spec:
   selector:
     matchLabels:
       app: graphdb
+  strategy:
+    type: Recreate
   template:
     metadata:
       labels:
         app: graphdb
     spec:
+      initContainers:
+        - name: graphdb-init
+          image: ontotext/graphdb:11.3.3
+          command: ["/bin/bash", "-c"]
+          args:
+            - |
+              # Start GraphDB in background for initialization
+              /opt/graphdb/dist/bin/graphdb &
+              GRAPHDB_PID=$!
+
+              # Wait for it to be ready
+              echo "Waiting for GraphDB to start..."
+              until curl -s http://localhost:7200/protocol > /dev/null 2>&1; do
+                sleep 3
+              done
+              echo "GraphDB is up."
+
+              # Run the init script
+              /opt/graphdb/init/init-script.sh
+
+              # Stop GraphDB so the main container can start cleanly
+              kill $GRAPHDB_PID 2>/dev/null
+              wait $GRAPHDB_PID 2>/dev/null || true
+              echo "Init complete."
+          env:
+            - name: GDB_HEAP_SIZE
+              value: "1G"
+          volumeMounts:
+            - name: graphdb-data
+              mountPath: /opt/graphdb/home
+            - name: init-config
+              mountPath: /opt/graphdb/init
+            - name: ontologies
+              mountPath: /opt/graphdb/init/ontologies
+            - name: license
+              mountPath: /opt/graphdb/init/license
       containers:
         - name: graphdb
           image: ontotext/graphdb:11.3.3
@@ -28,19 +66,15 @@ spec:
             limits:
               memory: "3Gi"
               cpu: "2000m"
+          readinessProbe:
+            httpGet:
+              path: /protocol
+              port: 7200
+            initialDelaySeconds: 30
+            periodSeconds: 10
           volumeMounts:
             - name: graphdb-data
               mountPath: /opt/graphdb/home
-        - name: graphdb-init
-          image: curlimages/curl:latest
-          command: ["/bin/sh", "/opt/graphdb/init/init-script.sh"]
-          volumeMounts:
-            - name: init-config
-              mountPath: /opt/graphdb/init
-            - name: ontologies
-              mountPath: /opt/graphdb/init/ontologies
-            - name: license
-              mountPath: /opt/graphdb/init/license
       volumes:
         - name: graphdb-data
           persistentVolumeClaim:
