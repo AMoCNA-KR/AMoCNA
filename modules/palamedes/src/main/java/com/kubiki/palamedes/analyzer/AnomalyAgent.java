@@ -36,8 +36,6 @@ public class AnomalyAgent {
 
     private final GraphDBGateway gateway;
     private final ActionUtils utils;
-
-    /** Timestamp of the last event-driven analysis run. */
     private final AtomicLong lastTriggerTime = new AtomicLong(System.currentTimeMillis());
 
     /**

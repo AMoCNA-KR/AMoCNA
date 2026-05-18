@@ -25,8 +25,6 @@ public class MapePipeline {
     public void run() {
         log.debug("Starting MAPE Pipeline run...");
 
-        // 1. MAPE-Analyze: Detect new anomalies and create INITIAL actions
-        // This is the "Inlet" for new workflows
         anomalyAgent.analyze();
 
         // 2. Fetch all non-terminal actions from GraphDB
@@ -35,7 +33,6 @@ public class MapePipeline {
 
         for (ActiveActionSummary action : activeActions) {
             try {
-                // Fetch the full structure for the context
                 ActionData data = graphDBGateway.fetchActionStructure(action.actionIri());
                 if (data == null) {
                     log.warn("Could not load structure for action {}, skipping", action.actionIri());
@@ -43,11 +40,9 @@ public class MapePipeline {
                 }
 
                 WorkflowContext context = new WorkflowContext(action.actionIri(), data);
-                // metadata enrichment
                 context.metadata().put("resourceName", action.resourceName());
                 context.metadata().put("currentState", action.stateFragment());
 
-                // Execute the pipe chain
                 for (MapePipe pipe : pipes) {
                     if (!pipe.process(context)) {
                         log.debug("Pipeline stopped at {} for action {}", pipe.getClass().getSimpleName(), action.actionIri());
