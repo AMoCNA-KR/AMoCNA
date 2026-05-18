@@ -37,4 +37,8 @@ public class OntologyRegistry {
         }
         return valueFactory.createIRI(palamedesProperties.ontology().bridgeNamespace(), fragment);
     }
+
+    public String getCneeNamespace() {
+        return palamedesProperties.ontology().resourcesNamespace();
+    }
 }

@@ -238,4 +238,29 @@ public class GraphDBGateway {
         return sparqlClient.executeBooleanQuery(query);
     }
 
+    /**
+     * Sets the {@code cnee:hasCurrentState} of a resource to the given state IRI.
+     * Uses an atomic DELETE/INSERT to enforce the functional property constraint
+     * (exactly one state at a time).
+     *
+     * <p>Called by {@link com.kubiki.palamedes.prometheus.PrometheusThresholdEvaluator}
+     * when a Prometheus threshold is crossed.
+     *
+     * @param resourceIri fully-qualified IRI of the resource (e.g. cnee:Pod_default_my-pod)
+     * @param stateIri    fully-qualified IRI of the new state (e.g. cnee:ContainerCPUThrottledState)
+     */
+    public void setResourceState(String resourceIri, String stateIri) {
+        String cneeNs = ontologyRegistry.getCneeNamespace();
+        String sparql = """
+                PREFIX cnee: <%s>
+                DELETE { <%s> cnee:hasCurrentState ?old }
+                INSERT { <%s> cnee:hasCurrentState <%s> }
+                WHERE  { OPTIONAL { <%s> cnee:hasCurrentState ?old } }
+                """.formatted(cneeNs, resourceIri, resourceIri, stateIri, resourceIri);
+
+        sparqlClient.executeWithConnection(conn -> {
+            conn.prepareUpdate(sparql).execute();
+            log.info("Set resource state: {} → {}", resourceIri, stateIri);
+        });
+    }
 }
