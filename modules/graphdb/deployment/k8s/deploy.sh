@@ -8,21 +8,24 @@ echo "=== Deploying GraphDB ==="
 # 1. Create namespace
 kubectl apply -f "$DIR/00-namespace.yaml"
 
-# 2. Handle License Secret from .env file
-if [ -f "$DIR/.env" ]; then
-    echo "Creating graphdb-license secret..."
+# 2. Handle License Secret
+if [ -f "$DIR/graphdb.license" ]; then
+    echo "Creating graphdb-license secret from graphdb.license file..."
+    # Decode Base64 to binary and create secret
+    base64 -d "$DIR/graphdb.license" > "$DIR/graphdb.license.bin"
     kubectl create secret generic graphdb-license \
-        --from-env-file="$DIR/.env" \
+        --from-file=GRAPHDB_LICENSE="$DIR/graphdb.license.bin" \
         --namespace graphdb \
         --dry-run=client -o yaml | kubectl apply -f -
+    rm "$DIR/graphdb.license.bin"
 else
-    echo "Warning: No .env file found. License will be skipped."
+    echo "Warning: No license found. Place graphdb.license in $DIR"
 fi
 
 # 3. Create Ontologies ConfigMap
 echo "Creating graphdb-ontologies ConfigMap..."
 ONTOLOGY_ARGS=""
-for f in "$PROJECT_ROOT"/ontology/*.rdf "$PROJECT_ROOT"/ontology/*.owl; do
+for f in "$PROJECT_ROOT"/ontology/*.rdf; do
     [ -f "$f" ] && ONTOLOGY_ARGS="$ONTOLOGY_ARGS --from-file=$f"
 done
 if [ -n "$ONTOLOGY_ARGS" ]; then

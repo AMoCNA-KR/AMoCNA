@@ -17,7 +17,7 @@ data:
        rep:repositoryImpl [
           rep:repositoryType "graphdb:SailRepository" ;
           sr:sailImpl [
-             sail:sailType "graphdb:FreeSail" ;
+             sail:sailType "graphdb:Sail" ;
              owlim:owlim-license "" ;
              owlim:base-URL "http://example.org/owlim#" ;
              owlim:defaultNS "" ;
@@ -48,14 +48,14 @@ data:
       sleep 5
     done
 
-    # 1. Apply License if provided in /opt/graphdb/init/license/GRAPHDB_LICENSE
-    if [ -f "/opt/graphdb/init/license/GRAPHDB_LICENSE" ]; then
-      echo "Applying license..."
-      curl -X POST http://localhost:7200/rest/license \\
-        -H "Content-Type: text/plain" \\
-        --data-binary "@/opt/graphdb/init/license/GRAPHDB_LICENSE"
+    # 1. Apply License — write to GraphDB work directory
+    if [ -f "/opt/graphdb/init/license/graphdb.license" ]; then
+      echo "Writing license to GraphDB work directory..."
+      mkdir -p /opt/graphdb/home/work
+      cp /opt/graphdb/init/license/graphdb.license /opt/graphdb/home/work/graphdb.license
+      echo "License file written to /opt/graphdb/home/work/graphdb.license"
     else
-      echo "No license file found in /opt/graphdb/init/license/GRAPHDB_LICENSE. Skipping license application."
+      echo "No license file found. Skipping."
     fi
 
     # 2. Create repository (if it doesn't exist)
@@ -73,9 +73,9 @@ data:
     for f in /opt/graphdb/init/ontologies/*.rdf; do
       if [ -f "$f" ]; then
         echo "Uploading $f..."
-        # Clear existing data in the specific context to avoid duplicates (optional, here we append)
         curl -X POST http://localhost:7200/repositories/amocna/statements \
           -H "Content-Type: application/rdf+xml" \
           -T "$f"
       fi
     done
+    echo "Init complete."

@@ -21,8 +21,18 @@ spec:
           command: ["/bin/bash", "-c"]
           args:
             - |
+              # Set home directory to the mounted volume
+              export GDB_HOME=/opt/graphdb/home
+              
+              # Copy license to the correct location on PV
+              mkdir -p $GDB_HOME/work
+              if [ -f "/opt/graphdb/init/license/graphdb.license" ]; then
+                cp /opt/graphdb/init/license/graphdb.license $GDB_HOME/work/graphdb.license
+                echo "License copied to $GDB_HOME/work/graphdb.license"
+              fi
+
               # Start GraphDB in background for initialization
-              /opt/graphdb/dist/bin/graphdb &
+              /opt/graphdb/dist/bin/graphdb -Dgraphdb.home=$GDB_HOME &
               GRAPHDB_PID=$!
 
               # Wait for it to be ready
@@ -90,3 +100,6 @@ spec:
           secret:
             secretName: graphdb-license
             optional: true
+            items:
+              - key: GRAPHDB_LICENSE
+                path: graphdb.license

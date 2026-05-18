@@ -34,3 +34,4 @@ knowledge/**/*
 Deployment/**/data/*
 .kiro/
 .env
+modules/graphdb/deployment/k8s/graphdb.license
