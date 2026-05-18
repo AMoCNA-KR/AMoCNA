@@ -56,7 +56,7 @@ public class HtnPlannerPipe implements MapePipe {
         if (success) {
             context.metadata().put("currentState", mapper.getFragment(WorkflowState.PLANNED));
         }
-        return !success;
+        return success;
     }
 
     private void decomposeWorkflow(ActionData.ComplexWorkflow workflow, IRI parentIri) {
@@ -64,18 +64,14 @@ public class HtnPlannerPipe implements MapePipe {
         IRI previousStepIri = null;
 
         for (ActionData step : steps) {
-            // Generate a concrete IRI for this step instance
             String stepId = utils.generateStepId();
             IRI stepIri = ontologyRegistry.actionsOntology(stepId);
 
-            // Materialize the child node (Simple or Complex)
             graphDBGateway.materializeActionInstance(stepIri, step, workflow.target(), parentIri);
 
             if (previousStepIri != null) {
-                // Link to depend on previous sibling
                 graphDBGateway.linkDependent(stepIri, previousStepIri);
             } else {
-                // The very first child starts in INITIAL state to trigger its own MAPE loop
                 graphDBGateway.transitionState(stepIri, mapper.getFragment(WorkflowState.INITIAL));
             }
 

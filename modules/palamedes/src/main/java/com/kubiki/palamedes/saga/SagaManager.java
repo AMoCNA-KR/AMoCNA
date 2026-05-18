@@ -7,11 +7,13 @@ import com.kubiki.palamedes.knowledge.GraphDBGateway;
 import com.kubiki.palamedes.knowledge.OntologyRegistry;
 import com.kubiki.palamedes.knowledge.StateRepository;
 import com.kubiki.palamedes.model.*;
+import com.kubiki.palamedes.pipeline.EngineWakeupEvent;
 import com.kubiki.palamedes.utils.ActionUtils;
 import lombok.RequiredArgsConstructor;
 import org.eclipse.rdf4j.model.IRI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -33,6 +35,7 @@ public class SagaManager {
     private final OntologyRegistry ontologyRegistry;
     private final ConditionFactory conditionFactory;
     private final WorkflowStateMapper mapper;
+    private final ApplicationEventPublisher publisher;
 
 
     public void handleFeedback(ActionStatusUpdate update) {
@@ -56,6 +59,8 @@ public class SagaManager {
             log.error("Action {} failed with status {}", update.actionId(), update.status());
             processFailure(actionIri, update.actionId());
         }
+
+        publisher.publishEvent(new EngineWakeupEvent("Saga state updated from Themis feedback"));
     }
 
     private void processSuccess(IRI actionIri) {

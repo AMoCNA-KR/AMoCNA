@@ -2,7 +2,7 @@ ${SPARQL_PREFIXES}
 SELECT DISTINCT ?resource ?resourceName ?intent
 WHERE {
   # 1. Find resource and its current state
-  ?resource ${PREFIX::RESOURCES_PREFIX}:hasCurrentState ?state .
+  ?resource ${PREFIX::RESOURCES_PREFIX}:hasState ?state .
   ?state a ?anomalyType .
   ?resource ${PREFIX::RESOURCES_PREFIX}:resourceName ?resourceName .
   

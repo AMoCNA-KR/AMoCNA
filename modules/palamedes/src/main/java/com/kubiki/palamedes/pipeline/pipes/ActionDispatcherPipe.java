@@ -42,7 +42,7 @@ public class ActionDispatcherPipe implements MapePipe {
 
                 dispatcherService.dispatch(message);
 
-                yield !stateRepository.transition(context.actionId(), WorkflowState.VALIDATED, WorkflowState.IN_PROGRESS);
+                yield stateRepository.transition(context.actionId(), WorkflowState.VALIDATED, WorkflowState.IN_PROGRESS);
             }
             case ActionData.ComplexWorkflow _ -> {
                 log.debug("ComplexWorkflow node {} bypasses direct broker routing (HTN pipeline handles children)", context.actionId());
