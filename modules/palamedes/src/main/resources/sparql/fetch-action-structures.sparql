@@ -4,7 +4,7 @@ SELECT DISTINCT ?action ?intent ?target ?protocol ?instruction ?method ?payload 
     ?postId ?postType ?postPolicy
     ?step ?compensation
     ?functionalIntent ?layerBoundary ?costValue WHERE {
-  VALUES ?root { ${actionIds} }
+  VALUES ?root { ${IRI::actionIds} }
 
   # 1. Discover all action nodes in the hierarchy.
   ?root (${PREFIX::ACTIONS_PREFIX}:isDecomposedInto|${PREFIX::ACTIONS_PREFIX}:hasCompensation|a/(${PREFIX::ACTIONS_PREFIX}:isDecomposedInto|${PREFIX::ACTIONS_PREFIX}:hasCompensation))* ?action .

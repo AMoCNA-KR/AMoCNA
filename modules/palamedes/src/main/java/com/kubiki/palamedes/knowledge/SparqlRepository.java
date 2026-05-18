@@ -26,7 +26,7 @@ public interface SparqlRepository {
     String fetchActionStructure(@Type(TemplateType.IRI) @Bind("IRI::actionId") String actionId);
 
     @Template(resource = "sparql/fetch-action-structures.sparql")
-    String fetchActionStructures(@Bind("actionIds") String actionIds);
+    String fetchActionStructures(@Type(TemplateType.IRI) @Bind("IRI::actionIds") String actionIds);
 
     @Template(resource = "sparql/check-idempotency.sparql")
     String checkIdempotency(@Type(TemplateType.IRI) @Bind("IRI::actionId") String actionId);
