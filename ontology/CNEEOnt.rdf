@@ -86,11 +86,12 @@
     
 
 
-    <!-- http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/hasCurrentState -->
 
-    <owl:ObjectProperty rdf:about="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/hasCurrentState">
-        <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#FunctionalProperty"/>
+    <!-- http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/hasState -->
+
+    <owl:ObjectProperty rdf:about="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/hasState">
         <rdfs:range rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/State"/>
+        <rdfs:comment>Links a cloud native entity to one or more domain-specific states.</rdfs:comment>
     </owl:ObjectProperty>
     
 
@@ -442,16 +443,16 @@
         </rdfs:subClassOf>
         <rdfs:subClassOf>
             <owl:Restriction>
-                <owl:onProperty rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/hasCurrentState"/>
-                <owl:qualifiedCardinality rdf:datatype="http://www.w3.org/2001/XMLSchema#nonNegativeInteger">1</owl:qualifiedCardinality>
-                <owl:onClass rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/ContainerState"/>
-            </owl:Restriction>
-        </rdfs:subClassOf>
-        <rdfs:subClassOf>
-            <owl:Restriction>
                 <owl:onProperty rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/usesImage"/>
                 <owl:qualifiedCardinality rdf:datatype="http://www.w3.org/2001/XMLSchema#nonNegativeInteger">1</owl:qualifiedCardinality>
                 <owl:onClass rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/Image"/>
+            </owl:Restriction>
+        </rdfs:subClassOf>
+
+        <rdfs:subClassOf>
+            <owl:Restriction>
+                <owl:onProperty rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/hasState"/>
+                <owl:someValuesFrom rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/ContainerState"/>
             </owl:Restriction>
         </rdfs:subClassOf>
     </owl:Class>
@@ -520,11 +521,7 @@
     
 
 
-    <!-- http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/ContainerState -->
-
-    <owl:Class rdf:about="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/ContainerState">
-        <rdfs:subClassOf rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/State"/>
-    </owl:Class>
+    
     
 
 
@@ -608,13 +605,6 @@
         </rdfs:subClassOf>
         <rdfs:subClassOf>
             <owl:Restriction>
-                <owl:onProperty rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/hasCurrentState"/>
-                <owl:qualifiedCardinality rdf:datatype="http://www.w3.org/2001/XMLSchema#nonNegativeInteger">1</owl:qualifiedCardinality>
-                <owl:onClass rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/ExecutionUnitState"/>
-            </owl:Restriction>
-        </rdfs:subClassOf>
-        <rdfs:subClassOf>
-            <owl:Restriction>
                 <owl:onProperty rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/allocatedCPU"/>
                 <owl:someValuesFrom rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
             </owl:Restriction>
@@ -626,6 +616,13 @@
             </owl:Restriction>
         </rdfs:subClassOf>
         <rdfs:comment>The smallest deployable unit of computing. Maps to a Kubernetes Pod, Docker Swarm Task, or Nomad Allocation.</rdfs:comment>
+
+        <rdfs:subClassOf>
+            <owl:Restriction>
+                <owl:onProperty rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/hasState"/>
+                <owl:someValuesFrom rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/ExecutionUnitState"/>
+            </owl:Restriction>
+        </rdfs:subClassOf>
     </owl:Class>
     
 
@@ -654,11 +651,7 @@
     
 
 
-    <!-- http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/ExecutionUnitState -->
-
-    <owl:Class rdf:about="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/ExecutionUnitState">
-        <rdfs:subClassOf rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/State"/>
-    </owl:Class>
+    
     
 
 
@@ -871,6 +864,13 @@
 
     <owl:Class rdf:about="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/NetworkResource">
         <rdfs:subClassOf rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/InfrastructureLayerElement"/>
+
+        <rdfs:subClassOf>
+            <owl:Restriction>
+                <owl:onProperty rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/hasState"/>
+                <owl:someValuesFrom rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/NetworkResourceState"/>
+            </owl:Restriction>
+        </rdfs:subClassOf>
     </owl:Class>
     
 
@@ -892,6 +892,13 @@
             </owl:Restriction>
         </rdfs:subClassOf>
         <owl:disjointWith rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/VirtualMachine"/>
+
+        <rdfs:subClassOf>
+            <owl:Restriction>
+                <owl:onProperty rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/hasState"/>
+                <owl:someValuesFrom rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/NodeState"/>
+            </owl:Restriction>
+        </rdfs:subClassOf>
     </owl:Class>
     
 
@@ -1013,14 +1020,6 @@
         <rdfs:comment>A health check to determine if an execution unit has successfully started (e.g., K8s StartupProbe).</rdfs:comment>
     </owl:Class>
     
-
-
-    <!-- http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/State -->
-
-    <owl:Class rdf:about="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/State"/>
-    
-
-
     <!-- http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/StatefulWorkloadController -->
 
     <owl:Class rdf:about="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/StatefulWorkloadController">
@@ -1043,6 +1042,13 @@
 
     <owl:Class rdf:about="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/StorageResource">
         <rdfs:subClassOf rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/InfrastructureLayerElement"/>
+
+        <rdfs:subClassOf>
+            <owl:Restriction>
+                <owl:onProperty rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/hasState"/>
+                <owl:someValuesFrom rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/StorageResourceState"/>
+            </owl:Restriction>
+        </rdfs:subClassOf>
     </owl:Class>
     
 
@@ -1171,7 +1177,121 @@
     
 
 
-    <!-- 
+    
+    <!-- http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/State -->
+    <owl:Class rdf:about="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/State"/>
+
+    <owl:Class rdf:about="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/ContainerState">
+        <rdfs:subClassOf rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/State"/>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/ExecutionUnitState">
+        <rdfs:subClassOf rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/State"/>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/NodeState">
+        <rdfs:subClassOf rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/State"/>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/NetworkResourceState">
+        <rdfs:subClassOf rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/State"/>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/StorageResourceState">
+        <rdfs:subClassOf rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/State"/>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/ContainerCrashLoopBackOffState">
+        <rdfs:subClassOf rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/ContainerState"/>
+            <rdfs:subClassOf rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/Anomaly"/>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/ContainerLivenessProbeFailedState">
+        <rdfs:subClassOf rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/ContainerState"/>
+            <rdfs:subClassOf rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/Anomaly"/>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/ContainerReadinessProbeFailedState">
+        <rdfs:subClassOf rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/ContainerState"/>
+            <rdfs:subClassOf rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/Anomaly"/>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/ContainerOOMKilledState">
+        <rdfs:subClassOf rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/ContainerState"/>
+            <rdfs:subClassOf rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/Anomaly"/>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/ContainerCPUThrottledState">
+        <rdfs:subClassOf rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/ContainerState"/>
+            <rdfs:subClassOf rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/Anomaly"/>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/ContainerMemoryLeakDetectedState">
+        <rdfs:subClassOf rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/ContainerState"/>
+            <rdfs:subClassOf rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/Anomaly"/>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/ExecutionUnitEvictedState">
+        <rdfs:subClassOf rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/ExecutionUnitState"/>
+            <rdfs:subClassOf rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/Anomaly"/>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/ExecutionUnitPendingState">
+        <rdfs:subClassOf rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/ExecutionUnitState"/>
+            <rdfs:subClassOf rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/Anomaly"/>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/NodeNotReadyState">
+        <rdfs:subClassOf rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/NodeState"/>
+            <rdfs:subClassOf rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/Anomaly"/>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/NodeCPUSaturatedState">
+        <rdfs:subClassOf rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/NodeState"/>
+            <rdfs:subClassOf rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/Anomaly"/>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/NodeMemoryStarvedState">
+        <rdfs:subClassOf rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/NodeState"/>
+            <rdfs:subClassOf rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/Anomaly"/>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/NetworkHighLatencyState">
+        <rdfs:subClassOf rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/NetworkResourceState"/>
+            <rdfs:subClassOf rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/Anomaly"/>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/NetworkHighErrorRateState">
+        <rdfs:subClassOf rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/NetworkResourceState"/>
+            <rdfs:subClassOf rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/Anomaly"/>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/NetworkPartitionState">
+        <rdfs:subClassOf rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/NetworkResourceState"/>
+            <rdfs:subClassOf rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/Anomaly"/>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/StorageDiskSpaceExhaustedState">
+        <rdfs:subClassOf rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/StorageResourceState"/>
+            <rdfs:subClassOf rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/Anomaly"/>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/StorageHighIOPSLatencyState">
+        <rdfs:subClassOf rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/StorageResourceState"/>
+            <rdfs:subClassOf rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/Anomaly"/>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/StorageVolumeDetachedState">
+        <rdfs:subClassOf rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/StorageResourceState"/>
+            <rdfs:subClassOf rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/Anomaly"/>
+    </owl:Class>
+
+    <!-- http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/Anomaly -->
+
+    <owl:Class rdf:about="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/Anomaly">
+        <rdfs:comment>A marker class indicating that a state or condition represents a deviation from normal or expected behavior.</rdfs:comment>
+    </owl:Class>
+<!-- 
     ///////////////////////////////////////////////////////////////////////////////////////
     //
     // General axioms
@@ -1179,46 +1299,7 @@
     ///////////////////////////////////////////////////////////////////////////////////////
      -->
 
-    <rdf:Description>
-        <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#AllDisjointClasses"/>
-        <owl:members rdf:parseType="Collection">
-            <rdf:Description rdf:about="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/ApplicationLayerElement"/>
-            <rdf:Description rdf:about="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/ContainerizationLayerElement"/>
-            <rdf:Description rdf:about="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/InfrastructureLayerElement"/>
-            <rdf:Description rdf:about="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/ManagementElement"/>
-            <rdf:Description rdf:about="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/ObservabilityElement"/>
-        </owl:members>
-    </rdf:Description>
-    <rdf:Description>
-        <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#AllDisjointClasses"/>
-        <owl:members rdf:parseType="Collection">
-            <rdf:Description rdf:about="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/Container"/>
-            <rdf:Description rdf:about="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/Image"/>
-            <rdf:Description rdf:about="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/Orchestrator"/>
-            <rdf:Description rdf:about="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/StatelessWorkloadController"/>
-        </owl:members>
-    </rdf:Description>
-    <rdf:Description>
-        <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#AllDisjointClasses"/>
-        <owl:members rdf:parseType="Collection">
-            <rdf:Description rdf:about="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/ContainerCreated"/>
-            <rdf:Description rdf:about="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/ContainerDead"/>
-            <rdf:Description rdf:about="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/ContainerExited"/>
-            <rdf:Description rdf:about="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/ContainerPaused"/>
-            <rdf:Description rdf:about="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/ContainerRestarting"/>
-            <rdf:Description rdf:about="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/ContainerRunning"/>
-        </owl:members>
-    </rdf:Description>
-    <rdf:Description>
-        <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#AllDisjointClasses"/>
-        <owl:members rdf:parseType="Collection">
-            <rdf:Description rdf:about="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/ContainerRunning"/>
-            <rdf:Description rdf:about="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/ExecutionUnitFailed"/>
-            <rdf:Description rdf:about="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/ExecutionUnitPending"/>
-            <rdf:Description rdf:about="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/ExecutionUnitSucceeded"/>
-            <rdf:Description rdf:about="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/Unknown"/>
-        </owl:members>
-    </rdf:Description>
+    
 </rdf:RDF>
 
 

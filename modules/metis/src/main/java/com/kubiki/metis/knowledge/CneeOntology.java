@@ -54,7 +54,7 @@ public final class CneeOntology {
     public static final String PROP_HOSTS              = "hosts";
     public static final String PROP_IS_HOSTED_ON       = "isHostedOn";
     public static final String PROP_COMMUNICATES_WITH  = "communicatesWith";
-    public static final String PROP_HAS_CURRENT_STATE  = "hasCurrentState";
+    public static final String PROP_HAS_STATE          = "hasState";
     public static final String PROP_EMITS_TELEMETRY    = "emitsTelemetry";
 
     // -------------------------------------------------------------------------

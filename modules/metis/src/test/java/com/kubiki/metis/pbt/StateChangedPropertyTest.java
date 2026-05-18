@@ -37,8 +37,8 @@ class StateChangedPropertyTest {
     private static final String CNEE_NAMESPACE =
             "http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt#";
 
-    private static final String HAS_CURRENT_STATE_IRI =
-            CNEE_NAMESPACE + "hasCurrentState";
+    private static final String HAS_STATE_IRI =
+            CNEE_NAMESPACE + "hasState";
 
     /**
      * Builds a KnowledgeBaseWriter backed by the given in-memory repository.
@@ -58,13 +58,13 @@ class StateChangedPropertyTest {
      * Counts the number of cnee:hasCurrentState triples for the given resource IRI
      * in the repository.
      */
-    private long countHasCurrentStateTriples(Repository repo, String resourceIri) {
+    private long countHasStateTriples(Repository repo, String resourceIri) {
         String sparql = """
                 SELECT (COUNT(*) AS ?count)
                 WHERE {
                   <%s> <%s> ?state .
                 }
-                """.formatted(resourceIri, HAS_CURRENT_STATE_IRI);
+                """.formatted(resourceIri, HAS_STATE_IRI);
 
         try (RepositoryConnection conn = repo.getConnection()) {
             TupleQuery query = conn.prepareTupleQuery(sparql);
@@ -128,10 +128,10 @@ class StateChangedPropertyTest {
             for (StateChangedEvent event : events) {
                 writer.changeState(event);
 
-                long count = countHasCurrentStateTriples(repo, resourceIri);
+                long count = countHasStateTriples(repo, resourceIri);
                 assertThat(count)
                         .as("After applying StateChangedEvent with new_state_iri='%s', " +
-                                "expected exactly 1 cnee:hasCurrentState triple for resource '%s', but found %d",
+                                "expected exactly 1 cnee:hasState triple for resource '%s', but found %d",
                                 event.getNewStateIri(), resourceIri, count)
                         .isEqualTo(1L);
             }

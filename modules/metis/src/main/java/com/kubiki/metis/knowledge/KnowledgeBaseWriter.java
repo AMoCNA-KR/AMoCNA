@@ -201,9 +201,9 @@ public class KnowledgeBaseWriter {
                 }
                 """.formatted(
                         sparqlPrefixes,
-                        resourceIri, CneeOntology.PROP_HAS_CURRENT_STATE,
-                        resourceIri, CneeOntology.PROP_HAS_CURRENT_STATE, newStateIri,
-                        resourceIri, CneeOntology.PROP_HAS_CURRENT_STATE);
+                        resourceIri, CneeOntology.PROP_HAS_STATE,
+                        resourceIri, CneeOntology.PROP_HAS_STATE, newStateIri,
+                        resourceIri, CneeOntology.PROP_HAS_STATE);
 
         executeUpdate(sparql);
     }
