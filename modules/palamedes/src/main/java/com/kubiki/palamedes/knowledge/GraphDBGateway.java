@@ -142,6 +142,21 @@ public class GraphDBGateway {
         });
     }
 
+    public Map<IRI, ActionData> fetchActionStructures(List<IRI> actionIds) {
+        String joinedIds = actionIds.stream()
+                .map(IRI::stringValue)
+                .collect(Collectors.joining("> <"));
+
+        String sparql = sparqlRepository.fetchActionStructures(joinedIds);
+
+        return sparqlClient.executeQuery(sparql, stream -> {
+            Map<IRI, List<BindingSet>> allBindings = stream.collect(
+                    Collectors.groupingBy(bs -> (IRI) bs.getValue(VAR_ACTION), LinkedHashMap::new, Collectors.toList())
+            );
+            return modelMapper.mapActions(allBindings, actionIds);
+        });
+    }
+
     public List<ActiveActionSummary> findActiveActions() {
         String sparql = sparqlRepository.findActiveActions();
 
