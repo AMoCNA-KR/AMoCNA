@@ -35,6 +35,7 @@ palamedes:
   engine:
     pipeline-rate-ms: 5000
     default-idempotency-seconds: 300
+    batch-size: 50
   utilities:
     step-prefix: "step-"
     action-prefix: "action-"
