@@ -37,16 +37,16 @@ public class GraphDBGateway {
 
 
     public void transitionState(IRI actionId, String stateFragment) {
-        IRI hasCurrentState = ontologyRegistry.actionsOntology("hasCurrentState");
+        IRI hasState = ontologyRegistry.actionsOntology("hasState");
         IRI newState = ontologyRegistry.actionsOntology(stateFragment);
         IRI hasLastTransitionTimestamp = ontologyRegistry.actionsOntology("hasLastTransitionTimestamp");
 
         sparqlClient.executeWithConnection(conn -> {
             ValueFactory vf = conn.getValueFactory();
             conn.begin();
-            conn.remove(actionId, hasCurrentState, null);
+            conn.remove(actionId, hasState, null);
             conn.remove(actionId, hasLastTransitionTimestamp, null);
-            conn.add(actionId, hasCurrentState, newState);
+            conn.add(actionId, hasState, newState);
             conn.add(actionId, hasLastTransitionTimestamp, vf.createLiteral(OffsetDateTime.now().toString(), XSD.DATETIME));
             conn.commit();
             log.info("Transitioned action {} to {}", actionId, stateFragment);
@@ -55,7 +55,7 @@ public class GraphDBGateway {
 
     public void createActionWorkflow(IRI resourceIri, IRI intentIri, String actionId) {
         IRI actionIri = ontologyRegistry.actionsOntology(actionId);
-        IRI hasCurrentState = ontologyRegistry.actionsOntology("hasCurrentState");
+        IRI hasState = ontologyRegistry.actionsOntology("hasState");
         IRI stateInitial = ontologyRegistry.actionsOntology("State_Initial");
         IRI targetsEntity = ontologyRegistry.actionsOntology("targetsEntity");
         IRI hasActionID = ontologyRegistry.actionsOntology("hasActionID");
@@ -66,7 +66,7 @@ public class GraphDBGateway {
             conn.begin();
             conn.add(actionIri, RDF.TYPE, intentIri);
             conn.add(actionIri, RDF.TYPE, ontologyRegistry.actionsOntology("AutonomicAction"));
-            conn.add(actionIri, hasCurrentState, stateInitial);
+            conn.add(actionIri, hasState, stateInitial);
             conn.add(actionIri, targetsEntity, resourceIri);
             conn.add(actionIri, hasActionID, vf.createLiteral(actionId));
             conn.add(actionIri, hasLastTransitionTimestamp, vf.createLiteral(OffsetDateTime.now().toString(), XSD.DATETIME));
@@ -104,9 +104,9 @@ public class GraphDBGateway {
     }
 
     public WorkflowState getState(IRI actionIri) {
-        IRI hasCurrentState = ontologyRegistry.actionsOntology("hasCurrentState");
+        IRI hasState = ontologyRegistry.actionsOntology("hasState");
         return sparqlClient.executeWithConnection(conn -> {
-            var statements = conn.getStatements(actionIri, hasCurrentState, null);
+            var statements = conn.getStatements(actionIri, hasState, null);
             if (statements.hasNext()) {
                 IRI stateIri = (IRI) statements.next().getObject();
                 return workflowStateMapper.fromFragment(stateIri.getLocalName());

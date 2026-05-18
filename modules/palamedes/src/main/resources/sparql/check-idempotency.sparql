@@ -1,5 +1,4 @@
 ${SPARQL_PREFIXES}
-
 SELECT DISTINCT ?window ?lastTransition
 WHERE {
   ?action ${PREFIX::ACTIONS_PREFIX}:idempotencyWindowSeconds ?window .

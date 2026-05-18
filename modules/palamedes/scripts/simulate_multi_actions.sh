@@ -24,13 +24,13 @@ simulate_anomaly() {
   PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 
   DELETE {
-    ?resource cnee:hasCurrentState ?oldState .
+    ?resource cnee:hasState ?oldState .
     ?oldState rdf:type ?oldType .
   }
   WHERE {
     ?resource cnee:resourceName \"$RESOURCE\" .
     OPTIONAL {
-      ?resource cnee:hasCurrentState ?oldState .
+      ?resource cnee:hasState ?oldState .
       ?oldState rdf:type ?oldType .
     }
   } ;
@@ -38,14 +38,14 @@ simulate_anomaly() {
   INSERT DATA {
     <${CNEE_NS}${RESOURCE}> rdf:type cnee:CloudNativeEntity ;
                                    cnee:resourceName \"$RESOURCE\" ;
-                                   cnee:hasCurrentState <${CNEE_NS}${RESOURCE}_state> .
+                                   cnee:hasState <${CNEE_NS}${RESOURCE}_state> .
     <${CNEE_NS}${RESOURCE}_state> rdf:type cnee:$TYPE .
   }
   "
 
   curl -s -f -o /dev/null -X POST "$GRAPHDB_URL/repositories/$REPOSITORY_ID/statements" \
-       -H "Content-Type: application/sparql-update" \
-       --data-binary "$SPARQL_UPDATE"
+    -H "Content-Type: application/sparql-update" \
+    --data-binary "$SPARQL_UPDATE"
 }
 
 # 1. Success Scenario: pod1 -> ContainerDead (triggers restart)
@@ -55,7 +55,7 @@ simulate_anomaly "pod1" "ContainerDead"
 simulate_anomaly "pod2" "NeedsMaintenance"
 
 # 3. Fail/Compensate Scenario: pod-fail -> FailingState (triggers restart that fails)
-# Note: You can trigger failure in Themis by targeting a non-existent endpoint 
+# Note: You can trigger failure in Themis by targeting a non-existent endpoint
 # or by manually injecting a FAILURE status into RabbitMQ/GraphDB for simulation.
 simulate_anomaly "pod-fail" "ContainerDead"
 
