@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: graphdb
+  namespace: graphdb
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: graphdb
+  template:
+    metadata:
+      labels:
+        app: graphdb
+    spec:
+      containers:
+        - name: graphdb
+          image: ontotext/graphdb:11.3.3
+          ports:
+            - containerPort: 7200
+          env:
+            - name: GDB_HEAP_SIZE
+              value: "2G"
+          resources:
+            requests:
+              memory: "2Gi"
+              cpu: "500m"
+            limits:
+              memory: "3Gi"
+              cpu: "2000m"
+          volumeMounts:
+            - name: graphdb-data
+              mountPath: /opt/graphdb/home
+        - name: graphdb-init
+          image: curlimages/curl:latest
+          command: ["/bin/sh", "/opt/graphdb/init/init-script.sh"]
+          volumeMounts:
+            - name: init-config
+              mountPath: /opt/graphdb/init
+            - name: ontologies
+              mountPath: /opt/graphdb/init/ontologies
+            - name: license
+              mountPath: /opt/graphdb/init/license
+      volumes:
+        - name: graphdb-data
+          persistentVolumeClaim:
+            claimName: graphdb-pvc
+        - name: init-config
+          configMap:
+            name: graphdb-init-config
+            defaultMode: 0755
+        - name: ontologies
+          configMap:
+            name: graphdb-ontologies
+        - name: license
+          secret:
+            secretName: graphdb-license
+            optional: true
