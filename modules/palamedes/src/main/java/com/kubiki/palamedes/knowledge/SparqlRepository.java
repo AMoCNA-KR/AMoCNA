@@ -6,6 +6,8 @@ import com.kubiki.daedalus.annotation.Template;
 import com.kubiki.daedalus.annotation.TemplateType;
 import com.kubiki.daedalus.annotation.Type;
 
+import java.util.List;
+
 @DaedalusRepository
 public interface SparqlRepository {
     @Template(resource = "sparql/find-anomalies.sparql")
@@ -22,6 +24,9 @@ public interface SparqlRepository {
 
     @Template(resource = "sparql/fetch-action-structure.sparql")
     String fetchActionStructure(@Type(TemplateType.IRI) @Bind("IRI::actionId") String actionId);
+
+    @Template(resource = "sparql/fetch-action-structures.sparql")
+    String fetchActionStructures(@Bind("actionIds") String actionIds);
 
     @Template(resource = "sparql/check-idempotency.sparql")
     String checkIdempotency(@Type(TemplateType.IRI) @Bind("IRI::actionId") String actionId);

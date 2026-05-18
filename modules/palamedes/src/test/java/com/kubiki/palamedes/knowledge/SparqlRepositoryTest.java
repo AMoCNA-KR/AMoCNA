@@ -39,4 +39,17 @@ class SparqlRepositoryTest {
         assertThat(query).contains("<" + actionId + ">");
         assertThat(query).contains("dependsOn");
     }
+
+    @Test
+    void shouldHydrateBulkActionStructureQuery() {
+        String action1 = "http://example.org/action/1";
+        String action2 = "http://example.org/action/2";
+        String actions = "<" + action1 + "> <" + action2 + ">";
+
+        String query = sparqlRepository.fetchActionStructures(actions);
+
+        assertThat(query).contains("VALUES ?root {");
+        assertThat(query).contains("<" + action1 + ">");
+        assertThat(query).contains("<" + action2 + ">");
+    }
 }
