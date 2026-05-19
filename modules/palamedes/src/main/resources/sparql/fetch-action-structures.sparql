@@ -4,7 +4,7 @@ SELECT DISTINCT ?action ?intent ?target ?protocol ?instruction ?method ?payload 
     ?postId ?postType ?postPolicy
     ?step ?compensation
     ?functionalIntent ?layerBoundary ?costValue WHERE {
-  VALUES ?root { ${IRI::actionId} }
+  VALUES ?root { ${IRI::actionIds} }
 
   # 1. Discover all action nodes in the hierarchy.
   ?root (${PREFIX::ACTIONS_PREFIX}:isDecomposedInto|${PREFIX::ACTIONS_PREFIX}:hasCompensation|a/(${PREFIX::ACTIONS_PREFIX}:isDecomposedInto|${PREFIX::ACTIONS_PREFIX}:hasCompensation))* ?action .
@@ -12,7 +12,7 @@ SELECT DISTINCT ?action ?intent ?target ?protocol ?instruction ?method ?payload 
   # 2. Identify all types (intents) for each node.
   ?action a ?intent .
 
-  # 3. Resolve properties with Blueprint Inheritance
+  # 3. Resolve properties with Blueprint Inheritance.
   OPTIONAL { ?action ${PREFIX::ACTIONS_PREFIX}:targetsEntity ?target } .
 
   # Action Classification

@@ -21,7 +21,7 @@ PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 
 SELECT ?action ?state ?resource ?timestamp
 WHERE {
-  ?action moam:hasState ?stateIri .
+  ?action moam:hasCurrentState ?stateIri .
   ?action moam:targetsEntity ?resourceIri .
   ?resourceIri cnee:resourceName ?resource .
   

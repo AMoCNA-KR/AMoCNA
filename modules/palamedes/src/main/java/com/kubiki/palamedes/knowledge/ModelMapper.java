@@ -6,6 +6,8 @@ import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.query.BindingSet;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Component;
 
@@ -13,6 +15,8 @@ import java.util.*;
 
 @Component
 public class ModelMapper {
+
+    private static final Logger log = LoggerFactory.getLogger(ModelMapper.class);
 
     private static final String INTENT_SUFFIX_COMPLEX = "ComplexWorkflow";
 
@@ -40,6 +44,19 @@ public class ModelMapper {
     private static final String BINDING_POST_ID = "postId";
     private static final String BINDING_POST_TYPE = "postType";
     private static final String BINDING_POST_POLICY = "postPolicy";
+
+    public Map<IRI, ActionData> mapActions(Map<IRI, List<BindingSet>> allBindings, List<IRI> rootActionIds) {
+        Map<IRI, ActionData> results = new HashMap<>();
+        for (IRI rootId : rootActionIds) {
+            Result<ActionData> result = mapAction(rootId, allBindings);
+            if (result.isSuccess()) {
+                results.put(rootId, result.value());
+            } else {
+                log.warn("Failed to map action {}: {}", rootId, result.error());
+            }
+        }
+        return results;
+    }
 
     public Result<ActionData> mapAction(IRI actionId, Map<IRI, List<BindingSet>> allBindings) {
         List<BindingSet> bindings = allBindings.get(actionId);

@@ -1,7 +1,7 @@
 ${SPARQL_PREFIXES}
 SELECT DISTINCT ?action ?resource ?resourceName ?state
 WHERE {
-  ?action ${PREFIX::ACTIONS_PREFIX}:hasState ?stateIri .
+  ?action ${PREFIX::ACTIONS_PREFIX}:hasCurrentState ?stateIri .
   ?action ${PREFIX::ACTIONS_PREFIX}:targetsEntity ?resource .
   ?resource ${PREFIX::RESOURCES_PREFIX}:resourceName ?resourceName .
   
