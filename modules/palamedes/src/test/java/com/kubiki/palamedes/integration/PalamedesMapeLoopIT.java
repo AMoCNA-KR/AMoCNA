@@ -138,9 +138,9 @@ class PalamedesMapeLoopIT {
         IRI step2 = vf.createIRI("http://test/Step2");
 
         try (RepositoryConnection conn = inMemoryRepo.getConnection()) {
-            conn.add(pod, registry.resourcesOntology("hasState"), state); // FIX
+            conn.add(pod, registry.resourcesOntology("hasState"), state);
             conn.add(state, RDF.TYPE, anomalyType);
-            conn.add(anomalyType, RDFS.SUBCLASSOF, registry.resourcesOntology("Anomaly")); // FIX
+            conn.add(anomalyType, RDFS.SUBCLASSOF, registry.resourcesOntology("Anomaly"));
 
             conn.add(pod, registry.resourcesOntology("resourceName"), vf.createLiteral("pod3"));
 

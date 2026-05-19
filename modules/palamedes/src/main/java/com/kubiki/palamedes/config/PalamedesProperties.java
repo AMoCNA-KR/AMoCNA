@@ -1,8 +1,12 @@
 package com.kubiki.palamedes.config;
 
+import com.kubiki.palamedes.prometheus.ThresholdDefinition;
+import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -24,6 +28,7 @@ public record PalamedesProperties(
             "failed",
             "compensating"
     );
+  
     public record GraphDB(String url, String repositoryId, int timeoutMs) {
         public GraphDB {
             Objects.requireNonNull(url, "palamedes.graphdb.url must not be null");

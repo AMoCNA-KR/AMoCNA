@@ -1,5 +1,6 @@
 package com.kubiki.palamedes.knowledge;
 
+import com.kubiki.palamedes.config.PalamedesProperties;
 import com.kubiki.palamedes.model.*;
 import lombok.RequiredArgsConstructor;
 import org.eclipse.rdf4j.model.IRI;
@@ -34,6 +35,7 @@ public class GraphDBGateway {
     private final ModelMapper modelMapper;
     private final WorkflowStateMapper workflowStateMapper;
     private final OntologyRegistry ontologyRegistry;
+    private final PalamedesProperties properties;
 
 
     public void transitionState(IRI actionId, String stateFragment) {
@@ -211,6 +213,14 @@ public class GraphDBGateway {
                 .collect(Collectors.toList()));
     }
 
+    public void updateResourceState(String resourceIri, String stateIri) {
+        String sparql = sparqlRepository.updateResourceState(resourceIri, stateIri);
+        sparqlClient.executeWithConnection(conn -> {
+            conn.prepareUpdate(sparql).execute();
+            log.info("Set resource state: {} → {}", resourceIri, stateIri);
+        });
+    }
+
     public IRI findParent(IRI childIri) {
         IRI isDecomposedInto = ontologyRegistry.actionsOntology("isDecomposedInto");
         return sparqlClient.executeWithConnection(conn -> {
@@ -233,5 +243,4 @@ public class GraphDBGateway {
     public boolean executeConditionQuery(String query) {
         return sparqlClient.executeBooleanQuery(query);
     }
-
 }
