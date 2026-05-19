@@ -37,4 +37,10 @@ public interface SparqlRepository {
             @Type(TemplateType.IRI) @Bind("IRI::fromState") String fromState,
             @Type(TemplateType.IRI) @Bind("IRI::toState") String toState
     );
+
+    @Template(resource = "sparql/update-resource-state.sparql")
+    String updateResourceState(
+            @Type(TemplateType.IRI) @Bind("IRI::resourceId") String resourceId,
+            @Type(TemplateType.IRI) @Bind("IRI::toState") String toState
+    );
 }

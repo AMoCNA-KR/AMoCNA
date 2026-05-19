@@ -213,6 +213,14 @@ public class GraphDBGateway {
                 .collect(Collectors.toList()));
     }
 
+    public void updateResourceState(String resourceIri, String stateIri) {
+        String sparql = sparqlRepository.updateResourceState(resourceIri, stateIri);
+        sparqlClient.executeWithConnection(conn -> {
+            conn.prepareUpdate(sparql).execute();
+            log.info("Set resource state: {} → {}", resourceIri, stateIri);
+        });
+    }
+
     public IRI findParent(IRI childIri) {
         IRI isDecomposedInto = ontologyRegistry.actionsOntology("isDecomposedInto");
         return sparqlClient.executeWithConnection(conn -> {
@@ -234,31 +242,5 @@ public class GraphDBGateway {
 
     public boolean executeConditionQuery(String query) {
         return sparqlClient.executeBooleanQuery(query);
-    }
-
-    /**
-     * Sets the {@code cnee:hasCurrentState} of a resource to the given state IRI.
-     * Uses an atomic DELETE/INSERT to enforce the functional property constraint
-     * (exactly one state at a time).
-     *
-     * <p>Called by {@link com.kubiki.palamedes.prometheus.PrometheusThresholdEvaluator}
-     * when a Prometheus threshold is crossed.
-     *
-     * @param resourceIri fully-qualified IRI of the resource (e.g. cnee:Pod_default_my-pod)
-     * @param stateIri    fully-qualified IRI of the new state (e.g. cnee:ContainerCPUThrottledState)
-     */
-    public void setResourceState(String resourceIri, String stateIri) {
-        String cneeNs = properties.getOntology().getCneeNamespace();
-        String sparql = """
-                PREFIX cnee: <%s>
-                DELETE { <%s> cnee:hasState ?old }
-                INSERT { <%s> cnee:hasState <%s> }
-                WHERE  { OPTIONAL { <%s> cnee:hasState ?old } }
-                """.formatted(cneeNs, resourceIri, resourceIri, stateIri, resourceIri);
-
-        sparqlClient.executeWithConnection(conn -> {
-            conn.prepareUpdate(sparql).execute();
-            log.info("Set resource state: {} → {}", resourceIri, stateIri);
-        });
     }
 }
