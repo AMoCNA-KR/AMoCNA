@@ -4,6 +4,7 @@ set -e
 # Configuration
 GRAPHDB_URL=${GRAPHDB_URL:-http://localhost:7200}
 REPOSITORY_ID=${REPOSITORY_ID:-amocna}
+PALAMEDES_URL=${PALAMEDES_URL:-http://localhost:8081}
 
 # Namespaces
 MOAM_NS="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#"
@@ -51,12 +52,15 @@ simulate_anomaly() {
 # 1. Success Scenario: pod1 -> ContainerDead (triggers restart)
 simulate_anomaly "pod1" "ContainerDead"
 
-# 2. Sequential Scenario: pod2 -> NeedsMaintenance (triggers multi-step)
-simulate_anomaly "pod2" "NeedsMaintenance"
+# 2. Sequential Scenario: pod2 -> ExecutionUnitFailed (triggers restart)
+simulate_anomaly "pod2" "ExecutionUnitFailed"
 
-# 3. Fail/Compensate Scenario: pod-fail -> FailingState (triggers restart that fails)
-# Note: You can trigger failure in Themis by targeting a non-existent endpoint
-# or by manually injecting a FAILURE status into RabbitMQ/GraphDB for simulation.
+# 3. Fail/Compensate Scenario: pod-fail -> ContainerDead (triggers restart that fails)
 simulate_anomaly "pod-fail" "ContainerDead"
+
+echo "---------------------------------------------------"
+echo "Triggering Anomaly Analysis in Palamedes..."
+curl -s -X POST "$PALAMEDES_URL/api/engine/analyze"
+echo -e "\n---------------------------------------------------"
 
 echo "Done. Use 'observe_workflow.sh' to watch the Petri Net transitions."

@@ -27,7 +27,7 @@ public class MapePipeline {
 
 
     @EventListener(EngineWakeupEvent.class)
-    @Scheduled(fixedRateString = "${palamedes.engine.pipeline-rate-ms}")
+    @Scheduled(fixedRateString = "${palamedes.engine.fallback-pipeline-rate-ms}")
     public void run() {
         log.debug("Starting MAPE Pipeline run...");
 

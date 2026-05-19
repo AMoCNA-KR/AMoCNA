@@ -859,6 +859,21 @@ before patching).</rdfs:comment>
     </owl:NamedIndividual>
     
 
+    <!-- Layer Boundaries -->
+
+    <owl:NamedIndividual rdf:about="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#InfrastructureLayer">
+        <rdf:type rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#LayerBoundary"/>
+    </owl:NamedIndividual>
+
+    <owl:NamedIndividual rdf:about="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#ContainerizationLayer">
+        <rdf:type rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#LayerBoundary"/>
+    </owl:NamedIndividual>
+
+    <owl:NamedIndividual rdf:about="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#ApplicationLayer">
+        <rdf:type rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#LayerBoundary"/>
+    </owl:NamedIndividual>
+    
+
 
     <!-- 
     ///////////////////////////////////////////////////////////////////////////////////////

@@ -18,7 +18,7 @@ public record PalamedesProperties(
 
     public record Prometheus(String url) {}
 
-    public record Engine(long pipelineRateMs, int defaultIdempotencySeconds, int batchSize) {}
+    public record Engine(long fallbackPipelineRateMs, long fallbackAnomalyScanRateMs, int defaultIdempotencySeconds, int batchSize) {}
 
     public record Utilities(String actionPrefix, String stepPrefix, String compensationPrefix, int sizeOfGeneratedUuid) {}
 }

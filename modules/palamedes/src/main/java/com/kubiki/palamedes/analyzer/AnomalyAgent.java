@@ -1,5 +1,6 @@
 package com.kubiki.palamedes.analyzer;
 
+import com.kubiki.palamedes.config.PalamedesProperties;
 import com.kubiki.palamedes.knowledge.GraphDBGateway;
 import com.kubiki.palamedes.model.AnomalyTarget;
 import com.kubiki.palamedes.pipeline.EngineWakeupEvent;
@@ -33,12 +34,10 @@ import java.util.concurrent.atomic.AtomicLong;
 public class AnomalyAgent {
     private static final Logger log = LoggerFactory.getLogger(AnomalyAgent.class);
 
-    /** 10 minutes in milliseconds — fallback poll interval. */
-    private static final long FALLBACK_INTERVAL_MS = 10 * 60 * 1000;
-
     private final GraphDBGateway gateway;
     private final ActionUtils utils;
     private final ApplicationEventPublisher publisher;
+    private final PalamedesProperties palamedesProperties;
     private final AtomicLong lastTriggerTime = new AtomicLong(System.currentTimeMillis());
 
     /**
@@ -51,16 +50,17 @@ public class AnomalyAgent {
     }
 
     /**
-     * Fallback scheduler — runs every 10 minutes but only executes the analysis
-     * if no event-driven trigger has occurred within the last 10 minutes.
+     * Fallback scheduler — runs according to configured rate but only executes the analysis
+     * if no event-driven trigger has occurred within the interval.
      * This catches anomalies that might have been missed due to messaging outages.
      */
-    @Scheduled(fixedRate = FALLBACK_INTERVAL_MS)
+    @Scheduled(fixedRateString = "${palamedes.engine.fallback-anomaly-scan-rate-ms}")
     public void fallbackAnalyze() {
+        long interval = palamedesProperties.engine().fallbackAnomalyScanRateMs();
         long elapsed = System.currentTimeMillis() - lastTriggerTime.get();
-        if (elapsed >= FALLBACK_INTERVAL_MS) {
-            log.info("No graph-update received for {}min — running fallback anomaly scan",
-                    elapsed / 60_000);
+        if (elapsed >= interval) {
+            log.info("No graph-update received for {}ms — running fallback anomaly scan",
+                    elapsed);
             doAnalyze();
         } else {
             log.debug("Fallback poll skipped — last trigger was {}s ago", elapsed / 1000);

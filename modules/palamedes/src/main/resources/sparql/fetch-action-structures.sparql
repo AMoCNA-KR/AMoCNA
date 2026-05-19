@@ -37,7 +37,7 @@ SELECT DISTINCT ?action ?intent ?target ?protocol ?instruction ?method ?payload 
   # Protocol Details
   OPTIONAL { ?action ${PREFIX::ACTIONS_PREFIX}:hasExecutionProtocol ?p1 } .
   OPTIONAL { ?intent ${PREFIX::ACTIONS_PREFIX}:hasExecutionProtocol ?p2 } .
-  BIND(COALESCE(?p1, ?protocol, ?p2) AS ?protocol) .
+  BIND(COALESCE(?p1, ?p2) AS ?protocol) .
 
   OPTIONAL { ?action ${PREFIX::ACTIONS_PREFIX}:hasExecutionInstruction ?i1 } .
   OPTIONAL { ?intent ${PREFIX::ACTIONS_PREFIX}:hasExecutionInstruction ?i2 } .
