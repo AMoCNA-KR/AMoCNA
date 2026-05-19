@@ -2,7 +2,6 @@ name: "network-down"
 query: "node_network_up"
 operator: "=="
 value: 0
-anomaly-state: "NetworkPartitionState"
-resource-kind: "Node"
-resource-label: "instance"
-namespace-label: null
+anomalyState: "NetworkPartitionState"
+resourceKind: "Node"
+resourceLabel: "instance"
