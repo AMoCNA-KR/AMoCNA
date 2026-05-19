@@ -1,5 +1,6 @@
 package com.kubiki.palamedes.prometheus;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.kubiki.palamedes.config.PalamedesProperties;
@@ -7,6 +8,7 @@ import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.core.annotation.Order;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.stereotype.Component;
@@ -23,26 +25,37 @@ import java.util.List;
 @RequiredArgsConstructor
 public class ThresholdsLoader {
     private static final Logger log = LoggerFactory.getLogger(ThresholdsLoader.class);
-    private final PalamedesProperties properties;
-    private final ObjectMapper yamlMapper = new ObjectMapper(new YAMLFactory());
+    private final ObjectMapper yamlMapper = createYamlMapper();
+    private final ArrayList<ThresholdDefinition> loadedThresholds = new ArrayList<>();
 
     @PostConstruct
     public void loadThresholds() throws IOException {
         PathMatchingResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
         Resource[] resources = resolver.getResources("classpath:thresholds/*.yml");
-        
-        List<ThresholdDefinition> thresholds = new ArrayList<>();
+
+        yamlMapper.setDefaultPrettyPrinter(null);
+        yamlMapper.setDefaultPropertyInclusion(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL);
+
         for (Resource resource : resources) {
             try {
                 ThresholdDefinition threshold = yamlMapper.readValue(resource.getInputStream(), ThresholdDefinition.class);
-                thresholds.add(threshold);
+                loadedThresholds.add(threshold);
                 log.info("Loaded threshold definition: {} from {}", threshold.name(), resource.getFilename());
             } catch (Exception e) {
                 log.error("Failed to load threshold from {}: {}", resource.getFilename(), e.getMessage());
             }
         }
-        
-        properties.getThresholds().addAll(thresholds);
-        log.info("Total {} threshold(s) loaded into PalamedesProperties", thresholds.size());
+
+        log.info("Total {} threshold(s) loaded into PalamedesProperties", loadedThresholds.size());
+    }
+
+    public List<ThresholdDefinition> getThresholds() {
+        return loadedThresholds;
+    }
+
+    private ObjectMapper createYamlMapper() {
+        ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
+        mapper.configure(DeserializationFeature.FAIL_ON_MISSING_EXTERNAL_TYPE_ID_PROPERTY, false);
+        return mapper;
     }
 }

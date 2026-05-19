@@ -2,6 +2,7 @@ package com.kubiki.palamedes.config;
 
 import com.kubiki.palamedes.prometheus.ThresholdDefinition;
 import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
@@ -16,10 +17,8 @@ public record PalamedesProperties(
         @NestedConfigurationProperty Ontology ontology,
         @NestedConfigurationProperty Prometheus prometheus,
         @NestedConfigurationProperty Engine engine,
-        @NestedConfigurationProperty Utilities utilities,
-        @NestedConfigurationProperty private List<ThresholdDefinition> thresholds = new ArrayList<>();
+        @NestedConfigurationProperty Utilities utilities
 ) {
-  
     private final static List<String> AVAILABLE_STATE_KEYS = List.of(
             "initial",
             "planned",
@@ -56,10 +55,6 @@ public record PalamedesProperties(
             Objects.requireNonNull(bridgePrefix, "palamedes.ontology.bridgePrefix must not be null");
             Objects.requireNonNull(states, "palamedes.ontology.states must not be null");
             PropertiesUtils.availableOptions(states, AVAILABLE_STATE_KEYS);
-        }
-        
-        public String getCneeNamespace() {
-            return resourcesNamespace();
         }
     }
 

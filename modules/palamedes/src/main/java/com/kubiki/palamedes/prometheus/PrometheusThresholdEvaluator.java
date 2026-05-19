@@ -2,8 +2,11 @@ package com.kubiki.palamedes.prometheus;
 
 import com.kubiki.palamedes.config.PalamedesProperties;
 import com.kubiki.palamedes.knowledge.GraphDBGateway;
+import io.micrometer.common.util.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -28,15 +31,17 @@ public class PrometheusThresholdEvaluator {
     private final PrometheusClient prometheusClient;
     private final GraphDBGateway graphDBGateway;
     private final PalamedesProperties properties;
+    private final ThresholdsLoader loader;
 
     public PrometheusThresholdEvaluator(PrometheusClient prometheusClient,
                                         GraphDBGateway graphDBGateway,
-                                        PalamedesProperties properties) {
+                                        PalamedesProperties properties, ThresholdsLoader loader) {
         this.prometheusClient = prometheusClient;
         this.graphDBGateway = graphDBGateway;
         this.properties = properties;
-        log.info("PrometheusThresholdEvaluator initialized with {} threshold(s)", 
-                properties.thresholds() != null ? properties.thresholds().size() : 0);
+        this.loader = loader;
+        log.info("PrometheusThresholdEvaluator initialized with {} threshold(s)",
+                this.loader.getThresholds() != null ? this.loader.getThresholds().size() : 0);
     }
 
     /**
@@ -45,7 +50,7 @@ public class PrometheusThresholdEvaluator {
      */
     @Scheduled(fixedDelayString = "${palamedes.prometheus.evaluation-interval-ms:30000}")
     public void evaluate() {
-        List<ThresholdDefinition> thresholds = properties.thresholds();
+        List<ThresholdDefinition> thresholds = loader.getThresholds();
         if (thresholds == null || thresholds.isEmpty()) {
             log.debug("No thresholds configured — skipping evaluation");
             return;
@@ -68,7 +73,7 @@ public class PrometheusThresholdEvaluator {
                         ? result.labels().get(threshold.namespaceLabel())
                         : null;
 
-                if (resourceName == null || resourceName.isBlank()) {
+                if (StringUtils.isBlank(resourceName)) {
                     log.warn("Threshold '{}' violated but resource label '{}' is missing from result",
                             threshold.name(), threshold.resourceLabel());
                     continue;
@@ -80,7 +85,7 @@ public class PrometheusThresholdEvaluator {
                         threshold.name(), resourceIri, result.value(), threshold.operator(), threshold.value());
 
                 String anomalyStateIri = properties.ontology().resourcesNamespace() + threshold.anomalyState();
-                graphDBGateway.setResourceState(resourceIri, anomalyStateIri);
+                graphDBGateway.updateResourceState(resourceIri, anomalyStateIri);
             }
         }
     }
