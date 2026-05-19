@@ -39,6 +39,7 @@ services:
       - GDB_HEAP_SIZE=1G
     volumes:
       - graphdb-data:/opt/graphdb/home
+      - ../../../graphdb.license:/opt/graphdb/home/conf/graphdb.license
 
   prometheus:
     image: prom/prometheus:latest

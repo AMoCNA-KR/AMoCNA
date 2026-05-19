@@ -1,5 +1,6 @@
 package com.kubiki.palamedes.integration;
 
+import com.kubiki.palamedes.analyzer.AnomalyAgent;
 import com.kubiki.palamedes.knowledge.OntologyRegistry;
 import com.kubiki.palamedes.knowledge.GraphDBGateway;
 import com.kubiki.palamedes.model.*;
@@ -9,6 +10,7 @@ import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
+import org.eclipse.rdf4j.model.vocabulary.RDFS;
 import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
@@ -41,6 +43,9 @@ class PalamedesMapeLoopIT {
     private SagaManager sagaManager;
 
     @Autowired
+    private AnomalyAgent anomalyAgent;
+
+    @Autowired
     private GraphDBGateway gateway;
 
     @Autowired
@@ -62,7 +67,7 @@ class PalamedesMapeLoopIT {
             inMemoryRepo.init();
         }
         clearGraph();
-        
+
         try {
             when(realRepository.getConnection()).thenAnswer(inv -> inMemoryRepo.getConnection());
             when(realRepository.getValueFactory()).thenReturn(vf);
@@ -86,49 +91,38 @@ class PalamedesMapeLoopIT {
         IRI state = vf.createIRI("http://test/pod1/state");
         IRI anomalyType = vf.createIRI("http://test/Anomaly1");
         IRI intent = vf.createIRI("http://test/RestartAction");
-        
+
         try (RepositoryConnection conn = inMemoryRepo.getConnection()) {
             conn.add(pod, registry.resourcesOntology("hasState"), state);
             conn.add(state, RDF.TYPE, anomalyType);
+
+            conn.add(anomalyType, RDFS.SUBCLASSOF, registry.resourcesOntology("Anomaly"));
+
             conn.add(pod, registry.resourcesOntology("resourceName"), vf.createLiteral("pod1"));
-            
+
             IRI restriction = vf.createIRI("http://test/rest1");
-            conn.add(anomalyType, org.eclipse.rdf4j.model.vocabulary.RDFS.SUBCLASSOF, restriction);
+            conn.add(anomalyType, RDFS.SUBCLASSOF, restriction);
             conn.add(restriction, RDF.TYPE, org.eclipse.rdf4j.model.vocabulary.OWL.RESTRICTION);
             conn.add(restriction, org.eclipse.rdf4j.model.vocabulary.OWL.ONPROPERTY, registry.bridgeOntology("isResolvedByIntent"));
             conn.add(restriction, org.eclipse.rdf4j.model.vocabulary.OWL.SOMEVALUESFROM, intent);
-            
-            // Blueprint details for mapping
+
             conn.add(intent, RDF.TYPE, registry.actionsOntology("SimpleAction"));
             conn.add(intent, registry.actionsOntology("hasExecutionProtocol"), vf.createLiteral("REST"));
             conn.add(intent, registry.actionsOntology("hasExecutionInstruction"), vf.createLiteral("http://restart/{resourceName}"));
             conn.add(intent, registry.actionsOntology("hasExpectedStatusCode"), vf.createLiteral("200", org.eclipse.rdf4j.model.vocabulary.XSD.INTEGER));
-            
-            // Industrial Classification Properties
-            conn.add(intent, registry.actionsOntology("hasFunctionalIntent"), vf.createIRI("http://test/Intent_Lifecycle"));
-            conn.add(intent, registry.actionsOntology("hasLayerBoundary"), vf.createIRI("http://test/Layer_Containerization"));
-            IRI cost = vf.createIRI("http://test/Cost_Low");
-            conn.add(intent, registry.actionsOntology("hasExecutionCost"), cost);
-            conn.add(cost, registry.actionsOntology("costValue"), vf.createLiteral("1.5", org.eclipse.rdf4j.model.vocabulary.XSD.FLOAT));
         }
 
-        mapePipeline.run(); 
-        
+        anomalyAgent.analyze();
+
         List<ActiveActionSummary> active = gateway.findActiveActions();
         assertEquals(1, active.size());
-        assertEquals("State_Planned", active.get(0).stateFragment());
+        assertEquals("State_InProgress", active.get(0).stateFragment());
         IRI actionIri = active.get(0).actionIri();
 
-        mapePipeline.run();
-        active = gateway.findActiveActions();
-        assertEquals("State_Validated", active.get(0).stateFragment());
-
-        mapePipeline.run();
-        active = gateway.findActiveActions();
-        assertEquals("State_InProgress", active.get(0).stateFragment());
         verify(rabbitTemplate, atLeastOnce()).convertAndSend(anyString(), anyString(), any(ActionMessage.class));
 
         sagaManager.handleFeedback(new ActionStatusUpdate(actionIri.getLocalName(), ExecutionStatus.COMPLETED, null, 200));
+
         assertTrue(gateway.findActiveActions().isEmpty());
     }
 
@@ -139,28 +133,27 @@ class PalamedesMapeLoopIT {
         IRI state = vf.createIRI("http://test/pod3/state");
         IRI anomalyType = vf.createIRI("http://test/ScaleAnomaly");
         IRI intent = vf.createIRI("http://test/ScalingComplexWorkflow");
-        
+
         IRI step1 = vf.createIRI("http://test/Step1");
         IRI step2 = vf.createIRI("http://test/Step2");
 
         try (RepositoryConnection conn = inMemoryRepo.getConnection()) {
             conn.add(pod, registry.resourcesOntology("hasState"), state);
             conn.add(state, RDF.TYPE, anomalyType);
+            conn.add(anomalyType, RDFS.SUBCLASSOF, registry.resourcesOntology("Anomaly"));
+
             conn.add(pod, registry.resourcesOntology("resourceName"), vf.createLiteral("pod3"));
-            
+
             IRI restriction = vf.createIRI("http://test/rest3");
-            conn.add(anomalyType, org.eclipse.rdf4j.model.vocabulary.RDFS.SUBCLASSOF, restriction);
+            conn.add(anomalyType, RDFS.SUBCLASSOF, restriction);
             conn.add(restriction, RDF.TYPE, org.eclipse.rdf4j.model.vocabulary.OWL.RESTRICTION);
             conn.add(restriction, org.eclipse.rdf4j.model.vocabulary.OWL.ONPROPERTY, registry.bridgeOntology("isResolvedByIntent"));
             conn.add(restriction, org.eclipse.rdf4j.model.vocabulary.OWL.SOMEVALUESFROM, intent);
-            
+
             conn.add(intent, RDF.TYPE, registry.actionsOntology("ComplexWorkflow"));
             conn.add(intent, registry.actionsOntology("isDecomposedInto"), step1);
             conn.add(intent, registry.actionsOntology("isDecomposedInto"), step2);
-            
-            // Classification for Parent
-            conn.add(intent, registry.actionsOntology("hasFunctionalIntent"), vf.createIRI("http://test/Intent_Scaling"));
-            
+
             // Step 1 details
             conn.add(step1, RDF.TYPE, registry.actionsOntology("SimpleAction"));
             conn.add(step1, registry.actionsOntology("hasExecutionProtocol"), vf.createLiteral("REST"));
@@ -174,28 +167,24 @@ class PalamedesMapeLoopIT {
             conn.add(step2, registry.actionsOntology("hasExpectedStatusCode"), vf.createLiteral("200", org.eclipse.rdf4j.model.vocabulary.XSD.INTEGER));
         }
 
-        mapePipeline.run(); 
-        
+        anomalyAgent.analyze();
+
         List<ActiveActionSummary> active = gateway.findActiveActions();
         assertTrue(active.size() >= 2);
-        
-        final List<ActiveActionSummary> activeActionsAfterPlan = active;
-        IRI child1Iri = activeActionsAfterPlan.stream()
-            .filter(a -> a.stateFragment().equals("State_Initial"))
-            .findFirst()
-            .orElseThrow(() -> new RuntimeException("Child 1 not found in INITIAL state"))
-            .actionIri();
-        
-        mapePipeline.run(); // Child 1: Planned
-        mapePipeline.run(); // Child 1: Validated
-        mapePipeline.run(); // Child 1: InProgress
-        
+
+        mapePipeline.run();
+
+        active = gateway.findActiveActions();
+        ActiveActionSummary child1 = active.stream()
+                .filter(a -> a.stateFragment().equals("State_InProgress"))
+                .findFirst()
+                .orElseThrow(() -> new RuntimeException("Child 1 not found in IN_PROGRESS state"));
+
         verify(rabbitTemplate, atLeastOnce()).convertAndSend(anyString(), anyString(), any(ActionMessage.class));
 
-        sagaManager.handleFeedback(new ActionStatusUpdate(child1Iri.getLocalName(), ExecutionStatus.COMPLETED, null, 200));
-        
-        mapePipeline.run();
+        sagaManager.handleFeedback(new ActionStatusUpdate(child1.actionIri().getLocalName(), ExecutionStatus.COMPLETED, null, 200));
+
         active = gateway.findActiveActions();
-        assertTrue(active.stream().anyMatch(a -> a.stateFragment().equals("State_Planned")), "Next step should have advanced to PLANNED");
+        assertTrue(active.stream().anyMatch(a -> a.stateFragment().equals("State_InProgress")), "Next step should have advanced to IN_PROGRESS");
     }
 }

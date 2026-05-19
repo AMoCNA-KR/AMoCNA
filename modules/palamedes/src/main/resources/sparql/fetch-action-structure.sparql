@@ -1,3 +1,4 @@
+${SPARQL_PREFIXES}
 SELECT DISTINCT ?action ?intent ?target ?protocol ?instruction ?method ?payload ?expectedStatusCode
     ?preId ?preType ?prePolicy
     ?postId ?postType ?postPolicy
@@ -11,7 +12,7 @@ SELECT DISTINCT ?action ?intent ?target ?protocol ?instruction ?method ?payload 
   # 2. Identify all types (intents) for each node.
   ?action a ?intent .
 
-  # 3. Resolve properties with Blueprint Inheritance.
+  # 3. Resolve properties with Blueprint Inheritance
   OPTIONAL { ?action ${PREFIX::ACTIONS_PREFIX}:targetsEntity ?target } .
 
   # Action Classification
