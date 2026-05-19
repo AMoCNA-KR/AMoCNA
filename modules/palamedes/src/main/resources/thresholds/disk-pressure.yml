@@ -1,0 +1,8 @@
+name: "disk-pressure"
+query: 'kube_node_status_condition{condition="DiskPressure",status="true"}'
+operator: "=="
+value: 1
+anomaly-state: "StorageDiskSpaceExhaustedState"
+resource-kind: "Node"
+resource-label: "node"
+namespace-label: null

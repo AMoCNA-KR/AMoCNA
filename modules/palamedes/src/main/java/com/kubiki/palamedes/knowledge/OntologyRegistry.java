@@ -21,24 +21,24 @@ public class OntologyRegistry {
         if (fragment != null && fragment.startsWith(HTTP)) {
             return valueFactory.createIRI(fragment);
         }
-        return valueFactory.createIRI(palamedesProperties.ontology().actionsNamespace(), fragment);
+        return valueFactory.createIRI(palamedesProperties.getOntology().actionsNamespace(), fragment);
     }
 
     public IRI resourcesOntology(String fragment) {
         if (fragment != null && fragment.startsWith(HTTP)) {
             return valueFactory.createIRI(fragment);
         }
-        return valueFactory.createIRI(palamedesProperties.ontology().resourcesNamespace(), fragment);
+        return valueFactory.createIRI(palamedesProperties.getOntology().resourcesNamespace(), fragment);
     }
 
     public IRI bridgeOntology(String fragment) {
         if (fragment != null && fragment.startsWith(HTTP)) {
             return valueFactory.createIRI(fragment);
         }
-        return valueFactory.createIRI(palamedesProperties.ontology().bridgeNamespace(), fragment);
+        return valueFactory.createIRI(palamedesProperties.getOntology().bridgeNamespace(), fragment);
     }
 
     public String getCneeNamespace() {
-        return palamedesProperties.ontology().resourcesNamespace();
+        return palamedesProperties.getOntology().resourcesNamespace();
     }
 }

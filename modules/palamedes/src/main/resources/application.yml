@@ -33,47 +33,6 @@ palamedes:
   prometheus:
     url: ${PROMETHEUS_URL:http://localhost:9090}
     evaluation-interval-ms: ${PROMETHEUS_EVAL_INTERVAL:30000}
-  thresholds:
-    - name: "critical-metric-exceeded"
-      query: "critical_metric"
-      operator: ">"
-      value: 100
-      anomaly-state: "ContainerCPUThrottledState"
-      resource-kind: "Pod"
-      resource-label: "pod"
-      namespace-label: "namespace"
-    - name: "node-memory-over-90-percent"
-      query: "node_memory_Active_bytes / node_memory_MemTotal_bytes"
-      operator: ">"
-      value: 0.9
-      anomaly-state: "NodeMemoryStarvedState"
-      resource-kind: "Node"
-      resource-label: "instance"
-      namespace-label: null
-    - name: "filesystem-over-80-percent"
-      query: '1 - (node_filesystem_avail_bytes{mountpoint="/tmp"} / node_filesystem_size_bytes{mountpoint="/tmp"})'
-      operator: ">"
-      value: 0.8
-      anomaly-state: "StorageDiskSpaceExhaustedState"
-      resource-kind: "Node"
-      resource-label: "instance"
-      namespace-label: null
-    - name: "disk-pressure"
-      query: 'kube_node_status_condition{condition="DiskPressure",status="true"}'
-      operator: "=="
-      value: 1
-      anomaly-state: "StorageDiskSpaceExhaustedState"
-      resource-kind: "Node"
-      resource-label: "node"
-      namespace-label: null
-    - name: "network-down"
-      query: "node_network_up"
-      operator: "=="
-      value: 0
-      anomaly-state: "NetworkPartitionState"
-      resource-kind: "Node"
-      resource-label: "instance"
-      namespace-label: null
   engine:
     pipeline-rate-ms: 5000
     default-idempotency-seconds: 300

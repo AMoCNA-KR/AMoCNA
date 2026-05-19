@@ -1,5 +1,6 @@
 package com.kubiki.palamedes.knowledge;
 
+import com.kubiki.palamedes.config.PalamedesProperties;
 import com.kubiki.palamedes.model.*;
 import com.kubiki.palamedes.templating.types.IriType;
 import lombok.RequiredArgsConstructor;
@@ -37,6 +38,7 @@ public class GraphDBGateway {
     private final ModelMapper modelMapper;
     private final WorkflowStateMapper workflowStateMapper;
     private final OntologyRegistry ontologyRegistry;
+    private final PalamedesProperties properties;
 
 
     public void transitionState(IRI actionId, String stateFragment) {
@@ -250,7 +252,7 @@ public class GraphDBGateway {
      * @param stateIri    fully-qualified IRI of the new state (e.g. cnee:ContainerCPUThrottledState)
      */
     public void setResourceState(String resourceIri, String stateIri) {
-        String cneeNs = ontologyRegistry.getCneeNamespace();
+        String cneeNs = properties.getOntology().getCneeNamespace();
         String sparql = """
                 PREFIX cnee: <%s>
                 DELETE { <%s> cnee:hasState ?old }

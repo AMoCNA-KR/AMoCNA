@@ -1,0 +1,8 @@
+name: "critical-metric-exceeded"
+query: "critical_metric"
+operator: ">"
+value: 100
+anomaly-state: "ContainerCPUThrottledState"
+resource-kind: "Pod"
+resource-label: "pod"
+namespace-label: "namespace"
