@@ -1,6 +1,6 @@
 ${SPARQL_PREFIXES}
-DELETE { ${IRI::actionId} ${PREFIX::ACTIONS_PREFIX}:hasState ${IRI::fromState} . }
-INSERT { ${IRI::actionId} ${PREFIX::ACTIONS_PREFIX}:hasState ${IRI::toState} . }
+DELETE { ${IRI::actionId} ${PREFIX::ACTIONS_PREFIX}:hasCurrentState ${IRI::fromState} . }
+INSERT { ${IRI::actionId} ${PREFIX::ACTIONS_PREFIX}:hasCurrentState ${IRI::toState} . }
 WHERE { 
-  ${IRI::actionId} ${PREFIX::ACTIONS_PREFIX}:hasState ${IRI::fromState} .
+  ${IRI::actionId} ${PREFIX::ACTIONS_PREFIX}:hasCurrentState ${IRI::fromState} .
 }
