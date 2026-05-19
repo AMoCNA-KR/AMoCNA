@@ -28,17 +28,15 @@ public class PrometheusThresholdEvaluator {
     private final PrometheusClient prometheusClient;
     private final GraphDBGateway graphDBGateway;
     private final PalamedesProperties properties;
-    private final List<ThresholdDefinition> thresholds;
 
     public PrometheusThresholdEvaluator(PrometheusClient prometheusClient,
                                         GraphDBGateway graphDBGateway,
-                                        PalamedesProperties properties,
-                                        ThresholdsConfig thresholdsConfig) {
+                                        PalamedesProperties properties) {
         this.prometheusClient = prometheusClient;
         this.graphDBGateway = graphDBGateway;
         this.properties = properties;
-        this.thresholds = thresholdsConfig.thresholds();
-        log.info("PrometheusThresholdEvaluator initialized with {} threshold(s)", thresholds.size());
+        log.info("PrometheusThresholdEvaluator initialized with {} threshold(s)", 
+                properties.thresholds() != null ? properties.thresholds().size() : 0);
     }
 
     /**
@@ -47,7 +45,8 @@ public class PrometheusThresholdEvaluator {
      */
     @Scheduled(fixedDelayString = "${palamedes.prometheus.evaluation-interval-ms:30000}")
     public void evaluate() {
-        if (thresholds.isEmpty()) {
+        List<ThresholdDefinition> thresholds = properties.thresholds();
+        if (thresholds == null || thresholds.isEmpty()) {
             log.debug("No thresholds configured — skipping evaluation");
             return;
         }
