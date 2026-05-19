@@ -253,9 +253,9 @@ public class GraphDBGateway {
         String cneeNs = ontologyRegistry.getCneeNamespace();
         String sparql = """
                 PREFIX cnee: <%s>
-                DELETE { <%s> cnee:hasCurrentState ?old }
-                INSERT { <%s> cnee:hasCurrentState <%s> }
-                WHERE  { OPTIONAL { <%s> cnee:hasCurrentState ?old } }
+                DELETE { <%s> cnee:hasState ?old }
+                INSERT { <%s> cnee:hasState <%s> }
+                WHERE  { OPTIONAL { <%s> cnee:hasState ?old } }
                 """.formatted(cneeNs, resourceIri, resourceIri, stateIri, resourceIri);
 
         sparqlClient.executeWithConnection(conn -> {
