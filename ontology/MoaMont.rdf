@@ -59,7 +59,7 @@
 
     <owl:ObjectProperty rdf:about="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#hasCurrentState">
         <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#FunctionalProperty"/>
-        <rdfs:domain rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#ComplexWorkflow"/>
+        <rdfs:domain rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#AutonomicAction"/>
         <rdfs:range rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#ExecutionState"/>
         <rdfs:comment>Tracks the live progress of a workflow within the Petri Net abstraction.</rdfs:comment>
     </owl:ObjectProperty>
@@ -828,6 +828,14 @@ before patching).</rdfs:comment>
     
 
 
+    <!-- http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#State_Initial -->
+
+    <owl:NamedIndividual rdf:about="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#State_Initial">
+        <rdf:type rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#ExecutionState"/>
+    </owl:NamedIndividual>
+    
+
+
     <!-- http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#State_Planned -->
 
     <owl:NamedIndividual rdf:about="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#State_Planned">
@@ -863,18 +871,6 @@ before patching).</rdfs:comment>
     <rdf:Description>
         <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#AllDisjointClasses"/>
         <owl:members rdf:parseType="Collection">
-            <rdf:Description rdf:about="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#AutonomicAction"/>
-            <rdf:Description rdf:about="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#ExecutionCondition"/>
-            <rdf:Description rdf:about="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#ExecutionCost"/>
-            <rdf:Description rdf:about="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#ExecutionState"/>
-            <rdf:Description rdf:about="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#FunctionalIntent"/>
-            <rdf:Description rdf:about="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#LayerBoundary"/>
-            <rdf:Description rdf:about="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#TargetResource"/>
-        </owl:members>
-    </rdf:Description>
-    <rdf:Description>
-        <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#AllDisjointClasses"/>
-        <owl:members rdf:parseType="Collection">
             <rdf:Description rdf:about="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#CircuitBreakAction"/>
             <rdf:Description rdf:about="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#TrafficDrainingAction"/>
             <rdf:Description rdf:about="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#TrafficMirroringAction"/>
@@ -888,6 +884,16 @@ before patching).</rdfs:comment>
             <rdf:Description rdf:about="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#MobilityAction"/>
             <rdf:Description rdf:about="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#ScalingAction"/>
             <rdf:Description rdf:about="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#TrafficRoutingAction"/>
+        </owl:members>
+    </rdf:Description>
+    <rdf:Description>
+        <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#AllDisjointClasses"/>
+        <owl:members rdf:parseType="Collection">
+            <rdf:Description rdf:about="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#ExecutionCondition"/>
+            <rdf:Description rdf:about="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#ExecutionCost"/>
+            <rdf:Description rdf:about="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#ExecutionState"/>
+            <rdf:Description rdf:about="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#LayerBoundary"/>
+            <rdf:Description rdf:about="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#TargetResource"/>
         </owl:members>
     </rdf:Description>
     <rdf:Description>
@@ -922,6 +928,7 @@ before patching).</rdfs:comment>
             <rdf:Description rdf:about="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#State_Compensating"/>
             <rdf:Description rdf:about="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#State_Failed"/>
             <rdf:Description rdf:about="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#State_InProgress"/>
+            <rdf:Description rdf:about="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#State_Initial"/>
             <rdf:Description rdf:about="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#State_Planned"/>
             <rdf:Description rdf:about="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#State_Succeeded"/>
             <rdf:Description rdf:about="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#State_Validated"/>
