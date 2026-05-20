@@ -2,7 +2,8 @@ project:
   name: amocna
   group_id: com.kubiki
   parent_pom: pom.xml
-  registry: sglomski # Override with AMOCNA_REGISTRY env var or --registry flag
+  # Override with AMOCNA_REGISTRY env var or --registry flag
+  registry: sglomski
 
 # ─── Core apps ─────────────────────────────────────────────────────────
 # Managed by the parent POM. Version-synced via `./amocna.py version`.
