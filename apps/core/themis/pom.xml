@@ -1,66 +1,69 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
-  <parent>
-      <groupId>com.kubiki</groupId>
-      <artifactId>amocna-parent</artifactId>
-      <version>1.0-SNAPSHOT</version>
-      <relativePath>../../../pom.xml</relativePath>
-  </parent>
+
+	<parent>
+		<groupId>com.kubiki</groupId>
+		<artifactId>amocna-parent</artifactId>
+		<version>1.0-SNAPSHOT</version>
+		<relativePath>../../../pom.xml</relativePath>
+	</parent>
 
 	<artifactId>themis</artifactId>
-
 	<name>themis</name>
 	<description>Themis Autonomic Action Executor</description>
 
 	<dependencies>
-		<!-- Common Module -->
 		<dependency>
 			<groupId>com.kubiki</groupId>
 			<artifactId>common</artifactId>
 		</dependency>
 
 		<dependency>
+			<groupId>com.kubiki</groupId>
+			<artifactId>daedalus</artifactId>
+		</dependency>
+
+		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter</artifactId>
 		</dependency>
+
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-web</artifactId>
 		</dependency>
+
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-configuration-processor</artifactId>
 			<optional>true</optional>
 		</dependency>
+
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-restclient</artifactId>
 		</dependency>
+
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-amqp</artifactId>
 		</dependency>
+
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-actuator</artifactId>
 		</dependency>
-		<dependency>
-			<groupId>org.springframework.retry</groupId>
-			<artifactId>spring-retry</artifactId>
-			<version>2.0.5</version>
-		</dependency>
+
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-aop</artifactId>
-			<version>3.2.4</version>
 		</dependency>
 
-		<!-- RDF4J / GraphDB -->
 		<dependency>
-			<groupId>com.kubiki</groupId>
-			<artifactId>daedalus</artifactId>
+			<groupId>org.springframework.retry</groupId>
+			<artifactId>spring-retry</artifactId>
 		</dependency>
 
 		<dependency>
@@ -71,7 +74,6 @@
 		<dependency>
 			<groupId>org.projectlombok</groupId>
 			<artifactId>lombok</artifactId>
-			<scope>compile</scope>
 		</dependency>
 
 		<dependency>
@@ -79,13 +81,11 @@
 			<artifactId>spring-boot-starter-test</artifactId>
 			<scope>test</scope>
 		</dependency>
-
 		<dependency>
 			<groupId>org.wiremock</groupId>
 			<artifactId>wiremock-standalone</artifactId>
 			<scope>test</scope>
 		</dependency>
-
 	</dependencies>
 
 	<build>

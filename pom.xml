@@ -22,6 +22,7 @@
     <module>apps/core/metis</module>
     <module>apps/core/palamedes</module>
     <module>apps/core/themis</module>
+    <module>apps/core/common</module>
   </modules>
 
   <properties>
@@ -31,6 +32,10 @@
     <maven.compiler.release>25</maven.compiler.release>
 
     <!-- Dependencies -->
+    <spring-boot.version>4.0.6</spring-boot.version>
+    <spring-retry.version>2.0.5</spring-retry.version>
+    <spring-boot-starter-aop.version>3.5.14</spring-boot-starter-aop.version>
+    <farbic8.version>7.0.0</farbic8.version>
     <grpc-spring-boot-starter.version>3.1.0.RELEASE</grpc-spring-boot-starter.version>
     <rdf4j.version>4.3.9</rdf4j.version>
     <graphdb.version>10.8.13</graphdb.version>
@@ -52,6 +57,11 @@
   <dependencyManagement>
     <dependencies>
       <!-- Core AMoCNA Modules -->
+      <dependency>
+        <groupId>com.kubiki</groupId>
+        <artifactId>common</artifactId>
+        <version>${project.version}</version>
+      </dependency>
       <dependency>
         <groupId>com.kubiki</groupId>
         <artifactId>daedalus</artifactId>
@@ -108,6 +118,25 @@
         <artifactId>jqwik</artifactId>
         <version>${jqwik.version}</version>
       </dependency>
+
+      <dependency>
+        <groupId>org.springframework.retry</groupId>
+        <artifactId>spring-retry</artifactId>
+        <version>${spring-retry.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-aop</artifactId>
+        <version>${spring-boot-starter-aop.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.fabric8</groupId>
+        <artifactId>kubernetes-client</artifactId>
+        <version>${farbic8.version}</version>
+      </dependency>
+
     </dependencies>
   </dependencyManagement>
 
