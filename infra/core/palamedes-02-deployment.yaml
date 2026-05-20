@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: palamedes
-  namespace: hephaestus
+  namespace: palamedes
 spec:
   replicas: 1
   selector:

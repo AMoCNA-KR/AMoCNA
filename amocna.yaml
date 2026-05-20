@@ -111,16 +111,17 @@ forward:
 # ─── Kubernetes deployment manifest directories ───────────────────────
 k8s:
   deploy_order:
-    - infra/manifests
-    - infra/business-demo
-    - infra/kubernetes-management
-    - infra/demo-metrics-adapter
+    - infra/graphdb
+    - infra/rabbitmq
+    - infra/core
   undeploy_namespaces:
-    - hephaestus
     - hephaestus-business
-    - kubernetes-management
-    - metrics-adapter
-    - kie
+    - metis
+    - palamedes
+    - themis
+    # - kubernetes-management
+    # - metrics-adapter
+    # - kie
   cluster_resources:
     - { kind: storageclass, name: hephaestus-manual }
     - { kind: persistentvolume, name: hephaestus-gui-pv }
