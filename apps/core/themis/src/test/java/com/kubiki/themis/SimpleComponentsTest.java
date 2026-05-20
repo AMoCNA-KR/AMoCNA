@@ -1,8 +1,8 @@
 package com.kubiki.themis;
 
 import com.kubiki.themis.config.ThemisProperties;
-import com.kubiki.themis.model.ExecutionStatus;
-import com.kubiki.themis.model.Protocol;
+import com.kubiki.common.model.ExecutionStatus;
+import com.kubiki.common.model.Protocol;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;

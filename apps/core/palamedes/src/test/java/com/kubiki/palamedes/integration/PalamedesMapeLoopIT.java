@@ -1,5 +1,8 @@
 package com.kubiki.palamedes.integration;
 
+import com.kubiki.common.model.ExecutionStatus;
+import com.kubiki.common.model.ActionStatusUpdate;
+import com.kubiki.common.model.ActionMessage;
 import com.kubiki.palamedes.analyzer.AnomalyAgent;
 import com.kubiki.palamedes.knowledge.OntologyRegistry;
 import com.kubiki.palamedes.knowledge.GraphDBGateway;

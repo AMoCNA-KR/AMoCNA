@@ -2,7 +2,7 @@ package com.kubiki.palamedes.planner;
 
 import com.kubiki.daedalus.core.DaedalusHydrator;
 import com.kubiki.palamedes.model.ActionData;
-import com.kubiki.palamedes.model.ActionMessage;
+import com.kubiki.common.model.ActionMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;

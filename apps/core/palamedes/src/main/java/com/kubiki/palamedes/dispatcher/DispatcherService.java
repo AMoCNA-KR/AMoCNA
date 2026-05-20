@@ -1,7 +1,7 @@
 package com.kubiki.palamedes.dispatcher;
 
 import com.kubiki.palamedes.knowledge.GraphDBGateway;
-import com.kubiki.palamedes.model.ActionMessage;
+import com.kubiki.common.model.ActionMessage;
 import com.kubiki.palamedes.config.RabbitMQConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

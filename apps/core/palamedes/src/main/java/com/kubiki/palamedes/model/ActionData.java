@@ -1,5 +1,6 @@
 package com.kubiki.palamedes.model;
 
+import com.kubiki.common.model.Protocol;
 import lombok.Builder;
 import org.eclipse.rdf4j.model.IRI;
 import org.springframework.http.HttpMethod;

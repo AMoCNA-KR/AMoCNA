@@ -1,5 +1,6 @@
 package com.kubiki.themis.model;
 
+import com.kubiki.common.model.ExecutionStatus;
 /**
  * Result of a protocol-specific execution.
  * 

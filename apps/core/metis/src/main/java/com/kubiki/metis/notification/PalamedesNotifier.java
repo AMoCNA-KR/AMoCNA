@@ -1,6 +1,6 @@
 package com.kubiki.metis.notification;
 
-import com.kubiki.metis.notification.model.GraphUpdateMessage;
+import com.kubiki.common.model.GraphUpdateMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;

@@ -1,10 +1,11 @@
 package com.kubiki.themis.execution;
 
+import com.kubiki.common.model.Protocol;
 import com.kubiki.themis.config.RabbitMQConfig;
-import com.kubiki.themis.model.ActionMessage;
-import com.kubiki.themis.model.ActionStatusUpdate;
+import com.kubiki.common.model.ActionMessage;
+import com.kubiki.common.model.ActionStatusUpdate;
 import com.kubiki.themis.model.ExecutionResult;
-import com.kubiki.themis.model.ExecutionStatus;
+import com.kubiki.common.model.ExecutionStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;

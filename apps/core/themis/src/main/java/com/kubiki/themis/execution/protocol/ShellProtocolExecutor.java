@@ -1,5 +1,8 @@
 package com.kubiki.themis.execution.protocol;
 
+import com.kubiki.common.model.ActionMessage;
+import com.kubiki.common.model.ExecutionStatus;
+import com.kubiki.common.model.Protocol;
 import com.kubiki.themis.execution.ProtocolExecutor;
 import com.kubiki.themis.model.*;
 import org.slf4j.Logger;

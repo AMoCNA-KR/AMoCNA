@@ -1,8 +1,8 @@
 package com.kubiki.themis.execution;
 
-import com.kubiki.themis.model.ActionMessage;
+import com.kubiki.common.model.ActionMessage;
 import com.kubiki.themis.model.ExecutionResult;
-import com.kubiki.themis.model.Protocol;
+import com.kubiki.common.model.Protocol;
 
 /**
  * Generic interface for protocol-specific execution.

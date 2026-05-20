@@ -9,14 +9,18 @@
       <relativePath>../../../pom.xml</relativePath>
   </parent>
 
-	<groupId>com.kubiki</groupId>
 	<artifactId>themis</artifactId>
-  <version>1.0-SNAPSHOT</version>
 
 	<name>themis</name>
 	<description>Themis Autonomic Action Executor</description>
 
 	<dependencies>
+		<!-- Common Module -->
+		<dependency>
+			<groupId>com.kubiki</groupId>
+			<artifactId>common</artifactId>
+		</dependency>
+
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter</artifactId>

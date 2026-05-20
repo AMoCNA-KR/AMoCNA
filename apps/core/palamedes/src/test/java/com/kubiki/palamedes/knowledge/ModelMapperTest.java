@@ -1,7 +1,7 @@
 package com.kubiki.palamedes.knowledge;
 
 import com.kubiki.palamedes.model.ActionData;
-import com.kubiki.palamedes.model.Protocol;
+import com.kubiki.common.model.Protocol;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.ValueFactory;
