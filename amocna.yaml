@@ -10,8 +10,13 @@ project:
 core_apps:
   daedalus:
     path: apps/core/daedalus
-    type: maven-lib # library — no Docker image, no deploy
+    type: maven-lib
     description: Daedalus Templating Module
+
+  common:
+    path: apps/core/common
+    type: maven-lib
+    description: Common libraries for other modules
 
   metis:
     path: apps/core/metis
@@ -107,18 +112,26 @@ forward:
     service: metrics-adapter
     local_port: 8081
     remote_port: 8085
+  graphdb:
+    namespace: graphdb
+    service: graphdb
+    local_port: 7200
+    remote_port: 7200
 
 # ─── Kubernetes deployment manifest directories ───────────────────────
 k8s:
   deploy_order:
     - infra/graphdb
     - infra/rabbitmq
+    - infra/business-demo
     - infra/core
   undeploy_namespaces:
-    - hephaestus-business
+    - graphdb
+    - rabbitmq
     - metis
     - palamedes
     - themis
+    - hephaestus-business
     # - kubernetes-management
     # - metrics-adapter
     # - kie
