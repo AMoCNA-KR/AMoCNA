@@ -36,7 +36,7 @@ import static org.mockito.Mockito.*;
 @ActiveProfiles("test")
 @TestPropertySource(properties = {
         "palamedes.engine.batch-size=50",
-        "palamedes.engine.pipeline-rate-ms=100000"
+        "palamedes.engine.fallback-pipeline-rate-ms=100000"
 })
 @DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
 class PerformanceScaleIT {
