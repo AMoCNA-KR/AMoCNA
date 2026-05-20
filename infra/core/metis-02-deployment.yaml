@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: metis
-  namespace: metis
+  namespace: hephaestus
 spec:
   replicas: 1
   selector:
@@ -27,7 +27,7 @@ spec:
             - name: METIS_GRAPHDB_REPOSITORYID
               value: "amocna"
             - name: RABBITMQ_HOST
-              value: "rabbitmq.palamedes.svc.cluster.local"
+              value: "rabbitmq.rabbitmq.svc.cluster.local"
             - name: RABBITMQ_PORT
               value: "5672"
             - name: METIS_SENSOR_ENABLED

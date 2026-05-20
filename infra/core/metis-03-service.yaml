@@ -2,7 +2,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: metis
-  namespace: metis
+  namespace: hephaestus
 spec:
   selector:
     app: metis

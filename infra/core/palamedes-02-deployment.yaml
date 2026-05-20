@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: palamedes
-  namespace: palamedes
+  namespace: hephaestus
 spec:
   replicas: 1
   selector:
@@ -26,7 +26,7 @@ spec:
             - name: GRAPHDB_REPO
               value: "amocna"
             - name: RABBITMQ_HOST
-              value: "rabbitmq.palamedes.svc.cluster.local"
+              value: "rabbitmq.rabbitmq.svc.cluster.local"
             - name: RABBITMQ_PORT
               value: "5672"
             - name: RABBITMQ_USER

@@ -1,0 +1,11 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - metis-01-rbac.yaml
+  - metis-02-deployment.yaml
+  - metis-03-service.yaml
+  - palamedes-02-deployment.yaml
+  - palamedes-03-service.yaml
+  - themis-02-deployment.yaml
+  - themis-03-service.yaml

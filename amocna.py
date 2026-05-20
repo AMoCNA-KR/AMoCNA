@@ -570,14 +570,10 @@ def cmd_deploy(cfg: ProjectConfig, args: argparse.Namespace) -> None:
         sys.exit(1)
 
     header("Deploying AMoCNA to Kubernetes")
-
-    for manifest_dir in cfg.k8s_deploy_order:
-        full_path = cfg.project_root / manifest_dir
-        if not full_path.is_dir():
-            warn(f"Manifest directory not found, skipping: {manifest_dir}")
-            continue
-        info(f"Applying {manifest_dir}/")
-        run(["kubectl", "apply", "-f", str(full_path)])
+    
+    full_path = cfg.project_root / "infra"
+    info(f"Applying kustomization in {full_path}")
+    run(["kubectl", "apply", "-k", str(full_path)])
 
     info("Deployment commands sent.")
     warn("It may take a few minutes for all pods to reach 'Running' state.")
@@ -587,17 +583,9 @@ def cmd_undeploy(cfg: ProjectConfig, _args: argparse.Namespace) -> None:
     """Remove AMoCNA from the Kubernetes cluster."""
     header("Undeploying AMoCNA from Kubernetes")
 
-    info("Deleting namespaces...")
-    for ns in cfg.k8s_undeploy_namespaces:
-        run(["kubectl", "delete", "namespace", ns, "--ignore-not-found"], check=False)
-
-    info("Cleaning up cluster-scoped resources...")
-    for res in cfg.k8s_cluster_resources:
-        if isinstance(res, dict):
-            kind = res.get("kind", "")
-            name = res.get("name", "")
-            if kind and name:
-                run(["kubectl", "delete", kind, name, "--ignore-not-found"], check=False)
+    full_path = cfg.project_root / "infra"
+    info(f"Deleting kustomization in {full_path}")
+    run(["kubectl", "delete", "-k", str(full_path), "--ignore-not-found"], check=False)
 
     info("AMoCNA has been removed from the cluster.")
 
