@@ -7,3 +7,4 @@ resources:
   - 02-init-config.yaml
   - 03-deployment.yaml
   - 04-service.yaml
+  - 05-provision-job.yaml

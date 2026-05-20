@@ -1,0 +1,19 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: graphdb-provisioner
+  namespace: graphdb
+spec:
+  template:
+    spec:
+      containers:
+      - name: provisioner
+        image: graphdb-provisioner:latest
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: GRAPHDB_URL
+          value: "http://graphdb:7200"
+        - name: REPOSITORY_ID
+          value: "amocna"
+      restartPolicy: OnFailure
+  backoffLimit: 4

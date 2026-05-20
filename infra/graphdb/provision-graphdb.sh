@@ -20,9 +20,14 @@ if echo "$REPOS_LIST" | grep -q "\"id\":\"$REPOSITORY_ID\""; then
 else
   echo "Repository '$REPOSITORY_ID' does not exist. Creating..."
 
+  CONFIG_FILE="/config/amocna-repo-config.ttl"
+  if [ ! -f "$CONFIG_FILE" ]; then
+    CONFIG_FILE="./amocna-repo-config.ttl"
+  fi
+
   curl -f -X POST "$GRAPHDB_URL/rest/repositories" \
     -H "Content-Type: multipart/form-data" \
-    -F "config=@/config/amocna-repo-config.ttl"
+    -F "config=@$CONFIG_FILE"
 
   echo "Repository '$REPOSITORY_ID' created successfully!"
 fi
@@ -57,11 +62,16 @@ echo "---------------------------------------------------"
 echo "Uploading blueprints..."
 echo "---------------------------------------------------"
 
-if [ -f "/config/restart-action-blueprint.ttl" ]; then
-  echo "Uploading RestartAction blueprint..."
+BLUEPRINT_FILE="/config/restart-action-blueprint.ttl"
+if [ ! -f "$BLUEPRINT_FILE" ]; then
+  BLUEPRINT_FILE="./restart-action-blueprint.ttl"
+fi
+
+if [ -f "$BLUEPRINT_FILE" ]; then
+  echo "Uploading RestartAction blueprint from $BLUEPRINT_FILE..."
   curl -s -f -X POST "$GRAPHDB_URL/repositories/$REPOSITORY_ID/statements" \
     -H "Content-Type: text/turtle" \
-    --data-binary "@/config/restart-action-blueprint.ttl"
+    --data-binary "@$BLUEPRINT_FILE"
   echo "SUCCESS: RestartAction blueprint uploaded!"
 fi
 
