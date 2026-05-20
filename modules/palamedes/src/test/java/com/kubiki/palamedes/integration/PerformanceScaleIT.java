@@ -36,7 +36,7 @@ import static org.mockito.Mockito.*;
 @ActiveProfiles("test")
 @TestPropertySource(properties = {
         "palamedes.engine.batch-size=50",
-        "palamedes.engine.pipeline-rate-ms=100000"
+        "palamedes.engine.fallback-pipeline-rate-ms=100000"
 })
 @DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
 class PerformanceScaleIT {
@@ -90,7 +90,7 @@ class PerformanceScaleIT {
     void shouldHandleLargeScaleWithBatching() {
         int actionCount = 200;
         IRI actionType = registry.actionsOntology("SimpleAction");
-        IRI hasState = registry.actionsOntology("hasState");
+        IRI hasCurrentState = registry.actionsOntology("hasCurrentState");
         IRI stateValidated = registry.actionsOntology("State_Validated");
         IRI targetsEntity = registry.actionsOntology("targetsEntity");
         IRI hasActionID = registry.actionsOntology("hasActionID");
@@ -105,7 +105,7 @@ class PerformanceScaleIT {
                 IRI resourceIri = vf.createIRI("http://test/resource" + i);
                 
                 conn.add(actionIri, RDF.TYPE, actionType);
-                conn.add(actionIri, hasState, stateValidated);
+                conn.add(actionIri, hasCurrentState, stateValidated);
                 conn.add(actionIri, targetsEntity, resourceIri);
                 conn.add(actionIri, hasActionID, vf.createLiteral("action" + i));
                 conn.add(resourceIri, registry.resourcesOntology("resourceName"), vf.createLiteral("res" + i));

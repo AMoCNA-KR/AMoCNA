@@ -146,8 +146,8 @@ public class GraphDBGateway {
 
     public Map<IRI, ActionData> fetchActionStructures(List<IRI> actionIds) {
         String joinedIds = actionIds.stream()
-                .map(iri -> "<" + iri.stringValue() + ">")
-                .collect(Collectors.joining(" "));
+                .map(IRI::stringValue)
+                .collect(Collectors.joining("> <"));
 
         String sparql = sparqlRepository.fetchActionStructures(joinedIds);
 
