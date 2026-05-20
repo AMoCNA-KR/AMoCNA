@@ -105,8 +105,8 @@ services:
 
   graphdb-provisioner:
     build:
-      context: infra/graphdb
-      dockerfile: graphdb-provisioner.dockerfile
+      context: .
+      dockerfile: infra/graphdb/graphdb-provisioner.dockerfile
     environment:
       - GRAPHDB_URL=http://graphdb:7200
       - REPOSITORY_ID=amocna
