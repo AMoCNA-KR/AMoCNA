@@ -415,7 +415,6 @@ def run(
 
 # ─── POM version helpers ─────────────────────────────────────────────
 
-_NS = "http://maven.apache.org/POM/4.0.0"
 _VERSION_RE = re.compile(r"(<version>)(.*?)(</version>)")
 _PARENT_BLOCK_RE = re.compile(r"(<parent>.*?</parent>)", re.DOTALL)
 
