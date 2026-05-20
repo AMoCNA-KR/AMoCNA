@@ -2,6 +2,10 @@
 FROM maven:3.9-eclipse-temurin-25 AS builder
 WORKDIR /app
 
+# Copy the parent pom to allow Maven to resolve dependencies
+COPY pom.xml .
+RUN mvn install -N
+
 # Install daedalus dependency first
 COPY apps/core/daedalus/pom.xml apps/core/daedalus/
 COPY apps/core/daedalus/src apps/core/daedalus/src/

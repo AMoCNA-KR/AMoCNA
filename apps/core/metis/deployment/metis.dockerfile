@@ -2,6 +2,10 @@
 FROM maven:3.9-eclipse-temurin-25 AS builder
 WORKDIR /app
 
+# Copy the parent pom to allow Maven to resolve dependencies
+COPY pom.xml .
+RUN mvn install -N
+
 # Copy the schema directory (required for gRPC stubs)
 COPY libs/schema/ libs/schema/
 

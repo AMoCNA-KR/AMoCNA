@@ -28,6 +28,7 @@ from typing import Any
 
 # ─── YAML mini-parser (no PyYAML dependency) ──────────────────────────
 
+
 def _parse_yaml(path: Path) -> dict:
     """Minimal YAML parser supporting scalars, maps, lists, and flow mappings.
 
@@ -83,7 +84,9 @@ def _parse_block(lines: list[str], idx: int, base_indent: int) -> tuple[dict, in
             # check next line
             next_idx = idx + 1
             # skip blanks/comments
-            while next_idx < len(lines) and (not lines[next_idx].strip() or lines[next_idx].strip().startswith("#")):
+            while next_idx < len(lines) and (
+                not lines[next_idx].strip() or lines[next_idx].strip().startswith("#")
+            ):
                 next_idx += 1
 
             if next_idx >= len(lines):
@@ -182,7 +185,9 @@ def _parse_scalar(val: str) -> Any:
     if not val:
         return None
     # strip quotes
-    if (val.startswith('"') and val.endswith('"')) or (val.startswith("'") and val.endswith("'")):
+    if (val.startswith('"') and val.endswith('"')) or (
+        val.startswith("'") and val.endswith("'")
+    ):
         return val[1:-1]
     # strip inline comments
     if "  #" in val:
@@ -210,8 +215,10 @@ def _parse_scalar(val: str) -> Any:
 
 # ─── ANSI colors ──────────────────────────────────────────────────────
 
+
 class _C:
     """ANSI color helpers."""
+
     _enabled = sys.stdout.isatty()
 
     @staticmethod
@@ -219,17 +226,28 @@ class _C:
         return f"\033[{code}m{text}\033[0m" if _C._enabled else text
 
     @staticmethod
-    def bold(t: str) -> str:   return _C._w("1", t)
+    def bold(t: str) -> str:
+        return _C._w("1", t)
+
     @staticmethod
-    def green(t: str) -> str:  return _C._w("32", t)
+    def green(t: str) -> str:
+        return _C._w("32", t)
+
     @staticmethod
-    def yellow(t: str) -> str: return _C._w("33", t)
+    def yellow(t: str) -> str:
+        return _C._w("33", t)
+
     @staticmethod
-    def red(t: str) -> str:    return _C._w("31", t)
+    def red(t: str) -> str:
+        return _C._w("31", t)
+
     @staticmethod
-    def cyan(t: str) -> str:   return _C._w("36", t)
+    def cyan(t: str) -> str:
+        return _C._w("36", t)
+
     @staticmethod
-    def dim(t: str) -> str:    return _C._w("2", t)
+    def dim(t: str) -> str:
+        return _C._w("2", t)
 
 
 def info(msg: str) -> None:
@@ -253,6 +271,7 @@ def header(msg: str) -> None:
 
 
 # ─── Project model ────────────────────────────────────────────────────
+
 
 @dataclass
 class AppDef:
@@ -290,6 +309,7 @@ class ProjectConfig:
 
 
 # ─── Config loader ────────────────────────────────────────────────────
+
 
 def find_project_root() -> Path:
     """Walk up from CWD or script dir to find amocna.yaml."""
@@ -378,8 +398,10 @@ def resolve_registry(args: argparse.Namespace, cfg: ProjectConfig) -> str:
 
 # ─── Shell helpers ────────────────────────────────────────────────────
 
-def run(cmd: list[str], cwd: Path | None = None, check: bool = True,
-        capture: bool = False) -> subprocess.CompletedProcess:
+
+def run(
+    cmd: list[str], cwd: Path | None = None, check: bool = True, capture: bool = False
+) -> subprocess.CompletedProcess:
     """Run a subprocess, streaming output unless capture=True."""
     print(f"  {_C.dim('$')} {_C.dim(' '.join(cmd))}")
     return subprocess.run(
@@ -434,9 +456,11 @@ def _set_version_in_text(text: str, new_version: str) -> str:
 
 def _set_parent_version_in_text(text: str, new_version: str) -> str:
     """Replace <version> inside <parent>...</parent> block."""
+
     def _replace_in_parent(m: re.Match) -> str:
         parent_block = m.group(1)
         return _VERSION_RE.sub(rf"\g<1>{new_version}\g<3>", parent_block, count=1)
+
     return _PARENT_BLOCK_RE.sub(_replace_in_parent, text)
 
 
@@ -472,9 +496,10 @@ def bump_version(current: str, part: str) -> str:
 
 # ─── Subcommands ──────────────────────────────────────────────────────
 
+
 def cmd_status(cfg: ProjectConfig, _args: argparse.Namespace) -> None:
     """Show project overview and app status."""
-    header(f"AMoCNA Project Status")
+    header("AMoCNA Project Status")
 
     current_version = read_pom_version(cfg.project_root / cfg.parent_pom)
     print(f"\n  Project:  {_C.bold(cfg.name)}")
@@ -502,7 +527,9 @@ def cmd_status(cfg: ProjectConfig, _args: argparse.Namespace) -> None:
 
     print(f"\n  {_C.bold('Forward Shortcuts')}")
     for name, fwd in cfg.forwards.items():
-        print(f"    {name:<20} → localhost:{fwd.local_port} → {fwd.namespace}/{fwd.service}:{fwd.remote_port}")
+        print(
+            f"    {name:<20} → localhost:{fwd.local_port} → {fwd.namespace}/{fwd.service}:{fwd.remote_port}"
+        )
     print()
 
 
@@ -530,12 +557,17 @@ def cmd_build(cfg: ProjectConfig, args: argparse.Namespace) -> None:
         info(f"Image: {image}")
         info(f"Dockerfile: {app.dockerfile}")
 
-        run([
-            "docker", "build",
-            "-t", image,
-            "-f", str(dockerfile_path),
-            str(cfg.project_root),
-        ])
+        run(
+            [
+                "docker",
+                "build",
+                "-t",
+                image,
+                "-f",
+                str(dockerfile_path),
+                str(cfg.project_root),
+            ]
+        )
 
         if args.push:
             info(f"Pushing {image}...")
@@ -566,11 +598,13 @@ def cmd_test(cfg: ProjectConfig, args: argparse.Namespace) -> None:
 def cmd_deploy(cfg: ProjectConfig, args: argparse.Namespace) -> None:
     """Deploy to Kubernetes using manifests."""
     if args.app:
-        error("Per-app deploy not yet implemented. Use --all or deploy specific manifests manually.")
+        error(
+            "Per-app deploy not yet implemented. Use --all or deploy specific manifests manually."
+        )
         sys.exit(1)
 
     header("Deploying AMoCNA to Kubernetes")
-    
+
     full_path = cfg.project_root / "infra"
     info(f"Applying kustomization in {full_path}")
     run(["kubectl", "apply", "-k", str(full_path)])
@@ -603,16 +637,22 @@ def cmd_forward(cfg: ProjectConfig, args: argparse.Namespace) -> None:
     local_port = args.local_port or fwd.local_port
 
     header(f"Forwarding {name}")
-    info(f"http://localhost:{local_port} → {fwd.namespace}/{fwd.service}:{fwd.remote_port}")
+    info(
+        f"http://localhost:{local_port} → {fwd.namespace}/{fwd.service}:{fwd.remote_port}"
+    )
     print(f"  {_C.dim('Press Ctrl+C to stop.')}\n")
 
     try:
-        run([
-            "kubectl", "port-forward",
-            "-n", fwd.namespace,
-            f"svc/{fwd.service}",
-            f"{local_port}:{fwd.remote_port}",
-        ])
+        run(
+            [
+                "kubectl",
+                "port-forward",
+                "-n",
+                fwd.namespace,
+                f"svc/{fwd.service}",
+                f"{local_port}:{fwd.remote_port}",
+            ]
+        )
     except KeyboardInterrupt:
         print()
         info("Forwarding stopped.")
@@ -639,7 +679,11 @@ def cmd_version(cfg: ProjectConfig, args: argparse.Namespace) -> None:
             pom = cfg.project_root / app.path / "pom.xml"
             if pom.is_file():
                 v = read_pom_version(pom)
-                match = _C.green("✔ in sync") if v == current else _C.red(f"✖ out of sync ({v})")
+                match = (
+                    _C.green("✔ in sync")
+                    if v == current
+                    else _C.red(f"✖ out of sync ({v})")
+                )
                 print(f"  {app.name:<20}: {match}")
         print()
         return
@@ -682,11 +726,14 @@ def cmd_version(cfg: ProjectConfig, args: argparse.Namespace) -> None:
 
     print()
     info(f"All core POMs synchronized to {_C.bold(new_version)}")
-    print(f"  {_C.dim('Tip: run')} ./amocna.py version {_C.dim('to verify sync state')}")
+    print(
+        f"  {_C.dim('Tip: run')} ./amocna.py version {_C.dim('to verify sync state')}"
+    )
     print()
 
 
 # ─── Helpers ──────────────────────────────────────────────────────────
+
 
 def _resolve_apps(cfg: ProjectConfig, args: argparse.Namespace) -> list[AppDef]:
     """Resolve which apps to operate on from --app / --all flags."""
@@ -708,6 +755,7 @@ def _resolve_apps(cfg: ProjectConfig, args: argparse.Namespace) -> list[AppDef]:
 
 
 # ─── CLI setup ────────────────────────────────────────────────────────
+
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
@@ -760,9 +808,13 @@ def build_parser() -> argparse.ArgumentParser:
     # version
     p_ver = sub.add_parser("version", help="Manage & sync versions across core POMs")
     ver_group = p_ver.add_mutually_exclusive_group()
-    ver_group.add_argument("--bump", choices=["major", "minor", "patch"], help="Bump version component")
+    ver_group.add_argument(
+        "--bump", choices=["major", "minor", "patch"], help="Bump version component"
+    )
     ver_group.add_argument("--set", help="Set an explicit version string")
-    p_ver.add_argument("--dry-run", action="store_true", help="Show what would change without writing")
+    p_ver.add_argument(
+        "--dry-run", action="store_true", help="Show what would change without writing"
+    )
 
     return parser
 
