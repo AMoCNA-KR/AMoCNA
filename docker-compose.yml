@@ -11,7 +11,6 @@
 # ─────────────────────────────────────────────────────────────────────
 
 services:
-
   # ── Core Services ──────────────────────────────────────────────────
 
   themis:
@@ -71,7 +70,7 @@ services:
 
   rabbitmq:
     build:
-      context: apps/core/palamedes/deployment
+      context: infra/rabbitmq
       dockerfile: rabbitmq.dockerfile
     ports:
       - "5672:5672"
@@ -91,6 +90,7 @@ services:
       - GDB_HEAP_SIZE=1G
     volumes:
       - graphdb-data:/opt/graphdb/home
+      - ./graphdb.license:/opt/graphdb/home/work/graphdb.license:ro
     restart: unless-stopped
 
   prometheus:
@@ -98,25 +98,21 @@ services:
     ports:
       - "9090:9090"
     volumes:
-      - ./apps/core/palamedes/deployment/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./infra/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
     restart: unless-stopped
 
   # ── One-shot: GraphDB repository provisioning ──────────────────────
 
   graphdb-provisioner:
-    image: alpine:latest
-    volumes:
-      - ./apps/core/palamedes/deployment/provision-graphdb.sh:/provision-graphdb.sh:ro
-      - ./apps/core/palamedes/deployment/amocna-repo-config.ttl:/config/amocna-repo-config.ttl:ro
-      - ./apps/core/palamedes/deployment/restart-action-blueprint.ttl:/config/restart-action-blueprint.ttl:ro
-      - ./libs/ontology:/ontology:ro
+    build:
+      context: infra/graphdb
+      dockerfile: graphdb-provisioner.dockerfile
     environment:
       - GRAPHDB_URL=http://graphdb:7200
       - REPOSITORY_ID=amocna
     depends_on:
-      - graphdb
-    entrypoint:
-      ["/bin/sh", "-c", "apk add --no-cache curl && /provision-graphdb.sh"]
+      graphdb:
+        condition: service_started
     restart: "no"
 
 volumes:
