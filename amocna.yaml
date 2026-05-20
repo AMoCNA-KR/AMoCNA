@@ -1,0 +1,127 @@
+project:
+  name: amocna
+  group_id: com.kubiki
+  parent_pom: pom.xml
+  registry: sglomski  # Override with AMOCNA_REGISTRY env var or --registry flag
+
+# ─── Core apps ─────────────────────────────────────────────────────────
+# Managed by the parent POM. Version-synced via `./amocna.py version`.
+core_apps:
+  daedalus:
+    path: apps/core/daedalus
+    type: maven-lib  # library — no Docker image, no deploy
+    description: Daedalus Templating Module
+
+  metis:
+    path: apps/core/metis
+    type: maven-app
+    dockerfile: apps/core/metis/deployment/metis.dockerfile
+    image_name: metis
+    ports:
+      grpc: 50052
+    description: Metis Knowledge Representation & Management
+
+  palamedes:
+    path: apps/core/palamedes
+    type: maven-app
+    dockerfile: apps/core/palamedes/deployment/palamedes.dockerfile
+    image_name: palamedes
+    ports:
+      http: 8081
+    description: Palamedes Reasoner and Planner
+
+  themis:
+    path: apps/core/themis
+    type: maven-app
+    dockerfile: apps/core/themis/deployment/themis.dockerfile
+    image_name: themis
+    ports:
+      http: 8080
+      grpc: 50051
+    description: Themis Autonomic Action Executor
+
+# ─── Standalone / legacy apps ──────────────────────────────────────────
+# NOT in the parent POM. Independent versioning. Directory names unchanged.
+standalone_apps:
+  gui-backend:
+    path: apps/gui/Hphaestus-GUI-Backend/hephaestus-backend
+    type: maven-app
+    dockerfile: apps/gui/Hphaestus-GUI-Backend/hephaestus-backend/gui-backend.dockerfile
+    image_name: gui
+    ports:
+      http: 8080
+    description: Hephaestus GUI Backend (Spring Boot)
+
+  hephaestus-gui:
+    path: apps/gui/Hphaestus-GUI
+    type: angular
+    description: Hephaestus GUI Frontend (Angular)
+
+  metrics-adapter:
+    path: apps/adapters/Metrics-Adapter
+    type: maven-app
+    dockerfile: apps/adapters/Metrics-Adapter/metrics-adapter.dockerfile
+    image_name: metrics-adapter
+    ports:
+      http: 8085
+    description: Metrics Adapter (Drools)
+
+  kubernetes-management:
+    path: apps/demos/KubernetesManagment
+    type: maven-app
+    dockerfile: apps/demos/KubernetesManagment/kubernetes-management.dockerfile
+    image_name: kubernetes-management
+    ports:
+      http: 8097
+    description: Kubernetes Management Demo
+
+  metric-exporter:
+    path: apps/demos/MetricExporter
+    type: maven-app
+    dockerfile: apps/demos/MetricExporter/metric-exporter.dockerfile
+    image_name: business-demo
+    ports:
+      http: 8099
+    description: Business Demo / Metric Exporter
+
+  controller:
+    path: apps/core/Controller
+    type: maven-app
+    dockerfile: apps/core/Controller/controller.dockerfile
+    image_name: controller
+    ports:
+      http: 8080
+    description: Execution Controller
+
+# ─── Kubernetes port-forwarding shortcuts ──────────────────────────────
+forward:
+  gui-backend:
+    namespace: hephaestus
+    service: hephaestus-gui
+    local_port: 8080
+    remote_port: 8080
+
+  metrics-adapter:
+    namespace: metrics-adapter
+    service: metrics-adapter
+    local_port: 8081
+    remote_port: 8085
+
+# ─── Kubernetes deployment manifest directories ───────────────────────
+k8s:
+  deploy_order:
+    - infra/manifests
+    - infra/business-demo
+    - infra/kubernetes-management
+    - infra/demo-metrics-adapter
+  undeploy_namespaces:
+    - hephaestus
+    - hephaestus-business
+    - kubernetes-management
+    - metrics-adapter
+    - kie
+  cluster_resources:
+    - { kind: storageclass, name: hephaestus-manual }
+    - { kind: persistentvolume, name: hephaestus-gui-pv }
+    - { kind: clusterrole, name: pod-reader }
+    - { kind: clusterrolebinding, name: read-secrets-global }

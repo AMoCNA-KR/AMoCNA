@@ -2,7 +2,7 @@ services:
   palamedes:
     build:
       context: ../../..
-      dockerfile: modules/palamedes/deployment/Dockerfile
+      dockerfile: apps/core/palamedes/deployment/palamedes.dockerfile
     ports:
       - "8081:8081"
     environment:
@@ -55,7 +55,7 @@ services:
       - ./provision-graphdb.sh:/provision-graphdb.sh
       - ./amocna-repo-config.ttl:/config/amocna-repo-config.ttl
       - ./restart-action-blueprint.ttl:/config/restart-action-blueprint.ttl
-      - ../../../ontology:/ontology
+      - ../../../libs/ontology:/ontology
     environment:
       - GRAPHDB_URL=http://graphdb:7200
       - REPOSITORY_ID=amocna

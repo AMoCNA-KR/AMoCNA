@@ -3,25 +3,25 @@ FROM maven:3.9-eclipse-temurin-25 AS builder
 WORKDIR /app
 
 # Install daedalus dependency first
-COPY modules/daedalus/pom.xml modules/daedalus/
-COPY modules/daedalus/src modules/daedalus/src/
-WORKDIR /app/modules/daedalus
+COPY apps/core/daedalus/pom.xml apps/core/daedalus/
+COPY apps/core/daedalus/src apps/core/daedalus/src/
+WORKDIR /app/apps/core/daedalus
 RUN mvn clean install -DskipTests
 
 # Copy the themis module structure
 WORKDIR /app
-COPY modules/themis/pom.xml modules/themis/
-WORKDIR /app/modules/themis
+COPY apps/core/themis/pom.xml apps/core/themis/
+WORKDIR /app/apps/core/themis
 RUN mvn dependency:go-offline
 
 # Copy the source code using the correct path from project root
-COPY modules/themis/src ./src
+COPY apps/core/themis/src ./src
 
 RUN mvn clean package -DskipTests
 
 FROM eclipse-temurin:25-jre as runtime
 WORKDIR /app
-COPY --from=builder /app/modules/themis/target/themis-0.0.1-SNAPSHOT.jar app.jar
+COPY --from=builder /app/apps/core/themis/target/*.jar app.jar
 
 EXPOSE 8080 50051
 

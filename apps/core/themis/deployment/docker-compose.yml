@@ -2,7 +2,7 @@ services:
   themis:
     build:
       context: ../../..
-      dockerfile: modules/themis/deployment/Dockerfile
+      dockerfile: apps/core/themis/deployment/themis.dockerfile
     ports:
       - "8080:8080"
       - "50051:50051"
