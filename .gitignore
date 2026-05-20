@@ -1,16 +1,5 @@
-# Compiled class file
+# ─── Build outputs ──────────────────────────────────────
 *.class
-
-# Log file
-*.log
-
-# BlueJ files
-*.ctxt
-
-# Mobile Tools for Java (J2ME)
-.mtj.tmp/
-
-# Package Files #
 *.jar
 *.war
 *.nar
@@ -18,21 +7,41 @@
 *.zip
 *.tar.gz
 *.rar
+*/**/target/
 
-# virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
+# ─── IDE ────────────────────────────────────────────────
+.idea/
+*.iml
+.project
+.classpath
+.factorypath
+.settings/
+*.prefs
+.superpowers
+.kiro/
+.vscode/
+*.swp
+*.swo
+
+# ─── Logs ───────────────────────────────────────────────
+*.log
 hs_err_pid*
 replay_pid*
 
-.idea
-.superpowers
+# ─── OS / misc ──────────────────────────────────────────
+.DS_Store
+Thumbs.db
+*.ctxt
+.mtj.tmp/
 
-*.prefs
-.classpath
-.project
+# ─── Node / Angular ─────────────────────────────────────
+node_modules/
+dist/
+.angular/
 
-knowledge/**/*
-Deployment/**/data/*
-*/**/target/**/*
-.kiro/
+# ─── Docker ─────────────────────────────────────────────
 .env
-modules/graphdb/deployment/k8s/graphdb.license
+
+# ─── Project-specific ──────────────────────────────────
+knowledge/**/*
+infra/**/data/*

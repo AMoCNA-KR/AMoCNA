@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: metis
+  namespace: hephaestus
+spec:
+  selector:
+    app: metis
+  ports:
+    - port: 50052
+      targetPort: 50052
+  type: ClusterIP

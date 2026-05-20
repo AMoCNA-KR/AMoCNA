@@ -1,0 +1,6 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - 00-hephaestus-business-ns.yaml
+  - 01-demo-dep.yaml
+  - 02-demo-svc.yaml
