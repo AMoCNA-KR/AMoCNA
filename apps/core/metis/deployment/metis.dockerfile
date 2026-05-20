@@ -6,6 +6,13 @@ WORKDIR /app
 COPY pom.xml .
 RUN mvn install -N
 
+# Install common dependency first
+COPY apps/core/common/pom.xml apps/core/common/
+COPY apps/core/common/src apps/core/common/src/
+WORKDIR /app/apps/core/common
+RUN mvn clean install -DskipTests
+
+WORKDIR /app
 # Copy the schema directory (required for gRPC stubs)
 COPY libs/schema/ libs/schema/
 

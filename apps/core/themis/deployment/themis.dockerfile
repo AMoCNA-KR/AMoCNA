@@ -12,6 +12,13 @@ COPY apps/core/daedalus/src apps/core/daedalus/src/
 WORKDIR /app/apps/core/daedalus
 RUN mvn clean install -DskipTests
 
+# Install common dependency
+WORKDIR /app
+COPY apps/core/common/pom.xml apps/core/common/
+COPY apps/core/common/src apps/core/common/src/
+WORKDIR /app/apps/core/common
+RUN mvn clean install -DskipTests
+
 # Copy the themis module structure
 WORKDIR /app
 COPY apps/core/themis/pom.xml apps/core/themis/
