@@ -83,6 +83,11 @@
         <artifactId>themis</artifactId>
         <version>${project.version}</version>
       </dependency>
+      <dependency>
+        <groupId>com.kubiki</groupId>
+        <artifactId>metrics-adapter</artifactId>
+        <version>${project.version}</version>
+      </dependency>
 
       <!-- RDF4J / GraphDB -->
       <dependency>
