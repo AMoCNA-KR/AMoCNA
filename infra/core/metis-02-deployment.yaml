@@ -16,8 +16,8 @@ spec:
       serviceAccountName: metis
       containers:
         - name: metis
-          image: sglomski/metis:latest
-          imagePullPolicy: Always
+          image: docker.io/sglomski/metis:latest
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 50052
               name: grpc

@@ -17,6 +17,7 @@ Requires: Python 3.10+, no external dependencies.
 from __future__ import annotations
 
 import argparse
+import base64
 import os
 import re
 import subprocess
@@ -532,6 +533,126 @@ def cmd_status(cfg: ProjectConfig, _args: argparse.Namespace) -> None:
     print()
 
 
+def _docker_build_image(
+    cfg: ProjectConfig,
+    app: AppDef,
+    registry: str,
+    tag: str,
+    *,
+    push: bool = False,
+) -> str:
+    """Build (and optionally push) a Docker image for an app. Returns the image ref."""
+    if not app.dockerfile:
+        error(f"No dockerfile configured for {app.name}")
+        sys.exit(1)
+
+    dockerfile_path = cfg.project_root / app.dockerfile
+    if not dockerfile_path.is_file():
+        error(f"Dockerfile not found: {dockerfile_path}")
+        sys.exit(1)
+
+    image = f"{registry}/{app.image_name}:{tag}"
+    info(f"Image: {image}")
+    info(f"Dockerfile: {app.dockerfile}")
+
+    run(
+        [
+            "docker",
+            "build",
+            "-t",
+            image,
+            "-f",
+            str(dockerfile_path),
+            str(cfg.project_root),
+        ]
+    )
+
+    if push:
+        info(f"Pushing {image}...")
+        run(["docker", "push", image])
+
+    return image
+
+
+def _kubectl_apply_stdin(manifest_yaml: str) -> None:
+    subprocess.run(
+        ["kubectl", "apply", "-f", "-"],
+        input=manifest_yaml,
+        text=True,
+        check=True,
+    )
+
+
+def _deploy_graphdb(cfg: ProjectConfig) -> None:
+    """Deploy GraphDB"""
+    graphdb_dir = cfg.project_root / "infra" / "graphdb"
+    ontology_dir = cfg.project_root / "libs" / "ontology"
+
+    header("Deploying GraphDB")
+    run(["kubectl", "apply", "-f", str(graphdb_dir / "00-namespace.yaml")])
+
+    license_file = graphdb_dir / "graphdb.license"
+    license_bin = graphdb_dir / "graphdb.license.bin"
+    if license_file.is_file():
+        info("Creating graphdb-license secret...")
+        license_bin.write_bytes(base64.b64decode(license_file.read_bytes()))
+        try:
+            create = subprocess.run(
+                [
+                    "kubectl",
+                    "create",
+                    "secret",
+                    "generic",
+                    "graphdb-license",
+                    f"--from-file=GRAPHDB_LICENSE={license_bin}",
+                    "--namespace=graphdb",
+                    "--dry-run=client",
+                    "-o",
+                    "yaml",
+                ],
+                capture_output=True,
+                text=True,
+                check=True,
+            )
+            _kubectl_apply_stdin(create.stdout)
+        finally:
+            license_bin.unlink(missing_ok=True)
+    else:
+        warn(f"No license found. Place graphdb.license in {graphdb_dir}")
+
+    info("Creating graphdb-ontologies ConfigMap...")
+    ontology_files = sorted(ontology_dir.glob("*.rdf"))
+    cm_cmd = [
+        "kubectl",
+        "create",
+        "configmap",
+        "graphdb-ontologies",
+        "--namespace=graphdb",
+    ]
+    if ontology_files:
+        for path in ontology_files:
+            cm_cmd.append(f"--from-file={path}")
+    else:
+        warn(f"No ontology files found in {ontology_dir}")
+    create = subprocess.run(
+        cm_cmd + ["--dry-run=client", "-o", "yaml"],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    _kubectl_apply_stdin(create.stdout)
+
+    for manifest in ("01-storage.yaml", "02-init-config.yaml", "03-deployment.yaml", "04-service.yaml"):
+        run(["kubectl", "apply", "-f", str(graphdb_dir / manifest)])
+
+
+def _undeploy_graphdb() -> None:
+    """Remove GraphDB (from additional_sensors undeploy.sh)."""
+    run(["kubectl", "delete", "namespace", "graphdb", "--ignore-not-found", "--timeout=60s"], check=False)
+    run(["kubectl", "delete", "pv", "graphdb-pv", "--ignore-not-found"], check=False)
+    run(["kubectl", "delete", "storageclass", "local-storage", "--ignore-not-found"], check=False)
+
+
 def cmd_build(cfg: ProjectConfig, args: argparse.Namespace) -> None:
     """Build Docker images for specified apps."""
     registry = resolve_registry(args, cfg)
@@ -540,38 +661,14 @@ def cmd_build(cfg: ProjectConfig, args: argparse.Namespace) -> None:
 
     for app in apps_to_build:
         if not app.dockerfile:
-            if app.app_type == "maven-lib":
-                info(f"Skipping {app.name} (library, no Docker image)")
+            if app.app_type in ("maven-lib", "angular"):
+                info(f"Skipping {app.name} ({app.app_type}, no Docker image)")
             else:
                 warn(f"Skipping {app.name} (no dockerfile configured)")
             continue
 
         header(f"Building {app.name}")
-        dockerfile_path = cfg.project_root / app.dockerfile
-        if not dockerfile_path.is_file():
-            error(f"Dockerfile not found: {dockerfile_path}")
-            sys.exit(1)
-
-        image = f"{registry}/{app.image_name}:{tag}"
-        info(f"Image: {image}")
-        info(f"Dockerfile: {app.dockerfile}")
-
-        run(
-            [
-                "docker",
-                "build",
-                "-t",
-                image,
-                "-f",
-                str(dockerfile_path),
-                str(cfg.project_root),
-            ]
-        )
-
-        if args.push:
-            info(f"Pushing {image}...")
-            run(["docker", "push", image])
-
+        _docker_build_image(cfg, app, registry, tag, push=args.push)
         info(f"{app.name} built successfully")
 
 
@@ -604,6 +701,8 @@ def cmd_deploy(cfg: ProjectConfig, args: argparse.Namespace) -> None:
 
     header("Deploying AMoCNA to Kubernetes")
 
+    _deploy_graphdb(cfg)
+
     full_path = cfg.project_root / "infra"
     info(f"Applying kustomization in {full_path}")
     run(["kubectl", "apply", "-k", str(full_path)])
@@ -619,6 +718,8 @@ def cmd_undeploy(cfg: ProjectConfig, _args: argparse.Namespace) -> None:
     full_path = cfg.project_root / "infra"
     info(f"Deleting kustomization in {full_path}")
     run(["kubectl", "delete", "-k", str(full_path), "--ignore-not-found"], check=False)
+
+    _undeploy_graphdb()
 
     info("AMoCNA has been removed from the cluster.")
 

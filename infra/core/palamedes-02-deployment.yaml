@@ -15,8 +15,8 @@ spec:
     spec:
       containers:
         - name: palamedes
-          image: sglomski/palamedes:latest
-          imagePullPolicy: Always
+          image: docker.io/sglomski/palamedes:latest
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8081
               name: http

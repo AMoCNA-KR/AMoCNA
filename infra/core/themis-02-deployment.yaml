@@ -15,8 +15,8 @@ spec:
     spec:
       containers:
         - name: themis
-          image: sglomski/themis:latest
-          imagePullPolicy: Always
+          image: docker.io/sglomski/themis:latest
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8080
               name: http
