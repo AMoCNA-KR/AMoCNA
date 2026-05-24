@@ -804,7 +804,17 @@ before patching).</rdfs:comment>
     
 
 
-    <!-- http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#State_Compensating -->
+    <!-- Complex Workflows -->
+
+    <owl:NamedIndividual rdf:about="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#EvacuateNodeWorkflow">
+        <rdf:type rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#ComplexWorkflow"/>
+        <rdfs:comment>Multi-stage node evacuation: Drain -> Move -> Route</rdfs:comment>
+    </owl:NamedIndividual>
+
+    <owl:NamedIndividual rdf:about="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#SafeUpdateWorkflow">
+        <rdf:type rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#ComplexWorkflow"/>
+        <rdfs:comment>Safe update with rollback capability</rdfs:comment>
+    </owl:NamedIndividual>
 
     <owl:NamedIndividual rdf:about="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#State_Compensating">
         <rdf:type rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#ExecutionState"/>

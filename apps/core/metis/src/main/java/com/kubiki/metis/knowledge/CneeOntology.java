@@ -22,18 +22,29 @@ public final class CneeOntology {
     // Kubernetes kinds — used as IRI prefixes by IriFactory.
     // -------------------------------------------------------------------------
 
-    public static final String KIND_POD     = "Pod";
-    public static final String KIND_SERVICE = "Service";
-    public static final String KIND_NODE    = "Node";
+    public static final String KIND_POD        = "Pod";
+    public static final String KIND_SERVICE    = "Service";
+    public static final String KIND_NODE       = "Node";
+    public static final String KIND_REPLICSET  = "ReplicaSet";
+    public static final String KIND_DEPLOYMENT = "Deployment";
+    public static final String KIND_STATEFULSET = "StatefulSet";
+    public static final String KIND_PV         = "PersistentVolume";
+    public static final String KIND_PVC        = "PersistentVolumeClaim";
 
     // -------------------------------------------------------------------------
     // CNEEOnt classes — local names.
     // -------------------------------------------------------------------------
 
-    public static final String CLASS_EXECUTION_UNIT = "ExecutionUnit";
-    public static final String CLASS_SERVICE        = "Service";
-    public static final String CLASS_NODE           = "Node";
-    public static final String CLASS_METRIC         = "Metric";
+    public static final String CLASS_EXECUTION_UNIT           = "ExecutionUnit";
+    public static final String CLASS_SERVICE                  = "Service";
+    public static final String CLASS_NODE                     = "Node";
+    public static final String CLASS_METRIC                   = "Metric";
+    public static final String CLASS_STATELESS_CONTROLLER     = "StatelessWorkloadController";
+    public static final String CLASS_STATEFUL_CONTROLLER      = "StatefulWorkloadController";
+    public static final String CLASS_PERSISTENT_STORAGE       = "PersistentStorageResource";
+    public static final String CLASS_INFRASTRUCTURE_LAYER     = "InfrastructureLayerElement";
+    public static final String CLASS_CONTAINERIZATION_LAYER   = "ContainerizationLayerElement";
+    public static final String CLASS_APPLICATION_LAYER        = "ApplicationLayerElement";
 
     // -------------------------------------------------------------------------
     // Pod phase → CNEEOnt state class local name.
@@ -79,6 +90,8 @@ public final class CneeOntology {
     public static final String PROP_IS_PART_OF         = "isPartOf";
     public static final String PROP_HOSTS              = "hosts";
     public static final String PROP_IS_HOSTED_ON       = "isHostedOn";
+    public static final String PROP_IS_REALIZED_BY     = "isRealizedBy";
+    public static final String PROP_USES_STORAGE       = "usesStorage";
     public static final String PROP_COMMUNICATES_WITH  = "communicatesWith";
     public static final String PROP_HAS_STATE          = "hasState";
     public static final String PROP_EMITS_TELEMETRY    = "emitsTelemetry";
