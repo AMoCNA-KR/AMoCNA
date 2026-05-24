@@ -8,6 +8,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Flux;
+import reactor.core.scheduler.Schedulers;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -40,10 +42,12 @@ public class AnomalyScanner {
     @Scheduled(fixedDelayString = "${scanner.interval:10000}")
     public void scan() {
         log.debug("Starting anomaly scan...");
-        for (QueryThreshold threshold : thresholds) {
-            prometheusClient.queryScalar(threshold.getQuery())
-                    .subscribe(value -> {
-                        if (value > threshold.getThreshold()) {
+        
+        Flux.fromIterable(thresholds)
+                .flatMap(threshold -> prometheusClient.queryScalar(threshold.getQuery())
+                        .filter(value -> value > threshold.getThreshold())
+                        .publishOn(Schedulers.boundedElastic())
+                        .doOnNext(value -> {
                             log.warn("Threshold breached: {} (Value: {})", threshold.getName(), value);
                             
                             // For now, use a placeholder resource IRI. 
@@ -54,15 +58,15 @@ public class AnomalyScanner {
                             graphWriter.instantiateAnomaly(targetResourceIri, threshold.getAnomalyTypeIri());
                             
                             // Notify via RabbitMQ
-                            GraphUpdateMessage message = new GraphUpdateMessage();
-                            message.setResourceIri(targetResourceIri);
-                            message.setOntologyType(threshold.getAnomalyTypeIri());
-                            message.setChangeKind("STATE_CHANGED");
-                            message.setCorrelationId("metrics-" + UUID.randomUUID());
+                            GraphUpdateMessage message = new GraphUpdateMessage(
+                                    targetResourceIri,
+                                    threshold.getAnomalyTypeIri(),
+                                    "STATE_CHANGED",
+                                    "metrics-" + UUID.randomUUID()
+                            );
                             
                             rabbitTemplate.convertAndSend("amocna.direct.exchange", "graph.updates", message);
-                        }
-                    });
-        }
+                        }))
+                .blockLast();
     }
 }
