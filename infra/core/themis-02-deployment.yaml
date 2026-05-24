@@ -13,6 +13,20 @@ spec:
       labels:
         app: themis
     spec:
+      initContainers:
+        - name: wait-for-rabbitmq
+          image: curlimages/curl:8.12.1
+          command:
+            - /bin/sh
+            - -c
+            - |
+              set -e
+              URL="http://rabbitmq.rabbitmq.svc.cluster.local:15672/"
+              echo "Waiting for RabbitMQ management at $URL ..."
+              until curl -sf "$URL" > /dev/null; do
+                sleep 2
+              done
+              echo "RabbitMQ is reachable."
       containers:
         - name: themis
           image: docker.io/sglomski/themis:latest
@@ -24,6 +38,8 @@ spec:
               name: grpc
           env:
             - name: RABBITMQ_HOST
+              value: "rabbitmq.rabbitmq.svc.cluster.local"
+            - name: SPRING_RABBITMQ_HOST
               value: "rabbitmq.rabbitmq.svc.cluster.local"
             - name: RABBITMQ_PORT
               value: "5672"

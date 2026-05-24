@@ -37,6 +37,5 @@ COPY --from=builder /app/apps/core/themis/target/*.jar app.jar
 EXPOSE 8080 50051
 
 ENV SPRING_PROFILES_ACTIVE=dev
-ENV SPRING_RABBITMQ_HOST=rabbitmq
 
 ENTRYPOINT ["java", "-jar", "app.jar"]

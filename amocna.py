@@ -678,6 +678,36 @@ def _deploy_graphdb(cfg: ProjectConfig) -> None:
     info("GraphDB is ready.")
 
 
+def _wait_for_rabbitmq() -> None:
+    """Block until RabbitMQ is ready to accept AMQP connections."""
+    info("Waiting for RabbitMQ deployment to become ready...")
+    run(
+        [
+            "kubectl",
+            "rollout",
+            "status",
+            "deployment/rabbitmq",
+            "-n",
+            "rabbitmq",
+            "--timeout=5m",
+        ]
+    )
+    run(
+        [
+            "kubectl",
+            "wait",
+            "--for=condition=ready",
+            "pod",
+            "-l",
+            "app=rabbitmq",
+            "-n",
+            "rabbitmq",
+            "--timeout=5m",
+        ]
+    )
+    info("RabbitMQ is ready.")
+
+
 def _wipe_graphdb_host_data(cfg: ProjectConfig) -> None:
     """Delete GraphDB files on the PV hostPath (survives namespace/PV deletion)."""
     host_path = cfg.graphdb_host_path
@@ -847,6 +877,8 @@ def cmd_deploy(cfg: ProjectConfig, args: argparse.Namespace) -> None:
     full_path = cfg.project_root / "infra"
     info(f"Applying kustomization in {full_path}")
     run(["kubectl", "apply", "-k", str(full_path)])
+
+    _wait_for_rabbitmq()
 
     info("Deployment commands sent.")
     warn("It may take a few minutes for all pods to reach 'Running' state.")

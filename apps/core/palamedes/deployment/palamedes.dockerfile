@@ -37,9 +37,5 @@ COPY --from=builder /app/apps/core/palamedes/target/*.jar app.jar
 EXPOSE 8081
 
 ENV SPRING_PROFILES_ACTIVE=dev
-ENV SPRING_RABBITMQ_HOST=rabbitmq
-ENV GRAPHDB_URL=http://graphdb:7200
-ENV GRAPHDB_REPO=amocna
-ENV PROMETHEUS_URL=http://prometheus:9090
 
 ENTRYPOINT ["java", "-jar", "app.jar"]

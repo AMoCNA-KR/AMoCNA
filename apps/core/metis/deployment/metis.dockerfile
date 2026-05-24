@@ -32,7 +32,5 @@ COPY --from=builder /app/apps/core/metis/target/*.jar app.jar
 EXPOSE 50052
 
 ENV SPRING_PROFILES_ACTIVE=dev
-ENV METIS_GRAPHDB_URL=http://graphdb:7200
-ENV METIS_PALAMEDES_HOST=palamedes
 
 ENTRYPOINT ["java", "-jar", "app.jar"]
