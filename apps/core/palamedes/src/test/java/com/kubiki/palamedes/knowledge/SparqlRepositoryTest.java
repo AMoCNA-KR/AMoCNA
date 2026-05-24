@@ -2,6 +2,7 @@ package com.kubiki.palamedes.knowledge;
 
 import com.kubiki.daedalus.context.GlobalTemplateContext;
 import com.kubiki.palamedes.config.BeanConfig;
+import com.kubiki.palamedes.config.DaedalusInitializer;
 import com.kubiki.palamedes.config.PalamedesProperties;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,7 +12,7 @@ import org.springframework.test.context.ActiveProfiles;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SpringBootTest(classes = {BeanConfig.class})
+@SpringBootTest(classes = {BeanConfig.class, DaedalusInitializer.class})
 @EnableConfigurationProperties(PalamedesProperties.class)
 @ActiveProfiles("test")
 class SparqlRepositoryTest {

@@ -36,6 +36,7 @@ public class GraphDBGateway {
     private final WorkflowStateMapper workflowStateMapper;
     private final OntologyRegistry ontologyRegistry;
     private final PalamedesProperties properties;
+    private final com.kubiki.palamedes.config.DaedalusInitializer daedalusInitializer;
 
 
     public void transitionState(IRI actionId, String stateFragment) {

@@ -1,10 +1,8 @@
 package com.kubiki.daedalus.context;
 
-import org.springframework.stereotype.Component;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.Map;
 
-@Component
 public class GlobalTemplateContext {
     private final Map<String, String> globals = new ConcurrentHashMap<>();
 
