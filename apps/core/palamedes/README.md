@@ -149,8 +149,8 @@ bash modules/palamedes/deployment/k8s/undeploy.sh
 | Service | Purpose | In-cluster URL |
 |---|---|---|
 | GraphDB | Knowledge base queries | `http://graphdb.graphdb.svc.cluster.local:7200` |
-| RabbitMQ | Message broker | `rabbitmq.palamedes.svc.cluster.local:5672` |
-| Prometheus | Metric condition evaluation | `http://prometheus.monitoring.svc.cluster.local:9090` |
+| RabbitMQ | Message broker | `rabbitmq.rabbitmq.svc.cluster.local:5672` |
+| Prometheus | Metric condition evaluation | `http://prometheus-kube-prometheus-prometheus.monitoring.svc.cluster.local:9090` |
 
 ---
 
