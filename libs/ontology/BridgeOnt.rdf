@@ -76,6 +76,39 @@
             </owl:Restriction>
         </rdfs:subClassOf>
     </rdf:Description>
+
+    <!-- http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/NodeNotReadyState -->
+
+    <rdf:Description rdf:about="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/NodeNotReadyState">
+        <rdfs:subClassOf>
+            <owl:Restriction>
+                <owl:onProperty rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/BridgeOnt#isResolvedByIntent"/>
+                <owl:someValuesFrom rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#EvacuateAction"/>
+            </owl:Restriction>
+        </rdfs:subClassOf>
+    </rdf:Description>
+
+    <!-- http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/NetworkHighLatencyState -->
+
+    <rdf:Description rdf:about="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/NetworkHighLatencyState">
+        <rdfs:subClassOf>
+            <owl:Restriction>
+                <owl:onProperty rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/BridgeOnt#isResolvedByIntent"/>
+                <owl:someValuesFrom rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#HorizontalScalingAction"/>
+            </owl:Restriction>
+        </rdfs:subClassOf>
+    </rdf:Description>
+
+    <!-- http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/StorageDiskSpaceExhaustedState -->
+
+    <rdf:Description rdf:about="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/StorageDiskSpaceExhaustedState">
+        <rdfs:subClassOf>
+            <owl:Restriction>
+                <owl:onProperty rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/BridgeOnt#isResolvedByIntent"/>
+                <owl:someValuesFrom rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#PatchAction"/>
+            </owl:Restriction>
+        </rdfs:subClassOf>
+    </rdf:Description>
 </rdf:RDF>
 
 
