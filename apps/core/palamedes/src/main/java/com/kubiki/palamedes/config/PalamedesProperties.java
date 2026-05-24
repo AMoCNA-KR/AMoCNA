@@ -1,6 +1,5 @@
 package com.kubiki.palamedes.config;
 
-import com.kubiki.palamedes.prometheus.ThresholdDefinition;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -15,7 +14,6 @@ import java.util.Objects;
 public record PalamedesProperties(
         @NestedConfigurationProperty GraphDB graphdb,
         @NestedConfigurationProperty Ontology ontology,
-        @NestedConfigurationProperty Prometheus prometheus,
         @NestedConfigurationProperty Engine engine,
         @NestedConfigurationProperty Utilities utilities
 ) {
@@ -55,12 +53,6 @@ public record PalamedesProperties(
             Objects.requireNonNull(bridgePrefix, "palamedes.ontology.bridgePrefix must not be null");
             Objects.requireNonNull(states, "palamedes.ontology.states must not be null");
             PropertiesUtils.availableOptions(states, AVAILABLE_STATE_KEYS);
-        }
-    }
-
-    public record Prometheus(String url) {
-        public Prometheus {
-            Objects.requireNonNull(url, "palamedes.prometheus.url must not be null");
         }
     }
 

@@ -16,4 +16,14 @@ public record GraphUpdateMessage(
         String ontologyType,
         String changeKind,
         String correlationId
-) {}
+) {
+    /**
+     * Compact canonical constructor for validation.
+     */
+    public GraphUpdateMessage {
+        java.util.Objects.requireNonNull(resourceIri, "resourceIri must not be null");
+        java.util.Objects.requireNonNull(ontologyType, "ontologyType must not be null");
+        java.util.Objects.requireNonNull(changeKind, "changeKind must not be null");
+        java.util.Objects.requireNonNull(correlationId, "correlationId must not be null");
+    }
+}

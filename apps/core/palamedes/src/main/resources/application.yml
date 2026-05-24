@@ -30,9 +30,6 @@ palamedes:
     actions-prefix: "moam"
     resources-prefix: "cnee"
     bridge-prefix: "bridge"
-  prometheus:
-    url: ${PROMETHEUS_URL:http://localhost:9090}
-    evaluation-interval-ms: ${PROMETHEUS_EVAL_INTERVAL:30000}
   engine:
     fallback-pipeline-rate-ms: ${PIPELINE_RATE:6000} # 1 minute
     fallback-anomaly-scan-rate-ms: ${ANOMALY_SCAN_RATE:60000} # 10 minute

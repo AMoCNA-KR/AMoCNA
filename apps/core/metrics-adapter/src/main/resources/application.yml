@@ -1,0 +1,25 @@
+spring:
+  application:
+    name: metrics-adapter
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USER:guest}
+    password: ${RABBITMQ_PASS:guest}
+
+prometheus:
+  url: ${PROMETHEUS_URL:http://localhost:9090}
+
+graphdb:
+  url: ${GRAPHDB_URL:http://localhost:7200}
+  repositoryId: ${GRAPHDB_REPO:amocna}
+
+ontology:
+  resources-namespace: ${ONTOLOGY_RESOURCES:http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/}
+
+scanner:
+  interval: 10000
+
+logging:
+  level:
+    com.kubiki.metrics: DEBUG
