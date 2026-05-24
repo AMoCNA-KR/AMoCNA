@@ -53,6 +53,32 @@
     
 
 
+    <!-- http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/ContainerCPUThrottledState -->
+
+    <rdf:Description rdf:about="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/ContainerCPUThrottledState">
+        <rdfs:subClassOf>
+            <owl:Restriction>
+                <owl:onProperty rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/BridgeOnt#isResolvedByIntent"/>
+                <owl:someValuesFrom rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#VerticalScalingAction"/>
+            </owl:Restriction>
+        </rdfs:subClassOf>
+    </rdf:Description>
+    
+
+
+    <!-- http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/ContainerCrashLoopBackOffState -->
+
+    <rdf:Description rdf:about="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/ContainerCrashLoopBackOffState">
+        <rdfs:subClassOf>
+            <owl:Restriction>
+                <owl:onProperty rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/BridgeOnt#isResolvedByIntent"/>
+                <owl:someValuesFrom rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#RollbackAction"/>
+            </owl:Restriction>
+        </rdfs:subClassOf>
+    </rdf:Description>
+    
+
+
     <!-- http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/ContainerDead -->
 
     <rdf:Description rdf:about="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/ContainerDead">
@@ -60,6 +86,58 @@
             <owl:Restriction>
                 <owl:onProperty rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/BridgeOnt#isResolvedByIntent"/>
                 <owl:someValuesFrom rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#RestartAction"/>
+            </owl:Restriction>
+        </rdfs:subClassOf>
+    </rdf:Description>
+    
+
+
+    <!-- http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/ContainerLivenessProbeFailedState -->
+
+    <rdf:Description rdf:about="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/ContainerLivenessProbeFailedState">
+        <rdfs:subClassOf>
+            <owl:Restriction>
+                <owl:onProperty rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/BridgeOnt#isResolvedByIntent"/>
+                <owl:someValuesFrom rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#RestartAction"/>
+            </owl:Restriction>
+        </rdfs:subClassOf>
+    </rdf:Description>
+    
+
+
+    <!-- http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/ContainerOOMKilledState -->
+
+    <rdf:Description rdf:about="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/ContainerOOMKilledState">
+        <rdfs:subClassOf>
+            <owl:Restriction>
+                <owl:onProperty rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/BridgeOnt#isResolvedByIntent"/>
+                <owl:someValuesFrom rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#VerticalScalingAction"/>
+            </owl:Restriction>
+        </rdfs:subClassOf>
+    </rdf:Description>
+    
+
+
+    <!-- http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/ExecutionUnit -->
+
+    <rdf:Description rdf:about="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/ExecutionUnit">
+        <rdfs:subClassOf>
+            <owl:Restriction>
+                <owl:onProperty rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#hasLayerBoundary"/>
+                <owl:hasValue rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#ContainerizationLayer"/>
+            </owl:Restriction>
+        </rdfs:subClassOf>
+    </rdf:Description>
+    
+
+
+    <!-- http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/ExecutionUnitEvictedState -->
+
+    <rdf:Description rdf:about="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/ExecutionUnitEvictedState">
+        <rdfs:subClassOf>
+            <owl:Restriction>
+                <owl:onProperty rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/BridgeOnt#isResolvedByIntent"/>
+                <owl:someValuesFrom rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#HorizontalScalingAction"/>
             </owl:Restriction>
         </rdfs:subClassOf>
     </rdf:Description>
@@ -76,17 +154,34 @@
             </owl:Restriction>
         </rdfs:subClassOf>
     </rdf:Description>
+    
 
-    <!-- http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/NodeNotReadyState -->
 
-    <rdf:Description rdf:about="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/NodeNotReadyState">
+    <!-- http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/Microservice -->
+
+    <rdf:Description rdf:about="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/Microservice">
         <rdfs:subClassOf>
             <owl:Restriction>
-                <owl:onProperty rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/BridgeOnt#isResolvedByIntent"/>
-                <owl:someValuesFrom rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#EvacuateAction"/>
+                <owl:onProperty rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#hasLayerBoundary"/>
+                <owl:hasValue rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#ApplicationLayer"/>
             </owl:Restriction>
         </rdfs:subClassOf>
     </rdf:Description>
+    
+
+
+    <!-- http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/NetworkHighErrorRateState -->
+
+    <rdf:Description rdf:about="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/NetworkHighErrorRateState">
+        <rdfs:subClassOf>
+            <owl:Restriction>
+                <owl:onProperty rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/BridgeOnt#isResolvedByIntent"/>
+                <owl:someValuesFrom rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#CircuitBreakAction"/>
+            </owl:Restriction>
+        </rdfs:subClassOf>
+    </rdf:Description>
+    
+
 
     <!-- http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/NetworkHighLatencyState -->
 
@@ -98,10 +193,10 @@
             </owl:Restriction>
         </rdfs:subClassOf>
     </rdf:Description>
+    
 
-    <!-- http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/StorageDiskSpaceExhaustedState -->
 
-    <!-- Layer Constraints -->
+    <!-- http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/Node -->
 
     <rdf:Description rdf:about="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/Node">
         <rdfs:subClassOf>
@@ -111,26 +206,49 @@
             </owl:Restriction>
         </rdfs:subClassOf>
     </rdf:Description>
+    
 
-    <rdf:Description rdf:about="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/ExecutionUnit">
+
+    <!-- http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/NodeCPUSaturatedState -->
+
+    <rdf:Description rdf:about="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/NodeCPUSaturatedState">
         <rdfs:subClassOf>
             <owl:Restriction>
-                <owl:onProperty rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#hasLayerBoundary"/>
-                <owl:hasValue rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#ContainerizationLayer"/>
+                <owl:onProperty rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/BridgeOnt#isResolvedByIntent"/>
+                <owl:someValuesFrom rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#HorizontalScalingAction"/>
             </owl:Restriction>
         </rdfs:subClassOf>
     </rdf:Description>
+    
 
-    <rdf:Description rdf:about="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/Microservice">
+
+    <!-- http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/NodeMemoryStarvedState -->
+
+    <rdf:Description rdf:about="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/NodeMemoryStarvedState">
         <rdfs:subClassOf>
             <owl:Restriction>
-                <owl:onProperty rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#hasLayerBoundary"/>
-                <owl:hasValue rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#ApplicationLayer"/>
+                <owl:onProperty rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/BridgeOnt#isResolvedByIntent"/>
+                <owl:someValuesFrom rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#HorizontalScalingAction"/>
             </owl:Restriction>
         </rdfs:subClassOf>
     </rdf:Description>
+    
 
-    <!-- Remediation Axioms for Storage and Workloads -->
+
+    <!-- http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/NodeNotReadyState -->
+
+    <rdf:Description rdf:about="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/NodeNotReadyState">
+        <rdfs:subClassOf>
+            <owl:Restriction>
+                <owl:onProperty rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/BridgeOnt#isResolvedByIntent"/>
+                <owl:someValuesFrom rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#EvacuateAction"/>
+            </owl:Restriction>
+        </rdfs:subClassOf>
+    </rdf:Description>
+    
+
+
+    <!-- http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/StorageDiskSpaceExhaustedState -->
 
     <rdf:Description rdf:about="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/StorageDiskSpaceExhaustedState">
         <rdfs:subClassOf>
@@ -140,12 +258,29 @@
             </owl:Restriction>
         </rdfs:subClassOf>
     </rdf:Description>
+    
 
-    <rdf:Description rdf:about="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/ContainerCrashLoopBackOffState">
+
+    <!-- http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/StorageHighIOPSLatencyState -->
+
+    <rdf:Description rdf:about="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/StorageHighIOPSLatencyState">
         <rdfs:subClassOf>
             <owl:Restriction>
                 <owl:onProperty rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/BridgeOnt#isResolvedByIntent"/>
-                <owl:someValuesFrom rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#RollbackAction"/>
+                <owl:someValuesFrom rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#MigrateAction"/>
+            </owl:Restriction>
+        </rdfs:subClassOf>
+    </rdf:Description>
+    
+
+
+    <!-- http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/StorageVolumeDetachedState -->
+
+    <rdf:Description rdf:about="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/StorageVolumeDetachedState">
+        <rdfs:subClassOf>
+            <owl:Restriction>
+                <owl:onProperty rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/BridgeOnt#isResolvedByIntent"/>
+                <owl:someValuesFrom rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#RestartAction"/>
             </owl:Restriction>
         </rdfs:subClassOf>
     </rdf:Description>
