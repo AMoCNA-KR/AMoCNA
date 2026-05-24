@@ -3,16 +3,18 @@ package com.kubiki.metrics.engine;
 import com.kubiki.common.model.GraphUpdateMessage;
 import com.kubiki.metrics.graph.GraphWriter;
 import com.kubiki.metrics.prometheus.PrometheusClient;
-import com.kubiki.metrics.prometheus.QueryThreshold;
+import com.kubiki.metrics.prometheus.ThresholdDefinition;
+import com.kubiki.metrics.prometheus.ThresholdsLoader;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.UUID;
 
 @Slf4j
@@ -21,52 +23,79 @@ public class AnomalyScanner {
     private final PrometheusClient prometheusClient;
     private final GraphWriter graphWriter;
     private final RabbitTemplate rabbitTemplate;
-    private final List<QueryThreshold> thresholds = new ArrayList<>();
+    private final ThresholdsLoader thresholdsLoader;
+
+    @Value("${ontology.resources-namespace:http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/}")
+    private String resourcesNamespace;
 
     public AnomalyScanner(PrometheusClient prometheusClient,
                           GraphWriter graphWriter,
-                          RabbitTemplate rabbitTemplate) {
+                          RabbitTemplate rabbitTemplate,
+                          ThresholdsLoader thresholdsLoader) {
         this.prometheusClient = prometheusClient;
         this.graphWriter = graphWriter;
         this.rabbitTemplate = rabbitTemplate;
-        
-        // Initialize some demo thresholds
-        QueryThreshold cpuThreshold = new QueryThreshold();
-        cpuThreshold.setName("High CPU Usage");
-        cpuThreshold.setQuery("sum(rate(container_cpu_usage_seconds_total[1m])) by (pod) > 0.8");
-        cpuThreshold.setThreshold(0.8);
-        cpuThreshold.setAnomalyTypeIri("http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt#CPUSaturatedState");
-        thresholds.add(cpuThreshold);
+        this.thresholdsLoader = thresholdsLoader;
     }
 
     @Scheduled(fixedDelayString = "${scanner.interval:10000}")
     public void scan() {
         log.debug("Starting anomaly scan...");
         
-        Flux.fromIterable(thresholds)
-                .flatMap(threshold -> prometheusClient.queryScalar(threshold.getQuery())
-                        .filter(value -> value > threshold.getThreshold())
+        Flux.fromIterable(thresholdsLoader.getThresholds())
+                .flatMap(threshold -> prometheusClient.query(threshold.query())
+                        .filter(result -> isViolated(result.value(), threshold.operator(), threshold.value()))
                         .publishOn(Schedulers.boundedElastic())
-                        .doOnNext(value -> {
-                            log.warn("Threshold breached: {} (Value: {})", threshold.getName(), value);
+                        .flatMap(result -> {
+                            String resourceName = result.labels().get(threshold.resourceLabel());
+                            String namespace = threshold.namespaceLabel() != null
+                                    ? result.labels().get(threshold.namespaceLabel())
+                                    : null;
+
+                            if (!StringUtils.hasText(resourceName)) {
+                                log.warn("Threshold '{}' violated but resource label '{}' is missing from result",
+                                        threshold.name(), threshold.resourceLabel());
+                                return Mono.empty();
+                            }
+
+                            String targetResourceIri = buildResourceIri(threshold.resourceKind(), namespace, resourceName);
+                            String anomalyStateIri = resourcesNamespace + threshold.anomalyState();
+
+                            log.warn("Threshold breached: {} for resource {} (Value: {} {} {})", 
+                                    threshold.name(), targetResourceIri, result.value(), threshold.operator(), threshold.value());
                             
-                            // For now, use a placeholder resource IRI. 
-                            // In a real scenario, we'd extract the pod name from the query result 
-                            // and resolve its IRI via Metis gRPC.
-                            String targetResourceIri = "http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt#Pod_placeholder";
-                            
-                            graphWriter.instantiateAnomaly(targetResourceIri, threshold.getAnomalyTypeIri());
-                            
-                            // Notify via RabbitMQ
-                            GraphUpdateMessage message = new GraphUpdateMessage(
-                                    targetResourceIri,
-                                    threshold.getAnomalyTypeIri(),
-                                    "STATE_CHANGED",
-                                    "metrics-" + UUID.randomUUID()
-                            );
-                            
-                            rabbitTemplate.convertAndSend("amocna.direct.exchange", "graph.updates", message);
+                            return Mono.fromRunnable(() -> {
+                                graphWriter.instantiateAnomaly(targetResourceIri, anomalyStateIri);
+                                
+                                // Notify via RabbitMQ
+                                GraphUpdateMessage message = new GraphUpdateMessage(
+                                        targetResourceIri,
+                                        anomalyStateIri,
+                                        "STATE_CHANGED",
+                                        "metrics-" + UUID.randomUUID()
+                                );
+                                
+                                rabbitTemplate.convertAndSend("amocna.direct.exchange", "graph.updates", message);
+                            }).subscribeOn(Schedulers.boundedElastic());
                         }))
                 .blockLast();
+    }
+
+    private boolean isViolated(double actual, String operator, double threshold) {
+        return switch (operator) {
+            case ">"  -> actual > threshold;
+            case ">=" -> actual >= threshold;
+            case "<"  -> actual < threshold;
+            case "<=" -> actual <= threshold;
+            case "==" -> actual == threshold;
+            default   -> false;
+        };
+    }
+
+    private String buildResourceIri(String kind, String namespace, String name) {
+        if (StringUtils.hasText(namespace)) {
+            return resourcesNamespace + kind + "_" + namespace + "_" + name;
+        }
+        return resourcesNamespace + kind + "_" + name;
     }
 }
