@@ -22,6 +22,7 @@
     <module>apps/core/metis</module>
     <module>apps/core/palamedes</module>
     <module>apps/core/themis</module>
+    <module>apps/core/hephaestus</module>
     <module>apps/core/common</module>
     <module>apps/core/metrics-adapter</module>
   </modules>
@@ -81,6 +82,11 @@
       <dependency>
         <groupId>com.kubiki</groupId>
         <artifactId>themis</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.kubiki</groupId>
+        <artifactId>hephaestus</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
