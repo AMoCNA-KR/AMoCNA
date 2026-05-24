@@ -3,9 +3,9 @@
 # ==========================================
 FROM node:16-alpine AS gui-builder
 WORKDIR /app/gui
-COPY Hphaestus-GUI/package*.json ./
+COPY apps/gui/Hphaestus-GUI/package*.json ./
 RUN npm install
-COPY Hphaestus-GUI/ ./
+COPY apps/gui/Hphaestus-GUI/ ./
 RUN npm run build -- --base-href /app/
 
 # ==========================================
@@ -15,11 +15,11 @@ FROM maven:3.8.6-openjdk-11 AS java-builder
 WORKDIR /app
 
 # 1. Build Translator (Local dependency)
-COPY Metrics-Translator/ /app/Metrics-Translator/
+COPY apps/adapters/Metrics-Translator/ /app/Metrics-Translator/
 RUN cd Metrics-Translator/Translator && mvn clean install -DskipTests
 
 # 2. Prepare GUI Backend
-COPY Hphaestus-GUI-Backend/ /app/Hphaestus-GUI-Backend/
+COPY apps/gui/Hphaestus-GUI-Backend/ /app/Hphaestus-GUI-Backend/
 # Copy built Angular files from Stage 1
 COPY --from=gui-builder /app/gui/dist/hephaestus-gui/* /app/Hphaestus-GUI-Backend/hephaestus-backend/src/main/resources/static/app/
 
