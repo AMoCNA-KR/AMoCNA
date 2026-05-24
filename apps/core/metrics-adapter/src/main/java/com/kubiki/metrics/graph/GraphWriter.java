@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -18,6 +19,7 @@ import java.util.UUID;
 public class GraphWriter {
     private final String graphDbUrl;
     private final String repositoryId;
+    private RemoteRepositoryManager manager;
     private Repository repository;
 
     private static final String CNEE_NS = "http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/";
@@ -33,7 +35,7 @@ public class GraphWriter {
     @PostConstruct
     public void init() {
         try {
-            RemoteRepositoryManager manager = new RemoteRepositoryManager(graphDbUrl);
+            manager = new RemoteRepositoryManager(graphDbUrl);
             manager.init();
             this.repository = manager.getRepository(repositoryId);
             log.info("Initialized GraphDB repository: {} at {}", repositoryId, graphDbUrl);
@@ -42,27 +44,47 @@ public class GraphWriter {
         }
     }
 
+    @PreDestroy
+    public void shutdown() {
+        if (manager != null) {
+            log.info("Shutting down GraphDB repository manager");
+            manager.shutDown();
+        }
+    }
+
     public void instantiateAnomaly(String targetResourceIri, String anomalyTypeIri) {
+        if (repository == null) {
+            log.error("Cannot instantiate anomaly: repository is not initialized");
+            return;
+        }
+
         String anomalyIri = anomalyTypeIri + "_" + UUID.randomUUID();
-        String timestamp = Instant.now().toString();
+        Instant now = Instant.now();
 
         try (RepositoryConnection conn = repository.getConnection()) {
-            conn.begin();
-            
-            conn.add(Values.iri(targetResourceIri), 
-                     Values.iri(HAS_STATE), 
-                     Values.iri(anomalyIri));
-            
-            conn.add(Values.iri(anomalyIri), 
-                     RDF.TYPE, 
-                     Values.iri(anomalyTypeIri));
-            
-            conn.add(Values.iri(anomalyIri), 
-                     Values.iri(DETECTED_AT), 
-                     Values.literal(timestamp));
-            
-            conn.commit();
-            log.info("Instantiated anomaly {} for resource {}", anomalyIri, targetResourceIri);
+            try {
+                conn.begin();
+
+                conn.add(Values.iri(targetResourceIri),
+                         Values.iri(HAS_STATE),
+                         Values.iri(anomalyIri));
+
+                conn.add(Values.iri(anomalyIri),
+                         RDF.TYPE,
+                         Values.iri(anomalyTypeIri));
+
+                conn.add(Values.iri(anomalyIri),
+                         Values.iri(DETECTED_AT),
+                         Values.literal(now));
+
+                conn.commit();
+                log.info("Instantiated anomaly {} for resource {}", anomalyIri, targetResourceIri);
+            } catch (Exception e) {
+                if (conn.isActive()) {
+                    conn.rollback();
+                }
+                throw e;
+            }
         } catch (Exception e) {
             log.error("Failed to instantiate anomaly in GraphDB for resource {}", targetResourceIri, e);
         }
