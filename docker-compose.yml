@@ -90,7 +90,7 @@ services:
       - GDB_HEAP_SIZE=1G
     volumes:
       - graphdb-data:/opt/graphdb/home
-      - ./graphdb.license:/opt/graphdb/home/work/graphdb.license:ro
+      - ./infra/graphdb/graphdb.license:/opt/graphdb/home/work/graphdb.license:ro
     restart: unless-stopped
 
   prometheus:

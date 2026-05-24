@@ -14,10 +14,37 @@ spec:
         app: metis
     spec:
       serviceAccountName: metis
+      initContainers:
+        - name: wait-for-graphdb
+          image: curlimages/curl:8.12.1
+          command:
+            - /bin/sh
+            - -c
+            - |
+              set -e
+              URL="http://graphdb.graphdb.svc.cluster.local:7200/protocol"
+              echo "Waiting for GraphDB at $URL ..."
+              until curl -sf "$URL" > /dev/null; do
+                sleep 2
+              done
+              echo "GraphDB is reachable."
+        - name: wait-for-rabbitmq
+          image: curlimages/curl:8.12.1
+          command:
+            - /bin/sh
+            - -c
+            - |
+              set -e
+              URL="http://rabbitmq.rabbitmq.svc.cluster.local:15672/"
+              echo "Waiting for RabbitMQ management at $URL ..."
+              until curl -sf "$URL" > /dev/null; do
+                sleep 2
+              done
+              echo "RabbitMQ is reachable."
       containers:
         - name: metis
-          image: sglomski/metis:latest
-          imagePullPolicy: Always
+          image: docker.io/sglomski/metis:latest
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 50052
               name: grpc

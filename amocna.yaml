@@ -140,3 +140,7 @@ k8s:
     - { kind: persistentvolume, name: hephaestus-gui-pv }
     - { kind: clusterrole, name: pod-reader }
     - { kind: clusterrolebinding, name: read-secrets-global }
+  # GraphDB hostPath PV (infra/graphdb/01-storage.yaml) — wiped on undeploy unless --keep-graphdb-data
+  graphdb_storage:
+    host_path: /data/graphdb
+    node_hostname: kube-worker-0

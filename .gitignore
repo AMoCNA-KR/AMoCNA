@@ -28,6 +28,9 @@
 hs_err_pid*
 replay_pid*
 
+# ─── GraphDB (generated) ────────────────────────────────
+infra/graphdb/graphdb.license.bin
+
 # ─── OS / misc ──────────────────────────────────────────
 .DS_Store
 Thumbs.db

@@ -6,17 +6,24 @@ import org.slf4j.LoggerFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Component;
 
+import java.util.concurrent.TimeUnit;
+
 /**
  * Publishes graph-update notifications to the {@code amocna.graph.updates} RabbitMQ queue
  * so that Palamedes (and any other interested consumer) can react to knowledge-base changes.
  *
- * <p>Failures are logged at ERROR level and silently swallowed — a messaging outage
- * must never roll back a successful graph update.
+ * <p>Transient publish failures are retried with backoff. After all retries are exhausted,
+ * the failure is logged at ERROR and swallowed — a messaging outage must never roll back
+ * a successful graph update.
  */
 @Component
 public class PalamedesNotifier {
 
     private static final Logger log = LoggerFactory.getLogger(PalamedesNotifier.class);
+
+    private static final int MAX_PUBLISH_ATTEMPTS = 5;
+    private static final long INITIAL_RETRY_DELAY_MS = 1_000;
+    private static final long MAX_RETRY_DELAY_MS = 8_000;
 
     public static final String EXCHANGE = "amocna.direct.exchange";
     public static final String ROUTING_KEY = "graph.updates";
@@ -40,13 +47,32 @@ public class PalamedesNotifier {
         GraphUpdateMessage message = new GraphUpdateMessage(
                 resourceIri, ontologyType, changeKind, correlationId);
 
+        long delayMs = INITIAL_RETRY_DELAY_MS;
+        for (int attempt = 1; attempt <= MAX_PUBLISH_ATTEMPTS; attempt++) {
+            try {
+                rabbitTemplate.convertAndSend(EXCHANGE, ROUTING_KEY, message);
+                log.debug("Published graph update to RabbitMQ [correlationId={}, resourceIri={}, changeKind={}]",
+                        correlationId, resourceIri, changeKind);
+                return;
+            } catch (Exception e) {
+                if (attempt >= MAX_PUBLISH_ATTEMPTS) {
+                    log.error("Failed to publish graph update to RabbitMQ after {} attempts [correlationId={}]: {}",
+                            MAX_PUBLISH_ATTEMPTS, correlationId, e.getMessage(), e);
+                    return;
+                }
+                log.warn("Failed to publish graph update to RabbitMQ (attempt {}/{}) [correlationId={}]: {}",
+                        attempt, MAX_PUBLISH_ATTEMPTS, correlationId, e.getMessage());
+                sleep(delayMs);
+                delayMs = Math.min(delayMs * 2, MAX_RETRY_DELAY_MS);
+            }
+        }
+    }
+
+    private static void sleep(long delayMs) {
         try {
-            rabbitTemplate.convertAndSend(EXCHANGE, ROUTING_KEY, message);
-            log.debug("Published graph update to RabbitMQ [correlationId={}, resourceIri={}, changeKind={}]",
-                    correlationId, resourceIri, changeKind);
-        } catch (Exception e) {
-            log.error("Failed to publish graph update to RabbitMQ [correlationId={}]: {}",
-                    correlationId, e.getMessage(), e);
+            TimeUnit.MILLISECONDS.sleep(delayMs);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
         }
     }
 }
