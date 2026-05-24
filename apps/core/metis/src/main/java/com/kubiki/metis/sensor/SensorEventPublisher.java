@@ -36,6 +36,9 @@ public class SensorEventPublisher {
 
     private static final Logger log = LoggerFactory.getLogger(SensorEventPublisher.class);
 
+    private static final int MAX_BUFFERED_EVENTS = 10_000;
+    private static final int MAX_CONSECUTIVE_GRAPHDB_FAILURES = 100;
+
     private final SensorEventProcessor processor;
     private final PalamedesNotifier notifier;
     private final int batchSize;
@@ -45,6 +48,7 @@ public class SensorEventPublisher {
     private final List<SensorEvent> buffer = new ArrayList<>();
     private final ReentrantLock lock = new ReentrantLock();
     private ScheduledExecutorService scheduler;
+    private int consecutiveGraphDbFailures;
 
     public SensorEventPublisher(SensorEventProcessor processor,
                                 PalamedesNotifier notifier,
@@ -123,6 +127,13 @@ public class SensorEventPublisher {
         try {
             ProcessResult result = processor.processBatch(batch, correlationId);
 
+            if (result.graphDbFailed()) {
+                handleGraphDbFailure(batch, correlationId);
+                return;
+            }
+
+            consecutiveGraphDbFailures = 0;
+
             HandlerResult firstSuccess = result.firstSuccess();
             if (firstSuccess != null) {
                 notifier.notify(
@@ -141,6 +152,42 @@ public class SensorEventPublisher {
             }
         } catch (Exception e) {
             log.error("Failed to flush sensor batch [correlationId={}]: {}", correlationId, e.getMessage(), e);
+        }
+    }
+
+    private void handleGraphDbFailure(List<SensorEvent> batch, String correlationId) {
+        consecutiveGraphDbFailures++;
+        if (consecutiveGraphDbFailures > MAX_CONSECUTIVE_GRAPHDB_FAILURES) {
+            log.error(
+                    "Dropping {} sensor events after {} consecutive GraphDB failures [correlationId={}]",
+                    batch.size(), MAX_CONSECUTIVE_GRAPHDB_FAILURES, correlationId);
+            return;
+        }
+        if (!requeueAtFront(batch)) {
+            log.error(
+                    "Dropping {} sensor events — buffer would exceed {} [correlationId={}]",
+                    batch.size(), MAX_BUFFERED_EVENTS, correlationId);
+            return;
+        }
+        log.warn("GraphDB unavailable — re-queued {} events for retry [correlationId={}, consecutiveFailures={}]",
+                batch.size(), correlationId, consecutiveGraphDbFailures);
+    }
+
+    /**
+     * Prepends failed events back to the buffer, preserving order.
+     *
+     * @return {@code false} if re-queue would exceed {@link #MAX_BUFFERED_EVENTS}
+     */
+    private boolean requeueAtFront(List<SensorEvent> batch) {
+        lock.lock();
+        try {
+            if (buffer.size() + batch.size() > MAX_BUFFERED_EVENTS) {
+                return false;
+            }
+            buffer.addAll(0, batch);
+            return true;
+        } finally {
+            lock.unlock();
         }
     }
 

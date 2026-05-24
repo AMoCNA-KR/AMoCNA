@@ -1,6 +1,7 @@
 package com.kubiki.metis.sensor;
 
 import com.kubiki.metis.config.MetisProperties;
+import com.kubiki.metis.knowledge.GraphDbReadiness;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
@@ -37,6 +38,7 @@ public class SensorOrchestrator implements ApplicationListener<ApplicationReadyE
 
     private final List<KubernetesSensor> sensors;
     private final SensorEventPublisher publisher;
+    private final GraphDbReadiness graphDbReadiness;
     private final boolean enabled;
 
     private ScheduledExecutorService retryExecutor;
@@ -44,9 +46,11 @@ public class SensorOrchestrator implements ApplicationListener<ApplicationReadyE
 
     public SensorOrchestrator(List<KubernetesSensor> sensors,
                               SensorEventPublisher publisher,
+                              GraphDbReadiness graphDbReadiness,
                               MetisProperties properties) {
         this.sensors = sensors;
         this.publisher = publisher;
+        this.graphDbReadiness = graphDbReadiness;
         this.enabled = properties.sensor() != null && properties.sensor().enabled();
     }
 
@@ -62,6 +66,7 @@ public class SensorOrchestrator implements ApplicationListener<ApplicationReadyE
         }
 
         log.info("Starting Kubernetes sensor layer [{} sensor(s)]", sensors.size());
+        graphDbReadiness.awaitReady();
         publisher.startScheduler();
 
         retryExecutor = Executors.newSingleThreadScheduledExecutor(r -> {

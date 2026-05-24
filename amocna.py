@@ -6,7 +6,7 @@ Usage:
     ./amocna.py build   [--app NAME|--all] [--push] [--registry REG] [--tag TAG]
     ./amocna.py test    [--app NAME|--all]
     ./amocna.py deploy  [--app NAME|--all]
-    ./amocna.py undeploy [--app NAME|--all]
+    ./amocna.py undeploy [--keep-graphdb-data]
     ./amocna.py forward <name> [--local-port PORT]
     ./amocna.py version [--bump major|minor|patch] [--set VER] [--dry-run]
     ./amocna.py status
@@ -306,6 +306,8 @@ class ProjectConfig:
     k8s_deploy_order: list[str]
     k8s_undeploy_namespaces: list[str]
     k8s_cluster_resources: list[dict]
+    graphdb_host_path: str
+    graphdb_node_hostname: str
     project_root: Path
 
 
@@ -372,6 +374,7 @@ def load_config(root: Path) -> ProjectConfig:
         )
 
     k8s = cfg.get("k8s") or {}
+    graphdb_storage = k8s.get("graphdb_storage") or {}
 
     return ProjectConfig(
         name=project.get("name", "amocna"),
@@ -383,6 +386,8 @@ def load_config(root: Path) -> ProjectConfig:
         k8s_deploy_order=k8s.get("deploy_order") or [],
         k8s_undeploy_namespaces=k8s.get("undeploy_namespaces") or [],
         k8s_cluster_resources=k8s.get("cluster_resources") or [],
+        graphdb_host_path=graphdb_storage.get("host_path", "/data/graphdb"),
+        graphdb_node_hostname=graphdb_storage.get("node_hostname", "kube-worker-0"),
         project_root=root,
     )
 
@@ -645,9 +650,135 @@ def _deploy_graphdb(cfg: ProjectConfig) -> None:
     for manifest in ("01-storage.yaml", "02-init-config.yaml", "03-deployment.yaml", "04-service.yaml"):
         run(["kubectl", "apply", "-f", str(graphdb_dir / manifest)])
 
+    info("Waiting for GraphDB deployment to become ready...")
+    run(
+        [
+            "kubectl",
+            "rollout",
+            "status",
+            "deployment/graphdb",
+            "-n",
+            "graphdb",
+            "--timeout=5m",
+        ]
+    )
+    run(
+        [
+            "kubectl",
+            "wait",
+            "--for=condition=ready",
+            "pod",
+            "-l",
+            "app=graphdb",
+            "-n",
+            "graphdb",
+            "--timeout=5m",
+        ]
+    )
+    info("GraphDB is ready.")
 
-def _undeploy_graphdb() -> None:
-    """Remove GraphDB (from additional_sensors undeploy.sh)."""
+
+def _wipe_graphdb_host_data(cfg: ProjectConfig) -> None:
+    """Delete GraphDB files on the PV hostPath (survives namespace/PV deletion)."""
+    host_path = cfg.graphdb_host_path
+    node = cfg.graphdb_node_hostname
+    job_name = "amocna-graphdb-wipe"
+
+    header("Wiping GraphDB persistent data")
+    info(f"Host path {host_path} on node {node}")
+
+    manifest = textwrap.dedent(
+        f"""\
+        apiVersion: batch/v1
+        kind: Job
+        metadata:
+          name: {job_name}
+          namespace: default
+        spec:
+          ttlSecondsAfterFinished: 120
+          backoffLimit: 0
+          template:
+            spec:
+              restartPolicy: Never
+              nodeSelector:
+                kubernetes.io/hostname: {node}
+              containers:
+                - name: wipe
+                  image: busybox:1.36
+                  command:
+                    - sh
+                    - -c
+                    - |
+                      set -e
+                      echo "Wiping GraphDB data under /mnt/graphdb ..."
+                      rm -rf /mnt/graphdb/*
+                      rm -rf /mnt/graphdb/.[!.]* /mnt/graphdb/..?* 2>/dev/null || true
+                      echo "Done."
+                  volumeMounts:
+                    - name: graphdb-data
+                      mountPath: /mnt/graphdb
+              volumes:
+                - name: graphdb-data
+                  hostPath:
+                    path: {host_path}
+                    type: DirectoryOrCreate
+        """
+    )
+
+    run(
+        ["kubectl", "delete", "job", job_name, "-n", "default", "--ignore-not-found"],
+        check=False,
+    )
+    _kubectl_apply_stdin(manifest)
+
+    result = run(
+        [
+            "kubectl",
+            "wait",
+            "--for=condition=complete",
+            f"job/{job_name}",
+            "-n",
+            "default",
+            "--timeout=120s",
+        ],
+        check=False,
+    )
+    run(
+        ["kubectl", "delete", "job", job_name, "-n", "default", "--ignore-not-found"],
+        check=False,
+    )
+
+    if result.returncode != 0:
+        warn(
+            f"Could not wipe GraphDB data at {host_path}. "
+            f"Remove it manually on node {node} if stale triples remain."
+        )
+    else:
+        info("GraphDB host data wiped.")
+
+
+def _undeploy_graphdb(cfg: ProjectConfig, *, keep_data: bool = False) -> None:
+    """Remove GraphDB and optionally wipe its hostPath volume."""
+    if not keep_data:
+        info("Stopping GraphDB before wiping data...")
+        run(
+            [
+                "kubectl",
+                "delete",
+                "deployment",
+                "graphdb",
+                "-n",
+                "graphdb",
+                "--ignore-not-found",
+                "--wait=true",
+                "--timeout=120s",
+            ],
+            check=False,
+        )
+        _wipe_graphdb_host_data(cfg)
+    else:
+        warn("Keeping GraphDB hostPath data (--keep-graphdb-data). Old repository data will remain.")
+
     run(["kubectl", "delete", "namespace", "graphdb", "--ignore-not-found", "--timeout=60s"], check=False)
     run(["kubectl", "delete", "pv", "graphdb-pv", "--ignore-not-found"], check=False)
     run(["kubectl", "delete", "storageclass", "local-storage", "--ignore-not-found"], check=False)
@@ -675,6 +806,7 @@ def cmd_build(cfg: ProjectConfig, args: argparse.Namespace) -> None:
 def cmd_test(cfg: ProjectConfig, args: argparse.Namespace) -> None:
     """Run Maven tests for specified apps."""
     apps_to_test = _resolve_apps(cfg, args)
+    parent_pom = cfg.project_root / cfg.parent_pom
 
     for app in apps_to_test:
         if app.app_type not in ("maven-app", "maven-lib"):
@@ -687,7 +819,16 @@ def cmd_test(cfg: ProjectConfig, args: argparse.Namespace) -> None:
             error(f"pom.xml not found: {pom_path}")
             sys.exit(1)
 
-        run(["mvn", "test", "-f", str(pom_path)])
+        if app.is_core:
+            if not parent_pom.is_file():
+                error(f"parent POM not found: {parent_pom}")
+                sys.exit(1)
+            run(
+                ["mvn", "test", "-pl", app.path, "-am"],
+                cwd=cfg.project_root,
+            )
+        else:
+            run(["mvn", "test", "-f", str(pom_path)])
         info(f"{app.name} tests passed")
 
 
@@ -711,7 +852,7 @@ def cmd_deploy(cfg: ProjectConfig, args: argparse.Namespace) -> None:
     warn("It may take a few minutes for all pods to reach 'Running' state.")
 
 
-def cmd_undeploy(cfg: ProjectConfig, _args: argparse.Namespace) -> None:
+def cmd_undeploy(cfg: ProjectConfig, args: argparse.Namespace) -> None:
     """Remove AMoCNA from the Kubernetes cluster."""
     header("Undeploying AMoCNA from Kubernetes")
 
@@ -719,7 +860,7 @@ def cmd_undeploy(cfg: ProjectConfig, _args: argparse.Namespace) -> None:
     info(f"Deleting kustomization in {full_path}")
     run(["kubectl", "delete", "-k", str(full_path), "--ignore-not-found"], check=False)
 
-    _undeploy_graphdb()
+    _undeploy_graphdb(cfg, keep_data=args.keep_graphdb_data)
 
     info("AMoCNA has been removed from the cluster.")
 
@@ -898,7 +1039,12 @@ def build_parser() -> argparse.ArgumentParser:
     p_deploy.add_argument("--all", action="store_true", help="Deploy all")
 
     # undeploy
-    sub.add_parser("undeploy", help="Remove AMoCNA from Kubernetes")
+    p_undeploy = sub.add_parser("undeploy", help="Remove AMoCNA from Kubernetes")
+    p_undeploy.add_argument(
+        "--keep-graphdb-data",
+        action="store_true",
+        help="Do not wipe GraphDB hostPath data (old triples may remain after redeploy)",
+    )
 
     # forward
     p_fwd = sub.add_parser("forward", help="Port-forward a K8s service")
