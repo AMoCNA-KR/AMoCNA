@@ -1,9 +1,11 @@
 package com.kubiki.metrics.engine;
 
+import com.kubiki.common.config.AmocnaCommonProperties;
 import com.kubiki.common.model.GraphUpdateMessage;
 import com.kubiki.metrics.graph.GraphWriter;
 import com.kubiki.metrics.prometheus.PrometheusClient;
 import com.kubiki.metrics.prometheus.ThresholdsLoader;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Value;
@@ -18,24 +20,13 @@ import java.util.UUID;
 
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class AnomalyScanner {
     private final PrometheusClient prometheusClient;
     private final GraphWriter graphWriter;
     private final RabbitTemplate rabbitTemplate;
     private final ThresholdsLoader thresholdsLoader;
-
-    @Value("${ontology.resources-namespace:http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/}")
-    private String resourcesNamespace;
-
-    public AnomalyScanner(PrometheusClient prometheusClient,
-                          GraphWriter graphWriter,
-                          RabbitTemplate rabbitTemplate,
-                          ThresholdsLoader thresholdsLoader) {
-        this.prometheusClient = prometheusClient;
-        this.graphWriter = graphWriter;
-        this.rabbitTemplate = rabbitTemplate;
-        this.thresholdsLoader = thresholdsLoader;
-    }
+    private final AmocnaCommonProperties properties;
 
     @Scheduled(fixedDelayString = "${scanner.interval:10000}")
     public void scan() {
@@ -58,7 +49,7 @@ public class AnomalyScanner {
                             }
 
                             String targetResourceIri = buildResourceIri(threshold.resourceKind(), namespace, resourceName);
-                            String anomalyStateIri = resourcesNamespace + threshold.anomalyState();
+                            String anomalyStateIri = properties.ontology().resourcesNamespace() + threshold.anomalyState();
 
                             log.warn("Threshold breached: {} for resource {} (Value: {} {} {})",
                                     threshold.name(), targetResourceIri, result.value(), threshold.operator(), threshold.value());
@@ -93,8 +84,8 @@ public class AnomalyScanner {
 
     private String buildResourceIri(String kind, String namespace, String name) {
         if (StringUtils.hasText(namespace)) {
-            return resourcesNamespace + kind + "_" + namespace + "_" + name;
+            return properties.ontology().resourcesNamespace() + kind + "_" + namespace + "_" + name;
         }
-        return resourcesNamespace + kind + "_" + name;
+        return properties.ontology().resourcesNamespace() + kind + "_" + name;
     }
 }

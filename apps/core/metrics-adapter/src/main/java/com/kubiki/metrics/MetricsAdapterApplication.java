@@ -1,12 +1,16 @@
 package com.kubiki.metrics;
 
+import com.kubiki.common.config.AmocnaCommonProperties;
 import com.kubiki.daedalus.annotation.EnableDaedalusRepositories;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
-@SpringBootApplication
 @EnableScheduling
+@SpringBootApplication
+@EnableConfigurationProperties({AmocnaCommonProperties.class})
 @EnableDaedalusRepositories(basePackages = "com.kubiki.metrics.graph")
 public class MetricsAdapterApplication {
     static void main(String[] args) {

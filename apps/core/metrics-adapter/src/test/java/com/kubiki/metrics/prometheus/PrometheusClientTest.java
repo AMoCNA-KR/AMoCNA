@@ -2,6 +2,7 @@ package com.kubiki.metrics.prometheus;
 
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
+import com.kubiki.common.config.AmocnaCommonProperties;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -17,8 +18,12 @@ class PrometheusClientTest {
 
     @BeforeEach
     void setUp(WireMockRuntimeInfo wmInfo) {
+        AmocnaCommonProperties properties = new AmocnaCommonProperties(
+                null, null,
+                new AmocnaCommonProperties.Prometheus(wmInfo.getHttpBaseUrl())
+        );
         WebClient.Builder builder = WebClient.builder();
-        prometheusClient = new PrometheusClient(builder, wmInfo.getHttpBaseUrl());
+        prometheusClient = new PrometheusClient(builder, properties);
     }
 
     @Test

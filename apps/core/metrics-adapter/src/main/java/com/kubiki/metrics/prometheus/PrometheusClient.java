@@ -1,5 +1,6 @@
 package com.kubiki.metrics.prometheus;
 
+import com.kubiki.common.config.AmocnaCommonProperties;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -16,9 +17,10 @@ import java.util.Map;
 public class PrometheusClient {
     private final WebClient webClient;
 
-    public PrometheusClient(WebClient.Builder builder, @Value("${prometheus.url:http://prometheus:9090}") String prometheusUrl) {
-        log.info("Initializing PrometheusClient with URL: {}", prometheusUrl);
-        this.webClient = builder.baseUrl(prometheusUrl).build();
+    public PrometheusClient(WebClient.Builder builder, AmocnaCommonProperties properties) {
+        String url = properties.prometheus().url();
+        log.info("Initializing PrometheusClient with URL: {}", url);
+        this.webClient = builder.baseUrl(url).build();
     }
 
     public Mono<Double> queryScalar(String query) {

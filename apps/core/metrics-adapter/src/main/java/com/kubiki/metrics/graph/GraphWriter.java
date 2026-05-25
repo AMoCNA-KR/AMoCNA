@@ -1,7 +1,9 @@
 package com.kubiki.metrics.graph;
 
+import com.kubiki.common.config.AmocnaCommonProperties;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
@@ -14,23 +16,18 @@ import java.util.UUID;
 
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class GraphWriter {
-    private final String graphDbUrl;
-    private final String repositoryId;
     private final SparqlRepository sparqlRepository;
+    private final AmocnaCommonProperties properties;
     private RemoteRepositoryManager manager;
     private Repository repository;
 
-    public GraphWriter(@Value("${graphdb.url:http://graphdb:7200}") String graphDbUrl,
-                       @Value("${graphdb.repositoryId:amocna}") String repositoryId,
-                       SparqlRepository sparqlRepository) {
-        this.graphDbUrl = graphDbUrl;
-        this.repositoryId = repositoryId;
-        this.sparqlRepository = sparqlRepository;
-    }
 
     @PostConstruct
     public void init() {
+        String graphDbUrl = properties.graphdb().url();
+        String repositoryId = properties.graphdb().repositoryId();
         try {
             manager = new RemoteRepositoryManager(graphDbUrl);
             manager.init();
