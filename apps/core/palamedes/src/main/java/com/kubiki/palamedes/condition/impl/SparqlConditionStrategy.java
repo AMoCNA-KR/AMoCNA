@@ -1,26 +1,25 @@
 package com.kubiki.palamedes.condition.impl;
 
+import com.kubiki.common.config.AmocnaCommonProperties;
 import com.kubiki.palamedes.condition.ConditionStrategy;
 import com.kubiki.palamedes.config.PalamedesProperties;
 import com.kubiki.palamedes.knowledge.GraphDBGateway;
 import com.kubiki.palamedes.model.ActionData;
+import lombok.RequiredArgsConstructor;
 import org.eclipse.rdf4j.model.IRI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 @Component
+@RequiredArgsConstructor
 public class SparqlConditionStrategy implements ConditionStrategy {
     private static final Logger log = LoggerFactory.getLogger(SparqlConditionStrategy.class);
     private static final String CLASS_STATE_BASED_CONDITION = "StateBasedCondition";
 
     private final GraphDBGateway gateway;
-    private final PalamedesProperties properties;
+    private final AmocnaCommonProperties properties;
 
-    public SparqlConditionStrategy(GraphDBGateway gateway, PalamedesProperties properties) {
-        this.gateway = gateway;
-        this.properties = properties;
-    }
 
     @Override
     public boolean supports(IRI conditionType) {

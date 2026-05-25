@@ -10,16 +10,23 @@ spring:
 server:
   port: ${SERVER_PORT:8081}
 
-palamedes:
-  graphdb:
-    url: ${GRAPHDB_URL:http://localhost:7200}
-    repository-id: ${GRAPHDB_REPO:amocna}
-    timeout-ms: ${GRAPHDB_TIMEOUT:5000}
+
+amocna:
   ontology:
     actions-namespace: ${ONTOLOGY_ACTIONS:http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#}
     resources-namespace: ${ONTOLOGY_RESOURCES:http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/}
     bridge-namespace: ${ONTOLOGY_BRIDGE:http://www.semanticweb.org/patryk/ontologies/2026/4/BridgeOnt#}
-    states:
+    actions-prefix: "moam"
+    resources-prefix: "cnee"
+    bridge-prefix: "bridge"
+  graphdb:
+    url: ${GRAPHDB_URL:http://localhost:7200}
+    repository-id: ${GRAPHDB_REPO:amocna}
+    timeout-ms: ${GRAPHDB_TIMEOUT:5000}
+
+palamedes:
+  states:
+    action-states:
       initial: "State_Initial"
       planned: "State_Planned"
       validated: "State_Validated"
@@ -27,9 +34,6 @@ palamedes:
       succeeded: "State_Succeeded"
       failed: "State_Failed"
       compensating: "State_Compensating"
-    actions-prefix: "moam"
-    resources-prefix: "cnee"
-    bridge-prefix: "bridge"
   engine:
     fallback-pipeline-rate-ms: ${PIPELINE_RATE:6000} # 1 minute
     fallback-anomaly-scan-rate-ms: ${ANOMALY_SCAN_RATE:60000} # 10 minute

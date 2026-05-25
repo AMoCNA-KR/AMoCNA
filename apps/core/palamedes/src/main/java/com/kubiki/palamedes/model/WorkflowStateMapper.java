@@ -15,7 +15,7 @@ public class WorkflowStateMapper {
     private final Map<String, WorkflowState> stringToState;
 
     public WorkflowStateMapper(PalamedesProperties properties) {
-        var states = properties.ontology().states();
+        var states = properties.states().actionStates();
 
         this.stateToString = Map.of(
                 WorkflowState.INITIAL, states.getOrDefault(PROPERTIES_INITIAL_STATE_NAME, DEFAULT_STATE_INITIAL),

@@ -19,23 +19,28 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class MapePipelineTest {
-    @Mock private MapePipe pipe1;
-    @Mock private MapePipe pipe2;
-    @Mock private GraphDBGateway gateway;
-    @Mock private PalamedesProperties properties;
-    @Mock private PalamedesProperties.Engine engine;
+    @Mock
+    private MapePipe pipe1;
+    @Mock
+    private MapePipe pipe2;
+    @Mock
+    private GraphDBGateway gateway;
+    @Mock
+    private PalamedesProperties properties;
+    @Mock
+    private PalamedesProperties.Engine engine;
 
     @Test
     void shouldExecutePipeline() {
         when(properties.engine()).thenReturn(engine);
         when(engine.batchSize()).thenReturn(50);
-        
+
         MapePipeline pipeline = new MapePipeline(List.of(pipe1, pipe2), gateway, properties);
-        
+
         IRI actionId = SimpleValueFactory.getInstance().createIRI("http://test/action1");
         var action = new ActiveActionSummary(
                 actionId, null, "resource1", "State_Initial");
-        
+
         when(gateway.findActiveActions()).thenReturn(List.of(action));
         ActionData.SimpleAction mockActionData = mock(ActionData.SimpleAction.class);
         when(gateway.fetchActionStructures(anyList())).thenReturn(Map.of(actionId, mockActionData));

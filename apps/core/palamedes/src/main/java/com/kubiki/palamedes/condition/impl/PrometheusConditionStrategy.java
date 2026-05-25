@@ -2,6 +2,7 @@ package com.kubiki.palamedes.condition.impl;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.kubiki.common.config.AmocnaCommonProperties;
 import com.kubiki.common.exception.ConditionEvaluationException;
 import com.kubiki.palamedes.condition.ConditionStrategy;
 import com.kubiki.palamedes.config.PalamedesProperties;
@@ -28,11 +29,11 @@ public class PrometheusConditionStrategy implements ConditionStrategy {
     private static final String FIELD_RESULT = "result";
 
     private final RestClient restClient;
-    private final PalamedesProperties properties;
+    private final AmocnaCommonProperties properties;
     private final ObjectMapper objectMapper;
 
     public PrometheusConditionStrategy(@Nullable @Qualifier("prometheusRestClient") RestClient restClient,
-                                       PalamedesProperties properties,
+                                       AmocnaCommonProperties properties,
                                        ObjectMapper objectMapper) {
         this.restClient = restClient;
         this.properties = properties;

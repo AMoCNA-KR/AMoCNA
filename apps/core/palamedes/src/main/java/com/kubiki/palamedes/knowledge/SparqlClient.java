@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
@@ -50,13 +51,13 @@ public class SparqlClient {
         }
     }
 
-    public void executeWithConnection(java.util.function.Consumer<RepositoryConnection> action) {
+    public void executeWithConnection(Consumer<RepositoryConnection> action) {
         try (RepositoryConnection connection = repository.getConnection()) {
             action.accept(connection);
         }
     }
 
-    public <T> T executeWithConnection(java.util.function.Function<RepositoryConnection, T> action) {
+    public <T> T executeWithConnection(Function<RepositoryConnection, T> action) {
         try (RepositoryConnection connection = repository.getConnection()) {
             return action.apply(connection);
         }

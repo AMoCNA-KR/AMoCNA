@@ -1,7 +1,7 @@
 package com.kubiki.palamedes.integration;
 
 import com.kubiki.palamedes.knowledge.GraphDBGateway;
-import com.kubiki.palamedes.knowledge.OntologyRegistry;
+import com.kubiki.common.ontology.OntologyRegistry;
 import com.kubiki.palamedes.knowledge.SparqlClient;
 import com.kubiki.palamedes.model.ActiveActionSummary;
 import com.kubiki.palamedes.pipeline.MapePipeline;
@@ -18,18 +18,16 @@ import org.junit.jupiter.api.Test;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.annotation.DirtiesContext;
-import org.springframework.test.context.TestPropertySource;
 
 import java.util.List;
-import java.util.function.Function;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.Mockito.*;
 
 @SpringBootTest
@@ -41,26 +39,20 @@ import static org.mockito.Mockito.*;
 @DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
 class PerformanceScaleIT {
 
-    @Autowired
-    private MapePipeline mapePipeline;
-
-    @Autowired
-    private GraphDBGateway gateway;
-
-    @Autowired
-    private OntologyRegistry registry;
-
-    @MockitoSpyBean
-    private SparqlClient sparqlClient;
-
-    @MockitoBean
-    private RabbitTemplate rabbitTemplate;
-
-    @MockitoBean
-    private Repository realRepository;
-
     private static Repository inMemoryRepo;
     private final ValueFactory vf = SimpleValueFactory.getInstance();
+    @Autowired
+    private MapePipeline mapePipeline;
+    @Autowired
+    private GraphDBGateway gateway;
+    @Autowired
+    private OntologyRegistry registry;
+    @MockitoSpyBean
+    private SparqlClient sparqlClient;
+    @MockitoBean
+    private RabbitTemplate rabbitTemplate;
+    @MockitoBean
+    private Repository realRepository;
 
     @BeforeEach
     void setUp() {
@@ -103,13 +95,13 @@ class PerformanceScaleIT {
             for (int i = 0; i < actionCount; i++) {
                 IRI actionIri = vf.createIRI("http://test/action" + i);
                 IRI resourceIri = vf.createIRI("http://test/resource" + i);
-                
+
                 conn.add(actionIri, RDF.TYPE, actionType);
                 conn.add(actionIri, hasCurrentState, stateValidated);
                 conn.add(actionIri, targetsEntity, resourceIri);
                 conn.add(actionIri, hasActionID, vf.createLiteral("action" + i));
                 conn.add(resourceIri, registry.resourcesOntology("resourceName"), vf.createLiteral("res" + i));
-                
+
                 conn.add(actionIri, protocol, vf.createLiteral("REST"));
                 conn.add(actionIri, instruction, vf.createLiteral("http://instruction/" + i));
                 conn.add(actionIri, statusCode, vf.createLiteral("200", org.eclipse.rdf4j.model.vocabulary.XSD.INTEGER));
@@ -128,7 +120,7 @@ class PerformanceScaleIT {
         long end = System.currentTimeMillis();
 
         System.out.println("Processed " + actionCount + " actions in " + (end - start) + "ms");
-        
+
         // Verification:
         // 1. Check if messages were sent (sampling)
         verify(rabbitTemplate, times(actionCount)).convertAndSend(anyString(), anyString(), any(Object.class));

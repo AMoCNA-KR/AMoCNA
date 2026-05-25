@@ -1,9 +1,8 @@
 package com.kubiki.palamedes.knowledge;
 
-import com.kubiki.palamedes.model.ActionData;
 import com.kubiki.common.model.Protocol;
+import com.kubiki.palamedes.model.ActionData;
 import org.eclipse.rdf4j.model.IRI;
-import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.query.BindingSet;
@@ -14,7 +13,8 @@ import org.springframework.http.HttpMethod;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ModelMapperTest {
     private final ModelMapper mapper = new ModelMapper();
@@ -64,8 +64,8 @@ class ModelMapperTest {
         bs2.addBinding("instruction", vf.createLiteral("stop.sh"));
 
         Map<IRI, List<BindingSet>> allBindings = Map.of(
-            action1, List.of(bs1),
-            action2, List.of(bs2)
+                action1, List.of(bs1),
+                action2, List.of(bs2)
         );
 
         Map<IRI, ActionData> results = mapper.mapActions(allBindings, List.of(action1, action2));
@@ -73,8 +73,8 @@ class ModelMapperTest {
         assertEquals(2, results.size());
         assertTrue(results.containsKey(action1));
         assertTrue(results.containsKey(action2));
-        assertEquals(Protocol.REST, ((ActionData.SimpleAction)results.get(action1)).protocol());
-        assertEquals(Protocol.SHELL, ((ActionData.SimpleAction)results.get(action2)).protocol());
+        assertEquals(Protocol.REST, ((ActionData.SimpleAction) results.get(action1)).protocol());
+        assertEquals(Protocol.SHELL, ((ActionData.SimpleAction) results.get(action2)).protocol());
     }
 
     @Test
@@ -104,15 +104,15 @@ class ModelMapperTest {
         stbs.addBinding("instruction", vf.createLiteral("stop.sh"));
 
         Map<IRI, List<BindingSet>> allBindings = Map.of(
-            workflowId, List.of(wbs),
-            stepId, List.of(sbs),
-            standaloneId, List.of(stbs)
+                workflowId, List.of(wbs),
+                stepId, List.of(sbs),
+                standaloneId, List.of(stbs)
         );
 
         Map<IRI, ActionData> results = mapper.mapActions(allBindings, List.of(workflowId, standaloneId));
 
         assertEquals(2, results.size());
-        
+
         ActionData.ComplexWorkflow workflow = (ActionData.ComplexWorkflow) results.get(workflowId);
         assertEquals(1, workflow.steps().size());
         assertEquals(stepId, workflow.steps().get(0).id());

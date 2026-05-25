@@ -16,10 +16,14 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class SparqlClientTest {
-    @Mock private Repository repository;
-    @Mock private RepositoryConnection connection;
-    @Mock private BooleanQuery booleanQuery;
-    @Mock private Update update;
+    @Mock
+    private Repository repository;
+    @Mock
+    private RepositoryConnection connection;
+    @Mock
+    private BooleanQuery booleanQuery;
+    @Mock
+    private Update update;
 
     private SparqlClient sparqlClient;
 

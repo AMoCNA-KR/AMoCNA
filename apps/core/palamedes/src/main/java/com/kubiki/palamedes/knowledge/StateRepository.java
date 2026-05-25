@@ -11,7 +11,7 @@ import org.springframework.stereotype.Repository;
 public class StateRepository {
     private final SparqlClient sparqlClient;
     private final SparqlRepository sparqlRepository;
-    private final OntologyRegistry ontologyRegistry;
+    private final com.kubiki.common.ontology.OntologyRegistry ontologyRegistry;
     private final WorkflowStateMapper mapper;
 
 

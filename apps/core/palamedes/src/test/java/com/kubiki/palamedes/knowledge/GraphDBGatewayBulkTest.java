@@ -13,9 +13,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import java.util.List;
 import java.util.Map;
@@ -29,17 +29,14 @@ import static org.mockito.Mockito.when;
 @DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
 class GraphDBGatewayBulkTest {
 
-    @Autowired
-    private GraphDBGateway gateway;
-
-    @Autowired
-    private OntologyRegistry registry;
-
-    @MockitoBean
-    private Repository realRepository;
-
     private static Repository inMemoryRepo;
     private final ValueFactory vf = SimpleValueFactory.getInstance();
+    @Autowired
+    private GraphDBGateway gateway;
+    @Autowired
+    private com.kubiki.common.ontology.OntologyRegistry registry;
+    @MockitoBean
+    private Repository realRepository;
 
     @BeforeEach
     void setUp() {
@@ -81,7 +78,7 @@ class GraphDBGatewayBulkTest {
             conn.add(action1, registry.actionsOntology("targetsEntity"), target);
             conn.add(intent1, registry.actionsOntology("hasExecutionProtocol"), vf.createLiteral("REST"));
             conn.add(intent1, registry.actionsOntology("hasExecutionInstruction"), vf.createLiteral("http://exec1"));
-            
+
             // Action 2
             conn.add(action2, RDF.TYPE, intent2);
             conn.add(action2, RDF.TYPE, registry.actionsOntology("SimpleAction"));
@@ -96,10 +93,10 @@ class GraphDBGatewayBulkTest {
         assertEquals(2, results.size());
         assertTrue(results.containsKey(action1));
         assertTrue(results.containsKey(action2));
-        
+
         ActionData.SimpleAction sa1 = (ActionData.SimpleAction) results.get(action1);
         assertEquals("REST", sa1.protocol().name());
-        
+
         ActionData.SimpleAction sa2 = (ActionData.SimpleAction) results.get(action2);
         assertEquals("SHELL", sa2.protocol().name());
     }

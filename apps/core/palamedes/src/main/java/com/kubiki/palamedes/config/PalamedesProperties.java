@@ -9,11 +9,11 @@ import java.util.Objects;
 
 @ConfigurationProperties(prefix = "palamedes")
 public record PalamedesProperties(
-        @NestedConfigurationProperty GraphDB graphdb,
-        @NestedConfigurationProperty Ontology ontology,
         @NestedConfigurationProperty Engine engine,
+        @NestedConfigurationProperty States states,
         @NestedConfigurationProperty Utilities utilities
 ) {
+
     private final static List<String> AVAILABLE_STATE_KEYS = List.of(
             "initial",
             "planned",
@@ -24,42 +24,22 @@ public record PalamedesProperties(
             "compensating"
     );
 
-    public record GraphDB(String url, String repositoryId, int timeoutMs) {
-        public GraphDB {
-            Objects.requireNonNull(url, "palamedes.graphdb.url must not be null");
-            Objects.requireNonNull(repositoryId, "palamedes.graphdb.repositoryId must not be null");
-            PropertiesUtils.requiredPositive(timeoutMs, "palamedes.graphdb.timeoutMs");
-        }
-    }
 
-    public record Ontology(
-            String actionsNamespace,
-            String actionsPrefix,
-            String resourcesNamespace,
-            String resourcesPrefix,
-            String bridgeNamespace,
-            String bridgePrefix,
-            Map<String, String> states
-    ) {
-        public Ontology {
-            Objects.requireNonNull(actionsNamespace, "palamedes.ontology.actionsNamespace must not be null");
-            Objects.requireNonNull(actionsPrefix, "palamedes.ontology.actionsPrefix must not be null");
-            Objects.requireNonNull(resourcesNamespace, "palamedes.ontology.resourcesNamespace must not be null");
-            Objects.requireNonNull(resourcesPrefix, "palamedes.ontology.resourcesPrefix must not be null");
-            Objects.requireNonNull(bridgeNamespace, "palamedes.ontology.bridgeNamespace must not be null");
-            Objects.requireNonNull(bridgePrefix, "palamedes.ontology.bridgePrefix must not be null");
-            Objects.requireNonNull(states, "palamedes.ontology.states must not be null");
-            PropertiesUtils.availableOptions(states, AVAILABLE_STATE_KEYS);
+
+    public record States(Map<String, String> actionStates) {
+        public States {
+            Objects.requireNonNull(actionStates, "palamedes.states.actionStates must not be null");
+            com.kubiki.common.config.PropertiesUtils.availableOptions(actionStates, AVAILABLE_STATE_KEYS);
         }
     }
 
     public record Engine(long fallbackPipelineRateMs, long fallbackAnomalyScanRateMs, int defaultIdempotencySeconds,
                          int batchSize) {
         public Engine {
-            PropertiesUtils.requiredPositive(fallbackPipelineRateMs, "palamedes.engine.fallbackPipelineRateMs");
-            PropertiesUtils.requiredPositive(fallbackAnomalyScanRateMs, "palamedes.engine.fallbackAnomalyScanRateMs");
-            PropertiesUtils.requiredPositive(defaultIdempotencySeconds, "palamedes.engine.defaultIdempotencySeconds");
-            PropertiesUtils.requiredPositive(batchSize, "palamedes.engine.batchSize");
+            com.kubiki.common.config.PropertiesUtils.requiredPositive(fallbackPipelineRateMs, "palamedes.engine.fallbackPipelineRateMs");
+            com.kubiki.common.config.PropertiesUtils.requiredPositive(fallbackAnomalyScanRateMs, "palamedes.engine.fallbackAnomalyScanRateMs");
+            com.kubiki.common.config.PropertiesUtils.requiredPositive(defaultIdempotencySeconds, "palamedes.engine.defaultIdempotencySeconds");
+            com.kubiki.common.config.PropertiesUtils.requiredPositive(batchSize, "palamedes.engine.batchSize");
         }
     }
 
@@ -69,7 +49,7 @@ public record PalamedesProperties(
             Objects.requireNonNull(actionPrefix, "palamedes.utilities.actionPrefix must not be null");
             Objects.requireNonNull(stepPrefix, "palamedes.utilities.stepPrefix must not be null");
             Objects.requireNonNull(compensationPrefix, "palamedes.utilities.compensationPrefix must not be null");
-            PropertiesUtils.requiredPositive(sizeOfGeneratedUuid, "palamedes.utilities.sizeOfGeneratedUuid");
+            com.kubiki.common.config.PropertiesUtils.requiredPositive(sizeOfGeneratedUuid, "palamedes.utilities.sizeOfGeneratedUuid");
         }
     }
 }
