@@ -3,8 +3,10 @@ package com.kubiki.daedalus.core.format;
 import com.kubiki.daedalus.annotation.TemplateType;
 import com.kubiki.daedalus.core.ValueFormatter;
 import org.springframework.stereotype.Component;
+
 import java.util.Collection;
 import java.util.stream.Collectors;
+
 import static com.kubiki.daedalus.core.DaedalusConstants.COLLECTION_SEPARATOR;
 import static com.kubiki.daedalus.core.DaedalusConstants.QUOTE;
 
@@ -28,6 +30,7 @@ public class CollectionFormatter implements ValueFormatter<Collection<?>> {
     public Class<Collection<?>> getSupportedType() {
         return (Class) Collection.class;
     }
+
     @Override
     public TemplateType getAnnotationType() {
         return TemplateType.COLLECTION;

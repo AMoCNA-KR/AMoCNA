@@ -10,10 +10,14 @@ public class PlainFormatter implements ValueFormatter<Object> {
     public String format(Object value) {
         return value != null ? value.toString() : "";
     }
+
     @Override
-    public Class<Object> getSupportedType() { 
-        return (Class) String.class; 
+    public Class<Object> getSupportedType() {
+        return (Class) String.class;
     }
+
     @Override
-    public TemplateType getAnnotationType() { return TemplateType.PLAIN; }
+    public TemplateType getAnnotationType() {
+        return TemplateType.PLAIN;
+    }
 }

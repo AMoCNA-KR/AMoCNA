@@ -18,18 +18,18 @@ class DaedalusAutoConfigDiscoveryTest {
     @Autowired(required = false)
     private GlobalTemplateContext globalContext;
 
-    @Configuration
-    @EnableAutoConfiguration
-    static class TestConfig {
-    }
-
     @Test
     void shouldDiscoverAutoConfiguration() {
         assertThat(globalContext).isNotNull();
         assertThat(testRepo).isNotNull();
-        
+
         globalContext.set("GLOBAL_VAR", "Discovered");
         String result = testRepo.greet("Discovery", "Test");
         assertThat(result).contains("Global: Discovered");
+    }
+
+    @Configuration
+    @EnableAutoConfiguration
+    static class TestConfig {
     }
 }

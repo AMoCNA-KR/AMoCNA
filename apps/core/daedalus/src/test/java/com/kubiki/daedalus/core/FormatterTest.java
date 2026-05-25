@@ -6,9 +6,11 @@ import com.kubiki.daedalus.core.format.IriFormatter;
 import com.kubiki.daedalus.core.format.LiteralFormatter;
 import com.kubiki.daedalus.core.format.PlainFormatter;
 import org.junit.jupiter.api.Test;
+
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class FormatterTest {
@@ -22,9 +24,20 @@ public class FormatterTest {
     @Test
     public void testCustomFormatter() {
         ValueFormatter<String> custom = new ValueFormatter<>() {
-            @Override public String format(String value) { return "CUSTOM:" + value; }
-            @Override public Class<String> getSupportedType() { return String.class; }
-            @Override public TemplateType getAnnotationType() { return TemplateType.PLAIN; }
+            @Override
+            public String format(String value) {
+                return "CUSTOM:" + value;
+            }
+
+            @Override
+            public Class<String> getSupportedType() {
+                return String.class;
+            }
+
+            @Override
+            public TemplateType getAnnotationType() {
+                return TemplateType.PLAIN;
+            }
         };
         Formatter customFormatter = new Formatter(Collections.singletonList(custom));
         assertEquals("CUSTOM:test", customFormatter.format("test", TemplateType.PLAIN));

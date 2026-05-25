@@ -3,9 +3,9 @@ package com.kubiki.daedalus.core;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
-import static com.kubiki.daedalus.core.DaedalusConstants.*;
+import static com.kubiki.daedalus.core.DaedalusConstants.DEFAULT_VALUE_SEPARATOR;
+import static com.kubiki.daedalus.core.DaedalusConstants.VAR_PATTERN;
 
 public class TemplateParser {
 
@@ -21,13 +21,13 @@ public class TemplateParser {
             String content = matcher.group(1);
             String name = content;
             String defaultValue = null;
-            
+
             if (content.contains(DEFAULT_VALUE_SEPARATOR)) {
                 int idx = content.indexOf(DEFAULT_VALUE_SEPARATOR);
                 name = content.substring(0, idx);
                 defaultValue = content.substring(idx + DEFAULT_VALUE_SEPARATOR.length());
             }
-            
+
             tokens.add(new TemplateToken.VariableToken(name, defaultValue));
             lastEnd = matcher.end();
         }

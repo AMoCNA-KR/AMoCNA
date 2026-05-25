@@ -22,14 +22,14 @@ class DaedalusHydratorTest {
     void setUp() {
         globalContext = new GlobalTemplateContext();
         globalContext.set("GLOBAL", "GlobalVal");
-        
+
         Formatter formatter = new Formatter(Arrays.asList(
                 new IriFormatter(),
                 new LiteralFormatter(),
                 new PlainFormatter(),
                 new CollectionFormatter()
         ));
-        
+
         hydrator = new DefaultDaedalusHydrator(new TemplateParser(), formatter, globalContext, new com.fasterxml.jackson.databind.ObjectMapper());
     }
 
@@ -43,8 +43,6 @@ class DaedalusHydratorTest {
         assertThat(result).isEqualTo("Hello Alice, global: GlobalVal");
     }
 
-    public record TestUser(String name, int age) {}
-
     @Test
     void shouldHydrateAndMapToPojo() {
         String template = "{\"name\": \"${name}\", \"age\": ${age}}";
@@ -54,5 +52,8 @@ class DaedalusHydratorTest {
 
         assertThat(user.name()).isEqualTo("Bob");
         assertThat(user.age()).isEqualTo(30);
+    }
+
+    public record TestUser(String name, int age) {
     }
 }

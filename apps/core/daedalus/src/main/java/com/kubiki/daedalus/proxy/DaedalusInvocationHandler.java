@@ -49,8 +49,8 @@ public class DaedalusInvocationHandler implements InvocationHandler {
         try (var is = getClass().getClassLoader().getResourceAsStream(path)) {
             if (is == null) throw new TemplateResourceException("Resource not found: " + path);
             return new String(is.readAllBytes());
-        } catch (Exception e) { 
-            throw new TemplateResourceException("Failed to load template: " + path, e); 
+        } catch (Exception e) {
+            throw new TemplateResourceException("Failed to load template: " + path, e);
         }
     }
 
@@ -90,15 +90,15 @@ public class DaedalusInvocationHandler implements InvocationHandler {
 
         StringBuilder sb = new StringBuilder();
         for (TemplateToken token : tokens) {
-            if (token instanceof TemplateToken.StaticToken s) {
-                sb.append(s.text());
-            } else if (token instanceof TemplateToken.VariableToken v) {
-                String val = values.get(v.name());
+            if (token instanceof TemplateToken.StaticToken(String text)) {
+                sb.append(text);
+            } else if (token instanceof TemplateToken.VariableToken(String name, String defaultValue)) {
+                String val = values.get(name);
                 if (val == null) {
-                    val = v.defaultValue();
+                    val = defaultValue;
                 }
                 if (val == null) {
-                    throw new HydrationException("Missing variable: " + v.name() + " for method: " + method.getName());
+                    throw new HydrationException("Missing variable: " + name + " for method: " + method.getName());
                 }
                 sb.append(val);
             }
