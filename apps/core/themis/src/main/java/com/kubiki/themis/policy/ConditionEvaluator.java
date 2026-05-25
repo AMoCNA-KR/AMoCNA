@@ -3,8 +3,6 @@ package com.kubiki.themis.policy;
 import com.kubiki.themis.config.ThemisProperties;
 import org.eclipse.rdf4j.query.BooleanQuery;
 import org.eclipse.rdf4j.query.QueryLanguage;
-import org.eclipse.rdf4j.query.TupleQuery;
-import org.eclipse.rdf4j.query.TupleQueryResult;
 import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.manager.RemoteRepositoryManager;
@@ -13,7 +11,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
-import java.util.ArrayList;
 import java.util.List;
 
 @Component
@@ -23,10 +20,12 @@ public class ConditionEvaluator {
 
     private final ThemisProperties properties;
     private final RestClient restClient;
+    private final SparqlRepository sparqlRepository;
 
-    public ConditionEvaluator(ThemisProperties properties, RestClient.Builder restClientBuilder) {
+    public ConditionEvaluator(ThemisProperties properties, RestClient.Builder restClientBuilder, SparqlRepository sparqlRepository) {
         this.properties = properties;
         this.restClient = restClientBuilder.build();
+        this.sparqlRepository = sparqlRepository;
     }
 
     public boolean evaluatePreConditions(String actionId) {
@@ -65,30 +64,8 @@ public class ConditionEvaluator {
     }
 
     private List<String> fetchConditions(String actionIri, String property) {
-        List<String> conditions = new ArrayList<>();
-        String sparql = String.format(
-                "PREFIX moam: <%s> " +
-                "SELECT ?query WHERE { " +
-                "  <%s> %s ?cond . " +
-                "  ?cond moam:policyQueryString ?query . " +
-                "}", MOAM_NS, actionIri, property);
-
-        RemoteRepositoryManager manager = RemoteRepositoryManager.getInstance(properties.graphdb().url());
-        try {
-            manager.init();
-            Repository repo = manager.getRepository(properties.graphdb().repositoryId());
-            try (RepositoryConnection conn = repo.getConnection()) {
-                TupleQuery query = conn.prepareTupleQuery(QueryLanguage.SPARQL, sparql);
-                try (TupleQueryResult result = query.evaluate()) {
-                    while (result.hasNext()) {
-                        conditions.add(result.next().getValue("query").stringValue());
-                    }
-                }
-            }
-        } finally {
-            manager.shutDown();
-        }
-        return conditions;
+        String propertyIri = MOAM_NS + property.replace("moam:", "");
+        return sparqlRepository.fetchConditions(actionIri, propertyIri);
     }
 
     private boolean isPromQL(String query) {

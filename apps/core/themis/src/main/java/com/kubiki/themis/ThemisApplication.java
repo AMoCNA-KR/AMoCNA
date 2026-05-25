@@ -10,7 +10,7 @@ import org.springframework.retry.annotation.EnableRetry;
 @SpringBootApplication(scanBasePackages = {"com.kubiki.themis", "com.kubiki.common"})
 @EnableRetry
 @EnableConfigurationProperties(ThemisProperties.class)
-@EnableDaedalusRepositories(basePackages = "com.kubiki.themis")
+@EnableDaedalusRepositories(basePackages = "com.kubiki.themis.policy")
 public class ThemisApplication {
     static void main(String[] args) {
         SpringApplication.run(ThemisApplication.class, args);
