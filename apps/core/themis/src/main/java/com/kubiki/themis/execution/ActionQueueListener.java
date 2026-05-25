@@ -6,6 +6,7 @@ import com.kubiki.common.model.ActionMessage;
 import com.kubiki.common.model.ActionStatusUpdate;
 import com.kubiki.themis.model.ExecutionResult;
 import com.kubiki.common.model.ExecutionStatus;
+import com.kubiki.themis.config.ThemisProperties;
 import com.kubiki.themis.policy.ConditionEvaluator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,11 +22,13 @@ public class ActionQueueListener {
     private final List<ProtocolExecutor> executors;
     private final StatusProducer statusProducer;
     private final ConditionEvaluator conditionEvaluator;
+    private final ThemisProperties properties;
 
-    public ActionQueueListener(List<ProtocolExecutor> executors, StatusProducer statusProducer, ConditionEvaluator conditionEvaluator) {
+    public ActionQueueListener(List<ProtocolExecutor> executors, StatusProducer statusProducer, ConditionEvaluator conditionEvaluator, ThemisProperties properties) {
         this.executors = executors;
         this.statusProducer = statusProducer;
         this.conditionEvaluator = conditionEvaluator;
+        this.properties = properties;
     }
 
     @RabbitListener(queues = RabbitMQConfig.ACTION_QUEUE)
@@ -50,6 +53,24 @@ public class ActionQueueListener {
         }
 
         ExecutionResult result = executeWithRetry(executor, message);
+
+        if (result.success()) {
+            int delay = properties.execution().postConditionDelayMs();
+            if (delay > 0) {
+                try {
+                    log.info("Waiting {}ms for cluster stabilization before post-condition verification", delay);
+                    Thread.sleep(delay);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    log.error("Stabilization delay interrupted", e);
+                }
+            }
+
+            if (!conditionEvaluator.evaluatePostConditions(message.actionId())) {
+                log.warn("Post-condition verification failed for action: {}", message.actionId());
+                result = ExecutionResult.failure(result.observedStatusCode(), "Post-condition verification failed", ExecutionStatus.FAILED_INTERNAL);
+            }
+        }
         
         ActionStatusUpdate status = new ActionStatusUpdate(
             message.actionId(),

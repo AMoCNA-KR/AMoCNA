@@ -11,7 +11,8 @@ import org.springframework.boot.context.properties.NestedConfigurationProperty;
 public record ThemisProperties(
         @NestedConfigurationProperty Secret secret,
         @NestedConfigurationProperty Graphdb graphdb,
-        @NestedConfigurationProperty Prometheus prometheus
+        @NestedConfigurationProperty Prometheus prometheus,
+        @NestedConfigurationProperty Execution execution
 ) {
     public record Secret(String bearerToken) {
     }
@@ -20,5 +21,8 @@ public record ThemisProperties(
     }
 
     public record Prometheus(String url) {
+    }
+
+    public record Execution(int postConditionDelayMs) {
     }
 }

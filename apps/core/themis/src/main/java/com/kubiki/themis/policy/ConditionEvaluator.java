@@ -30,12 +30,20 @@ public class ConditionEvaluator {
     }
 
     public boolean evaluatePreConditions(String actionId) {
-        log.info("Evaluating pre-conditions for action: {}", actionId);
+        return evaluateConditions(actionId, "moam:hasPreCondition", "pre");
+    }
+
+    public boolean evaluatePostConditions(String actionId) {
+        return evaluateConditions(actionId, "moam:hasPostCondition", "post");
+    }
+
+    private boolean evaluateConditions(String actionId, String property, String logPrefix) {
+        log.info("Evaluating {}-conditions for action: {}", logPrefix, actionId);
         String actionIri = properties.graphdb().actionsNamespace() + actionId;
 
-        List<String> conditions = fetchPreConditions(actionIri);
+        List<String> conditions = fetchConditions(actionIri, property);
         if (conditions.isEmpty()) {
-            log.info("No pre-conditions found for action: {}", actionId);
+            log.info("No {}-conditions found for action: {}", logPrefix, actionId);
             return true;
         }
 
@@ -48,7 +56,7 @@ public class ConditionEvaluator {
             }
 
             if (!result) {
-                log.warn("Pre-condition failed for action {}: {}", actionId, conditionQuery);
+                log.warn("{}-condition failed for action {}: {}", logPrefix, actionId, conditionQuery);
                 return false;
             }
         }
@@ -56,14 +64,14 @@ public class ConditionEvaluator {
         return true;
     }
 
-    private List<String> fetchPreConditions(String actionIri) {
+    private List<String> fetchConditions(String actionIri, String property) {
         List<String> conditions = new ArrayList<>();
         String sparql = String.format(
                 "PREFIX moam: <%s> " +
                 "SELECT ?query WHERE { " +
-                "  <%s> moam:hasPreCondition ?cond . " +
+                "  <%s> %s ?cond . " +
                 "  ?cond moam:policyQueryString ?query . " +
-                "}", MOAM_NS, actionIri);
+                "}", MOAM_NS, actionIri, property);
 
         RemoteRepositoryManager manager = RemoteRepositoryManager.getInstance(properties.graphdb().url());
         try {
