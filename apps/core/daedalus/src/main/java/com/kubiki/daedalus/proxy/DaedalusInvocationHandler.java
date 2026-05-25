@@ -2,6 +2,8 @@ package com.kubiki.daedalus.proxy;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kubiki.daedalus.annotation.Bind;
+import com.kubiki.daedalus.annotation.SparqlQuery;
+import com.kubiki.daedalus.annotation.SparqlUpdate;
 import com.kubiki.daedalus.annotation.Template;
 import com.kubiki.daedalus.annotation.TemplateType;
 import com.kubiki.daedalus.annotation.Type;
@@ -13,6 +15,11 @@ import com.kubiki.daedalus.exception.DaedalusException;
 import com.kubiki.daedalus.exception.HydrationException;
 import com.kubiki.daedalus.exception.TemplateMappingException;
 import com.kubiki.daedalus.exception.TemplateResourceException;
+import org.eclipse.rdf4j.query.TupleQueryResult;
+import org.eclipse.rdf4j.repository.Repository;
+import org.eclipse.rdf4j.repository.RepositoryConnection;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
@@ -25,28 +32,48 @@ import java.util.Map;
 import static com.kubiki.daedalus.core.DaedalusConstants.*;
 
 public class DaedalusInvocationHandler implements InvocationHandler {
+    private static final Logger log = LoggerFactory.getLogger(DaedalusInvocationHandler.class);
+
     private final Class<?> interfaceClass;
     private final Map<Method, List<TemplateToken>> methodTemplates = new HashMap<>();
+    private final Map<Method, Boolean> isUpdate = new HashMap<>();
     private final GlobalTemplateContext globalContext;
     private final Formatter formatter;
     private final ObjectMapper objectMapper = new ObjectMapper();
+    private final Repository repository;
 
-    public DaedalusInvocationHandler(Class<?> interfaceClass, GlobalTemplateContext globalContext, Formatter formatter) {
+    public DaedalusInvocationHandler(Class<?> interfaceClass, GlobalTemplateContext globalContext, Formatter formatter, Repository repository) {
         this.interfaceClass = interfaceClass;
         this.globalContext = globalContext;
         this.formatter = formatter;
+        this.repository = repository;
         TemplateParser parser = new TemplateParser();
         for (Method method : interfaceClass.getMethods()) {
+            String raw = null;
             Template templateAnn = method.getAnnotation(Template.class);
             if (templateAnn != null) {
-                String raw = loadResource(templateAnn.resource());
+                raw = loadResource(templateAnn.resource());
+            }
+
+            SparqlQuery queryAnn = method.getAnnotation(SparqlQuery.class);
+            if (queryAnn != null) {
+                raw = queryAnn.value().isEmpty() ? loadResource(queryAnn.resource()) : queryAnn.value();
+            }
+
+            SparqlUpdate updateAnn = method.getAnnotation(SparqlUpdate.class);
+            if (updateAnn != null) {
+                raw = updateAnn.value().isEmpty() ? loadResource(updateAnn.resource()) : updateAnn.value();
+                isUpdate.put(method, true);
+            }
+
+            if (raw != null) {
                 methodTemplates.put(method, parser.parse(raw));
             }
         }
     }
 
     private String loadResource(String path) {
-        try (var is = getClass().getClassLoader().getResourceAsStream(path)) {
+        try (var is = interfaceClass.getClassLoader().getResourceAsStream(path)) {
             if (is == null) throw new TemplateResourceException("Resource not found: " + path);
             return new String(is.readAllBytes());
         } catch (Exception e) {
@@ -72,7 +99,7 @@ public class DaedalusInvocationHandler implements InvocationHandler {
                     return PROXY_PREFIX + interfaceClass.getSimpleName() + PROXY_SUFFIX;
                 }
             }
-            throw new DaedalusException("Method not annotated with @Template: " + method.getName());
+            throw new DaedalusException("Method not annotated with @Template, @SparqlQuery or @SparqlUpdate: " + method.getName());
         }
 
         Map<String, String> values = new HashMap<>(globalContext.getAll());
@@ -105,6 +132,38 @@ public class DaedalusInvocationHandler implements InvocationHandler {
         }
 
         String hydrated = sb.toString();
+        
+        if (Boolean.TRUE.equals(isUpdate.get(method))) {
+            if (repository == null) {
+                throw new DaedalusException("Cannot execute @SparqlUpdate: Repository bean not found in context");
+            }
+            log.debug("Executing SPARQL UPDATE:\n{}", hydrated);
+            try (RepositoryConnection conn = repository.getConnection()) {
+                conn.prepareUpdate(hydrated).execute();
+            }
+            return null;
+        }
+
+        if (method.isAnnotationPresent(SparqlQuery.class)) {
+            if (repository == null) {
+                throw new DaedalusException("Cannot execute @SparqlQuery: Repository bean not found in context");
+            }
+            log.debug("Executing SPARQL QUERY:\n{}", hydrated);
+            try (RepositoryConnection conn = repository.getConnection()) {
+                if (method.getReturnType().equals(Boolean.class) || method.getReturnType().equals(boolean.class)) {
+                    return conn.prepareBooleanQuery(hydrated).evaluate();
+                }
+                
+                try (TupleQueryResult result = conn.prepareTupleQuery(hydrated).evaluate()) {
+                    if (method.getReturnType().equals(List.class)) {
+                        return result.stream().toList();
+                    }
+                    // Add more mapping logic if needed, for now return list of binding sets
+                    return result.stream().toList();
+                }
+            }
+        }
+
         if (method.getReturnType().equals(String.class)) return hydrated;
         try {
             return objectMapper.readValue(hydrated, method.getReturnType());

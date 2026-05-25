@@ -94,7 +94,7 @@ class DaedalusInvocationHandlerTest {
         return (TestRepository) Proxy.newProxyInstance(
                 TestRepository.class.getClassLoader(),
                 new Class[]{TestRepository.class},
-                new DaedalusInvocationHandler(TestRepository.class, globalContext, formatter)
+                new DaedalusInvocationHandler(TestRepository.class, globalContext, formatter, null)
         );
     }
 
