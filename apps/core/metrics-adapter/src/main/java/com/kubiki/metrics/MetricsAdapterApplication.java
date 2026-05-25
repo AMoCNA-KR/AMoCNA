@@ -9,7 +9,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @EnableScheduling
 @EnableDaedalusRepositories(basePackages = "com.kubiki.metrics.graph")
 public class MetricsAdapterApplication {
-    public static void main(String[] args) {
+    static void main(String[] args) {
         SpringApplication.run(MetricsAdapterApplication.class, args);
     }
 }

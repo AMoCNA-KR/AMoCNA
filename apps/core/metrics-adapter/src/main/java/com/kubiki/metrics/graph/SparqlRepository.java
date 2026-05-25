@@ -1,10 +1,6 @@
 package com.kubiki.metrics.graph;
 
-import com.kubiki.daedalus.annotation.Bind;
-import com.kubiki.daedalus.annotation.DaedalusRepository;
-import com.kubiki.daedalus.annotation.Template;
-import com.kubiki.daedalus.annotation.Type;
-import com.kubiki.daedalus.core.format.TemplateType;
+import com.kubiki.daedalus.annotation.*;
 
 @DaedalusRepository
 public interface SparqlRepository {

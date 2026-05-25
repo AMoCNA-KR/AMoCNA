@@ -35,13 +35,13 @@ public class PrometheusClient {
                         return Mono.empty();
                     }
 
-                    if (response.getData() == null || 
-                        response.getData().getResult() == null || 
-                        response.getData().getResult().isEmpty()) {
+                    if (response.getData() == null ||
+                            response.getData().getResult() == null ||
+                            response.getData().getResult().isEmpty()) {
                         log.debug("Prometheus query returned no results for query: {}", query);
                         return Mono.empty();
                     }
-                    
+
                     try {
                         List<Object> value = response.getData().getResult().get(0).getValue();
                         if (value != null && value.size() > 1) {
@@ -52,7 +52,7 @@ public class PrometheusClient {
                         log.error("Failed to parse Prometheus result value for query: {}", query, e);
                         return Mono.error(e);
                     }
-                    
+
                     return Mono.empty();
                 })
                 .doOnError(e -> log.error("Error communicating with Prometheus for query: {}", query, e));
@@ -102,7 +102,8 @@ public class PrometheusClient {
     /**
      * A single result from a Prometheus instant query.
      */
-    public record QueryResult(Map<String, String> labels, double value) {}
+    public record QueryResult(Map<String, String> labels, double value) {
+    }
 
     @Data
     public static class PrometheusResponse {
