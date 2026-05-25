@@ -8,7 +8,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 @SpringBootApplication(scanBasePackages = {"com.kubiki.palamedes", "com.kubiki.common"})
 @EnableConfigurationProperties({PalamedesProperties.class})
 public class PalamedesApplication {
-    public static void main(String[] args) {
+    static void main(String[] args) {
         SpringApplication.run(PalamedesApplication.class, args);
     }
 }

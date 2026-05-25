@@ -1,9 +1,9 @@
 package com.kubiki.palamedes.pipeline.pipes;
 
+import com.kubiki.common.model.ActionMessage;
 import com.kubiki.palamedes.dispatcher.DispatcherService;
 import com.kubiki.palamedes.knowledge.StateRepository;
 import com.kubiki.palamedes.model.ActionData;
-import com.kubiki.common.model.ActionMessage;
 import com.kubiki.palamedes.model.WorkflowState;
 import com.kubiki.palamedes.model.WorkflowStateMapper;
 import com.kubiki.palamedes.pipeline.MapePipe;

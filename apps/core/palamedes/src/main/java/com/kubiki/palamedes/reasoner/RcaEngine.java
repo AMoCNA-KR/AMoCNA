@@ -3,7 +3,6 @@ package com.kubiki.palamedes.reasoner;
 import com.kubiki.palamedes.knowledge.GraphDBGateway;
 import com.kubiki.palamedes.model.AnomalyTarget;
 import lombok.RequiredArgsConstructor;
-import org.eclipse.rdf4j.model.IRI;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -19,7 +18,7 @@ public class RcaEngine {
      */
     public AnomalyTarget findRootCause(AnomalyTarget initialAnomaly) {
         List<AnomalyTarget> rootCauses = gateway.findRootCause(initialAnomaly.resourceIri());
-        
+
         // For simplicity, if multiple paths exist, just return the one that is NOT the initial anomaly itself
         // if we found one deeper. Otherwise return the initial.
         return rootCauses.stream()

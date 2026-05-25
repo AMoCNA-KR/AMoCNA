@@ -1,11 +1,8 @@
 package com.kubiki.palamedes.config;
 
-import lombok.Data;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -26,7 +23,7 @@ public record PalamedesProperties(
             "failed",
             "compensating"
     );
-  
+
     public record GraphDB(String url, String repositoryId, int timeoutMs) {
         public GraphDB {
             Objects.requireNonNull(url, "palamedes.graphdb.url must not be null");
@@ -56,7 +53,8 @@ public record PalamedesProperties(
         }
     }
 
-    public record Engine(long fallbackPipelineRateMs, long fallbackAnomalyScanRateMs, int defaultIdempotencySeconds, int batchSize) {
+    public record Engine(long fallbackPipelineRateMs, long fallbackAnomalyScanRateMs, int defaultIdempotencySeconds,
+                         int batchSize) {
         public Engine {
             PropertiesUtils.requiredPositive(fallbackPipelineRateMs, "palamedes.engine.fallbackPipelineRateMs");
             PropertiesUtils.requiredPositive(fallbackAnomalyScanRateMs, "palamedes.engine.fallbackAnomalyScanRateMs");
@@ -65,7 +63,8 @@ public record PalamedesProperties(
         }
     }
 
-    public record Utilities(String actionPrefix, String stepPrefix, String compensationPrefix, int sizeOfGeneratedUuid) {
+    public record Utilities(String actionPrefix, String stepPrefix, String compensationPrefix,
+                            int sizeOfGeneratedUuid) {
         public Utilities {
             Objects.requireNonNull(actionPrefix, "palamedes.utilities.actionPrefix must not be null");
             Objects.requireNonNull(stepPrefix, "palamedes.utilities.stepPrefix must not be null");

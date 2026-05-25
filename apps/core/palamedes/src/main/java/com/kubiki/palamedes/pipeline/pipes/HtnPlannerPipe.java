@@ -1,7 +1,5 @@
 package com.kubiki.palamedes.pipeline.pipes;
 
-import com.kubiki.palamedes.knowledge.GraphDBGateway;
-import com.kubiki.palamedes.knowledge.OntologyRegistry;
 import com.kubiki.palamedes.knowledge.StateRepository;
 import com.kubiki.palamedes.model.ActionData;
 import com.kubiki.palamedes.model.WorkflowState;
@@ -10,13 +8,10 @@ import com.kubiki.palamedes.pipeline.MapePipe;
 import com.kubiki.palamedes.pipeline.WorkflowContext;
 import com.kubiki.palamedes.saga.WorkflowPlanner;
 import lombok.RequiredArgsConstructor;
-import org.eclipse.rdf4j.model.IRI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
-
-import java.util.List;
 
 /**
  * HtnPlannerPipe (MAPE-Plan):

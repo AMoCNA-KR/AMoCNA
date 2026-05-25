@@ -19,7 +19,7 @@ public class DaedalusInitializer {
     @PostConstruct
     public void init() {
         log.info("Initializing Daedalus global variables...");
-        
+
         String prefixes = String.format(
                 """
                         PREFIX %s: <%s>
