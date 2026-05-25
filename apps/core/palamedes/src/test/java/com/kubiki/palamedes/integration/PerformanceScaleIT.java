@@ -1,8 +1,8 @@
 package com.kubiki.palamedes.integration;
 
-import com.kubiki.palamedes.knowledge.GraphDBGateway;
+import com.kubiki.common.knowledge.SparqlClient;
 import com.kubiki.common.ontology.OntologyRegistry;
-import com.kubiki.palamedes.knowledge.SparqlClient;
+import com.kubiki.palamedes.knowledge.GraphDBGateway;
 import com.kubiki.palamedes.model.ActiveActionSummary;
 import com.kubiki.palamedes.pipeline.MapePipeline;
 import org.eclipse.rdf4j.model.IRI;

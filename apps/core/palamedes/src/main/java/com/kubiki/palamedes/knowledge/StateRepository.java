@@ -1,5 +1,6 @@
 package com.kubiki.palamedes.knowledge;
 
+import com.kubiki.common.knowledge.SparqlClient;
 import com.kubiki.palamedes.model.WorkflowState;
 import com.kubiki.palamedes.model.WorkflowStateMapper;
 import lombok.RequiredArgsConstructor;

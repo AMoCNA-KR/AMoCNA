@@ -1,4 +1,4 @@
-package com.kubiki.palamedes.knowledge;
+package com.kubiki.common.knowledge;
 
 import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.query.TupleQueryResult;
@@ -32,7 +32,6 @@ public class SparqlClient {
             }
         }
     }
-
 
     public boolean executeUpdateWithSuccess(String sparql) {
         log.debug("Executing SPARQL UPDATE:\n{}", sparql);

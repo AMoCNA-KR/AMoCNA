@@ -1,6 +1,7 @@
 package com.kubiki.palamedes.knowledge;
 
 import com.kubiki.common.config.AmocnaCommonProperties;
+import com.kubiki.common.knowledge.SparqlClient;
 import com.kubiki.common.ontology.OntologyRegistry;
 import com.kubiki.palamedes.config.PalamedesProperties;
 import com.kubiki.palamedes.model.*;
