@@ -43,4 +43,7 @@ public interface SparqlRepository {
             @Type(TemplateType.IRI) @Bind("IRI::resourceId") String resourceId,
             @Type(TemplateType.IRI) @Bind("IRI::toState") String toState
     );
+
+    @Template(resource = "sparql/find-root-cause.sparql")
+    String findRootCause(@Type(TemplateType.IRI) @Bind("IRI::startResource") String startResource);
 }

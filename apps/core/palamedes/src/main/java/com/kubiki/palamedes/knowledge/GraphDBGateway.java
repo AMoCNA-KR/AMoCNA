@@ -206,6 +206,16 @@ public class GraphDBGateway {
         )).collect(Collectors.toList()));
     }
 
+    public List<AnomalyTarget> findRootCause(IRI startResource) {
+        String sparql = sparqlRepository.findRootCause(startResource.stringValue());
+
+        return sparqlClient.executeQuery(sparql, stream -> stream.map(bs -> new AnomalyTarget(
+                (IRI) bs.getValue("rootResource"),
+                bs.getValue("rootResourceName").stringValue(),
+                (IRI) bs.getValue(INTENT_IRI)
+        )).collect(Collectors.toList()));
+    }
+
     public List<IRI> findDependents(IRI actionId) {
         String sparql = sparqlRepository.findDependents(actionId.stringValue());
 

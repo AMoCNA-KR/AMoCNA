@@ -1,0 +1,20 @@
+${SPARQL_PREFIXES}
+SELECT DISTINCT ?rootResource ?rootResourceName ?intent
+WHERE {
+  ${IRI::startResource} (${PREFIX::RESOURCES_PREFIX}:dependsOn|${PREFIX::RESOURCES_PREFIX}:usesStorage|${PREFIX::RESOURCES_PREFIX}:isHostedOn|${PREFIX::RESOURCES_PREFIX}:isRealizedBy)* ?rootResource .
+  
+  ?rootResource ${PREFIX::RESOURCES_PREFIX}:hasState ?state .
+  ?state a ?anomalyType .
+  ?rootResource ${PREFIX::RESOURCES_PREFIX}:resourceName ?rootResourceName .
+  
+  ?anomalyType rdfs:subClassOf ?restriction .
+  ?restriction a owl:Restriction .
+  ?restriction owl:onProperty ${PREFIX::BRIDGE_PREFIX}:isResolvedByIntent .
+  ?restriction owl:someValuesFrom ?intent .
+  
+  FILTER NOT EXISTS {
+    ?action ${PREFIX::ACTIONS_PREFIX}:targetsEntity ?rootResource .
+    ?action ${PREFIX::ACTIONS_PREFIX}:hasCurrentState ?currentState .
+    FILTER(?currentState IN (${PREFIX::ACTIONS_PREFIX}:${INDIVIDUAL::STATE_INITIAL}, ${PREFIX::ACTIONS_PREFIX}:${INDIVIDUAL::STATE_PLANNED}, ${PREFIX::ACTIONS_PREFIX}:${INDIVIDUAL::STATE_VALIDATED}, ${PREFIX::ACTIONS_PREFIX}:${INDIVIDUAL::STATE_INPROGRESS}, ${PREFIX::ACTIONS_PREFIX}:${INDIVIDUAL::STATE_COMPENSATING}))
+  }
+}
