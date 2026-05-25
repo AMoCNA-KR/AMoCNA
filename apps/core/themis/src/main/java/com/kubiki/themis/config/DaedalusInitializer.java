@@ -1,5 +1,6 @@
 package com.kubiki.themis.config;
 
+import com.kubiki.common.config.AmocnaCommonProperties;
 import com.kubiki.daedalus.context.GlobalTemplateContext;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
@@ -10,16 +11,12 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class DaedalusInitializer {
     private final GlobalTemplateContext ctx;
-
-    @Value("${ontology.moam-prefix:moam}")
-    private String moamPrefix;
-
-    @Value("${ontology.actions-namespace:http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#}")
-    private String moamNamespace;
+    private final AmocnaCommonProperties properties;
 
     @PostConstruct
     public void init() {
-        ctx.set("SPARQL_PREFIXES", String.format("PREFIX %s: <%s>", moamPrefix, moamNamespace));
-        ctx.set("PREFIX::MOAM_PREFIX", moamPrefix);
+        String actionsPrefix = properties.ontology().actionsPrefix();
+        ctx.set("SPARQL_PREFIXES", String.format("PREFIX %s: <%s>", actionsPrefix, properties.ontology().actionsNamespace()));
+        ctx.set("PREFIX::ACTIONS_PREFIX", actionsPrefix);
     }
 }

@@ -1,8 +1,8 @@
 package com.kubiki.themis.execution;
 
-import com.kubiki.themis.config.RabbitMQConfig;
 import com.kubiki.common.model.ActionStatusUpdate;
 import com.kubiki.common.model.ExecutionStatus;
+import com.kubiki.themis.config.RabbitMQConfig;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;

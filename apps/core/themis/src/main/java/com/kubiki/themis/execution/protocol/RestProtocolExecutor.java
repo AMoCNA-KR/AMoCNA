@@ -5,7 +5,7 @@ import com.kubiki.common.model.ExecutionStatus;
 import com.kubiki.common.model.Protocol;
 import com.kubiki.themis.config.ThemisProperties;
 import com.kubiki.themis.execution.ProtocolExecutor;
-import com.kubiki.themis.model.*;
+import com.kubiki.themis.model.ExecutionResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpMethod;
@@ -68,7 +68,7 @@ public class RestProtocolExecutor implements ProtocolExecutor {
 
             ResponseEntity<Void> response = request.retrieve().toBodilessEntity();
             int observed = response.getStatusCode().value();
-            
+
             if (observed == expectedStatusCode) {
                 return ExecutionResult.success(observed);
             } else {

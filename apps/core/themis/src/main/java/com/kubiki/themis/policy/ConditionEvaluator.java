@@ -1,5 +1,7 @@
 package com.kubiki.themis.policy;
 
+import com.kubiki.common.config.AmocnaCommonProperties;
+import com.kubiki.common.ontology.OntologyRegistry;
 import com.kubiki.themis.config.ThemisProperties;
 import org.eclipse.rdf4j.query.BooleanQuery;
 import org.eclipse.rdf4j.query.QueryLanguage;
@@ -16,31 +18,33 @@ import java.util.List;
 @Component
 public class ConditionEvaluator {
     private static final Logger log = LoggerFactory.getLogger(ConditionEvaluator.class);
-    private static final String MOAM_NS = "http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#";
 
-    private final ThemisProperties properties;
+    private final AmocnaCommonProperties properties;
     private final RestClient restClient;
     private final SparqlRepository sparqlRepository;
 
-    public ConditionEvaluator(ThemisProperties properties, RestClient.Builder restClientBuilder, SparqlRepository sparqlRepository) {
+    public ConditionEvaluator(AmocnaCommonProperties properties,
+                              RestClient.Builder restClientBuilder,
+                              SparqlRepository sparqlRepository) {
         this.properties = properties;
         this.restClient = restClientBuilder.build();
         this.sparqlRepository = sparqlRepository;
     }
 
     public boolean evaluatePreConditions(String actionId) {
-        return evaluateConditions(actionId, "moam:hasPreCondition", "pre");
+        return evaluateConditions(actionId, "hasPreCondition", "pre");
     }
 
     public boolean evaluatePostConditions(String actionId) {
-        return evaluateConditions(actionId, "moam:hasPostCondition", "post");
+        return evaluateConditions(actionId, "hasPostCondition", "post");
     }
 
     private boolean evaluateConditions(String actionId, String property, String logPrefix) {
         log.info("Evaluating {}-conditions for action: {}", logPrefix, actionId);
-        String actionIri = properties.graphdb().actionsNamespace() + actionId;
+        String actionIri = properties.ontology().actionsNamespace() + actionId;
+        String propertyIri = properties.ontology().actionsNamespace() + property;
 
-        List<String> conditions = fetchConditions(actionIri, property);
+        List<String> conditions = fetchConditions(actionIri, propertyIri);
         if (conditions.isEmpty()) {
             log.info("No {}-conditions found for action: {}", logPrefix, actionId);
             return true;
@@ -64,8 +68,7 @@ public class ConditionEvaluator {
     }
 
     private List<String> fetchConditions(String actionIri, String property) {
-        String propertyIri = MOAM_NS + property.replace("moam:", "");
-        return sparqlRepository.fetchConditions(actionIri, propertyIri);
+        return sparqlRepository.fetchConditions(actionIri, property);
     }
 
     private boolean isPromQL(String query) {
@@ -101,6 +104,9 @@ public class ConditionEvaluator {
         }
     }
 
-    private record PrometheusResponse(String status, PrometheusData data) {}
-    private record PrometheusData(String resultType, List<Object> result) {}
+    private record PrometheusResponse(String status, PrometheusData data) {
+    }
+
+    private record PrometheusData(String resultType, List<Object> result) {
+    }
 }

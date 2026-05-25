@@ -1,8 +1,8 @@
 package com.kubiki.themis;
 
-import com.kubiki.themis.config.ThemisProperties;
 import com.kubiki.common.model.ExecutionStatus;
 import com.kubiki.common.model.Protocol;
+import com.kubiki.themis.config.ThemisProperties;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -38,11 +38,17 @@ class SimpleComponentsTest {
     @DisplayName("ThemisProperties and its nested records should work correctly")
     void testThemisProperties() {
         ThemisProperties.Secret secret = new ThemisProperties.Secret("token");
-        ThemisProperties props = new ThemisProperties(secret);
+        ThemisProperties.Execution execution = new ThemisProperties.Execution(1000);
+        
+        ThemisProperties props = new ThemisProperties(secret, execution);
+        
         assertAll(
                 () -> assertEquals("token", props.secret().bearerToken()),
+                () -> assertEquals(1000, props.execution().postConditionDelayMs()),
                 () -> assertNotNull(props.toString()),
-                () -> assertEquals(props, new ThemisProperties(new ThemisProperties.Secret("token")))
+                () -> assertEquals(props, new ThemisProperties(
+                        new ThemisProperties.Secret("token"),
+                        new ThemisProperties.Execution(1000)))
         );
     }
 }

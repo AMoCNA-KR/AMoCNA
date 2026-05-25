@@ -1,10 +1,7 @@
 package com.kubiki.themis.policy;
 
-import com.kubiki.daedalus.annotation.Bind;
-import com.kubiki.daedalus.annotation.DaedalusRepository;
-import com.kubiki.daedalus.annotation.Template;
-import com.kubiki.daedalus.annotation.Type;
-import com.kubiki.daedalus.core.format.TemplateType;
+import com.kubiki.daedalus.annotation.*;
+
 import java.util.List;
 
 @DaedalusRepository

@@ -4,7 +4,7 @@ import com.kubiki.common.model.ActionMessage;
 import com.kubiki.common.model.ExecutionStatus;
 import com.kubiki.common.model.Protocol;
 import com.kubiki.themis.execution.ProtocolExecutor;
-import com.kubiki.themis.model.*;
+import com.kubiki.themis.model.ExecutionResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -17,8 +17,8 @@ import java.io.BufferedReader;
  */
 @Component
 public class ShellProtocolExecutor implements ProtocolExecutor {
-    private static final Logger log = LoggerFactory.getLogger(ShellProtocolExecutor.class);
     public static final String BIN_SH = "/bin/sh";
+    private static final Logger log = LoggerFactory.getLogger(ShellProtocolExecutor.class);
 
     @Override
     public boolean supports(Protocol protocol) {
@@ -45,7 +45,7 @@ public class ShellProtocolExecutor implements ProtocolExecutor {
         try {
             ProcessBuilder pb = new ProcessBuilder();
             Process process = pb.command(BIN_SH, "-c", command).start();
-            
+
             Thread.ofVirtual().start(() -> readStream(process.inputReader(), "STDOUT", actionId));
             Thread.ofVirtual().start(() -> readStream(process.errorReader(), "STDERR", actionId));
 

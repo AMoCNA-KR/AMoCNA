@@ -1,10 +1,10 @@
 package com.kubiki.themis.execution.protocol;
 
-import com.kubiki.themis.config.ThemisProperties;
 import com.kubiki.common.model.ActionMessage;
-import com.kubiki.themis.model.ExecutionResult;
 import com.kubiki.common.model.ExecutionStatus;
 import com.kubiki.common.model.Protocol;
+import com.kubiki.themis.config.ThemisProperties;
+import com.kubiki.themis.model.ExecutionResult;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -17,7 +17,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestClient;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
