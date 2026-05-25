@@ -4,16 +4,20 @@ import com.kubiki.common.config.AmocnaCommonProperties;
 import com.kubiki.daedalus.context.GlobalTemplateContext;
 import com.kubiki.palamedes.config.BeanConfig;
 import com.kubiki.palamedes.config.DaedalusInitializer;
+import com.kubiki.palamedes.config.GraphDBConfig;
 import com.kubiki.palamedes.config.PalamedesProperties;
+import org.eclipse.rdf4j.query.BindingSet;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 
+import java.util.List;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SpringBootTest(classes = {BeanConfig.class, DaedalusInitializer.class})
+@SpringBootTest(classes = {BeanConfig.class, DaedalusInitializer.class, GraphDBConfig.class})
 @EnableConfigurationProperties({PalamedesProperties.class, AmocnaCommonProperties.class})
 @ActiveProfiles("test")
 class SparqlRepositoryTest {
@@ -28,18 +32,17 @@ class SparqlRepositoryTest {
     void shouldInjectAndHydrateFindAnomalies() {
         assertThat(sparqlRepository).isNotNull();
 
-        String query = sparqlRepository.findAnomalies();
+        List<BindingSet> result = sparqlRepository.findAnomalies();
 
-        assertThat(query).contains("SELECT DISTINCT ?resource");
+        assertThat(result).isNotNull();
     }
 
     @Test
     void shouldHydrateParameterizedQuery() {
         String actionId = "http://example.org/action/123";
-        String query = sparqlRepository.findDependents(actionId);
+        List<BindingSet> result = sparqlRepository.findDependents(actionId);
 
-        assertThat(query).contains("<" + actionId + ">");
-        assertThat(query).contains("dependsOn");
+        assertThat(result).isNotNull();
     }
 
     @Test
@@ -48,10 +51,8 @@ class SparqlRepositoryTest {
         String action2 = "http://example.org/action/2";
         String actions = "<" + action1 + "> <" + action2 + ">";
 
-        String query = sparqlRepository.fetchActionStructures(actions);
+        List<BindingSet> result = sparqlRepository.fetchActionStructures(actions);
 
-        assertThat(query).contains("VALUES ?root {");
-        assertThat(query).contains("<" + action1 + ">");
-        assertThat(query).contains("<" + action2 + ">");
+        assertThat(result).isNotNull();
     }
 }

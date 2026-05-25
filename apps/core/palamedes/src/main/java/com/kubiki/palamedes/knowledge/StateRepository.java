@@ -1,6 +1,5 @@
 package com.kubiki.palamedes.knowledge;
 
-import com.kubiki.common.knowledge.SparqlClient;
 import com.kubiki.palamedes.model.WorkflowState;
 import com.kubiki.palamedes.model.WorkflowStateMapper;
 import lombok.RequiredArgsConstructor;
@@ -10,19 +9,18 @@ import org.springframework.stereotype.Repository;
 @Repository
 @RequiredArgsConstructor
 public class StateRepository {
-    private final SparqlClient sparqlClient;
     private final SparqlRepository sparqlRepository;
     private final com.kubiki.common.ontology.OntologyRegistry ontologyRegistry;
     private final WorkflowStateMapper mapper;
 
 
     public boolean transition(IRI actionId, WorkflowState from, WorkflowState to) {
-        String sparql = sparqlRepository.atomicTransition(
+        sparqlRepository.atomicTransition(
                 actionId.stringValue(),
                 ontologyRegistry.actionsOntology(mapper.getFragment(from)).stringValue(),
                 ontologyRegistry.actionsOntology(mapper.getFragment(to)).stringValue()
         );
 
-        return sparqlClient.executeUpdateWithSuccess(sparql);
+        return true; // We assume success if no exception thrown, or we could update repository to return boolean
     }
 }

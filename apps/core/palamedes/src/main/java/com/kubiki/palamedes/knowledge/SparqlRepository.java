@@ -1,43 +1,46 @@
 package com.kubiki.palamedes.knowledge;
 
 import com.kubiki.daedalus.annotation.*;
+import org.eclipse.rdf4j.query.BindingSet;
+
+import java.util.List;
 
 @DaedalusRepository
 public interface SparqlRepository {
-    @Template(resource = "sparql/find-anomalies.sparql")
-    String findAnomalies();
+    @SparqlQuery(resource = "sparql/find-anomalies.sparql")
+    List<BindingSet> findAnomalies();
 
-    @Template(resource = "sparql/find-dependents.sparql")
-    String findDependents(@Type(TemplateType.IRI) @Bind("IRI::actionId") String actionId);
+    @SparqlQuery(resource = "sparql/find-dependents.sparql")
+    List<BindingSet> findDependents(@Type(TemplateType.IRI) @Bind("IRI::actionId") String actionId);
 
-    @Template(resource = "sparql/find-compensation.sparql")
-    String findCompensation(@Type(TemplateType.IRI) @Bind("IRI::actionId") String actionId);
+    @SparqlQuery(resource = "sparql/find-compensation.sparql")
+    List<BindingSet> findCompensation(@Type(TemplateType.IRI) @Bind("IRI::actionId") String actionId);
 
-    @Template(resource = "sparql/find-active-actions.sparql")
-    String findActiveActions();
+    @SparqlQuery(resource = "sparql/find-active-actions.sparql")
+    List<BindingSet> findActiveActions();
 
-    @Template(resource = "sparql/fetch-action-structure.sparql")
-    String fetchActionStructure(@Type(TemplateType.IRI) @Bind("IRI::actionId") String actionId);
+    @SparqlQuery(resource = "sparql/fetch-action-structure.sparql")
+    List<BindingSet> fetchActionStructure(@Type(TemplateType.IRI) @Bind("IRI::actionId") String actionId);
 
-    @Template(resource = "sparql/fetch-action-structures.sparql")
-    String fetchActionStructures(@Type(TemplateType.IRI) @Bind("IRI::actionIds") String actionIds);
+    @SparqlQuery(resource = "sparql/fetch-action-structures.sparql")
+    List<BindingSet> fetchActionStructures(@Type(TemplateType.IRI) @Bind("IRI::actionIds") String actionIds);
 
-    @Template(resource = "sparql/check-idempotency.sparql")
-    String checkIdempotency(@Type(TemplateType.IRI) @Bind("IRI::actionId") String actionId);
+    @SparqlQuery(resource = "sparql/check-idempotency.sparql")
+    List<BindingSet> checkIdempotency(@Type(TemplateType.IRI) @Bind("IRI::actionId") String actionId);
 
-    @Template(resource = "sparql/atomic-transition.sparql")
-    String atomicTransition(
+    @SparqlUpdate(resource = "sparql/atomic-transition.sparql")
+    void atomicTransition(
             @Type(TemplateType.IRI) @Bind("IRI::actionId") String actionId,
             @Type(TemplateType.IRI) @Bind("IRI::fromState") String fromState,
             @Type(TemplateType.IRI) @Bind("IRI::toState") String toState
     );
 
-    @Template(resource = "sparql/update-resource-state.sparql")
-    String updateResourceState(
+    @SparqlUpdate(resource = "sparql/update-resource-state.sparql")
+    void updateResourceState(
             @Type(TemplateType.IRI) @Bind("IRI::resourceId") String resourceId,
             @Type(TemplateType.IRI) @Bind("IRI::toState") String toState
     );
 
-    @Template(resource = "sparql/find-root-cause.sparql")
-    String findRootCause(@Type(TemplateType.IRI) @Bind("IRI::startResource") String startResource);
+    @SparqlQuery(resource = "sparql/find-root-cause.sparql")
+    List<BindingSet> findRootCause(@Type(TemplateType.IRI) @Bind("IRI::startResource") String startResource);
 }

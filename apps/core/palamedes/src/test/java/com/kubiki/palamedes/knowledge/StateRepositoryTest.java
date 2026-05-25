@@ -1,6 +1,5 @@
 package com.kubiki.palamedes.knowledge;
 
-import com.kubiki.common.knowledge.SparqlClient;
 import com.kubiki.palamedes.model.WorkflowState;
 import com.kubiki.palamedes.model.WorkflowStateMapper;
 import org.eclipse.rdf4j.model.IRI;
@@ -20,8 +19,6 @@ import static org.mockito.Mockito.when;
 class StateRepositoryTest {
     private final IRI actionId = SimpleValueFactory.getInstance().createIRI("http://test/action1");
     @Mock
-    private SparqlClient sparqlClient;
-    @Mock
     private SparqlRepository sparqlRepository;
     @Mock
     private com.kubiki.common.ontology.OntologyRegistry registry;
@@ -31,13 +28,11 @@ class StateRepositoryTest {
 
     @BeforeEach
     void setUp() {
-        repository = new StateRepository(sparqlClient, sparqlRepository, registry, mapper);
+        repository = new StateRepository(sparqlRepository, registry, mapper);
     }
 
     @Test
     void shouldTransitionState() {
-        when(sparqlRepository.atomicTransition(anyString(), anyString(), anyString())).thenReturn("SPARQL");
-        when(sparqlClient.executeUpdateWithSuccess("SPARQL")).thenReturn(true);
         when(registry.actionsOntology(anyString())).thenReturn(SimpleValueFactory.getInstance().createIRI("http://test/State"));
 
         when(mapper.getFragment(WorkflowState.INITIAL)).thenReturn("State_Initial");
@@ -46,6 +41,6 @@ class StateRepositoryTest {
         boolean result = repository.transition(actionId, WorkflowState.INITIAL, WorkflowState.PLANNED);
 
         assertTrue(result);
-        verify(sparqlClient).executeUpdateWithSuccess("SPARQL");
+        verify(sparqlRepository).atomicTransition(anyString(), anyString(), anyString());
     }
 }
