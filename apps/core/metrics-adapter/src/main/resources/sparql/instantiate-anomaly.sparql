@@ -1,0 +1,6 @@
+${SPARQL_PREFIXES}
+INSERT DATA {
+    ${IRI::targetResource} ${PREFIX::CNEE_PREFIX}:hasState ${IRI::anomaly} .
+    ${IRI::anomaly} a ${IRI::anomalyType} .
+    ${IRI::anomaly} ${PREFIX::CNEE_PREFIX}:detectedAt ${LITERAL::timestamp} .
+}

@@ -1,16 +1,14 @@
 package com.kubiki.metrics.graph;
 
 import lombok.extern.slf4j.Slf4j;
-import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.manager.RemoteRepositoryManager;
-import org.eclipse.rdf4j.model.util.Values;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -19,17 +17,16 @@ import java.util.UUID;
 public class GraphWriter {
   private final String graphDbUrl;
   private final String repositoryId;
+  private final SparqlRepository sparqlRepository;
   private RemoteRepositoryManager manager;
   private Repository repository;
 
-  private static final String CNEE_NS = "http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/";
-  private static final String HAS_STATE = CNEE_NS + "hasState";
-  private static final String DETECTED_AT = CNEE_NS + "detectedAt";
-
   public GraphWriter(@Value("${graphdb.url:http://graphdb:7200}") String graphDbUrl,
-      @Value("${graphdb.repositoryId:amocna}") String repositoryId) {
+      @Value("${graphdb.repositoryId:amocna}") String repositoryId,
+      SparqlRepository sparqlRepository) {
     this.graphDbUrl = graphDbUrl;
     this.repositoryId = repositoryId;
+    this.sparqlRepository = sparqlRepository;
   }
 
   @PostConstruct
@@ -59,32 +56,12 @@ public class GraphWriter {
     }
 
     String anomalyIri = anomalyTypeIri + "_" + UUID.randomUUID();
-    Instant now = Instant.now();
+    String timestamp = Instant.now().toString();
 
     try (RepositoryConnection conn = repository.getConnection()) {
-      try {
-        conn.begin();
-
-        conn.add(Values.iri(targetResourceIri),
-            Values.iri(HAS_STATE),
-            Values.iri(anomalyIri));
-
-        conn.add(Values.iri(anomalyIri),
-            RDF.TYPE,
-            Values.iri(anomalyTypeIri));
-
-        conn.add(Values.iri(anomalyIri),
-            Values.iri(DETECTED_AT),
-            Values.literal(now));
-
-        conn.commit();
-        log.info("Instantiated anomaly {} for resource {}", anomalyIri, targetResourceIri);
-      } catch (Exception e) {
-        if (conn.isActive()) {
-          conn.rollback();
-        }
-        throw e;
-      }
+      String updateQuery = sparqlRepository.instantiateAnomaly(targetResourceIri, anomalyIri, anomalyTypeIri, timestamp);
+      conn.prepareUpdate(updateQuery).execute();
+      log.info("Instantiated anomaly {} for resource {}", anomalyIri, targetResourceIri);
     } catch (Exception e) {
       log.error("Failed to instantiate anomaly in GraphDB for resource {}", targetResourceIri, e);
     }
