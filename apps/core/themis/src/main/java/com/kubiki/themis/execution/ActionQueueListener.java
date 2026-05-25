@@ -6,6 +6,7 @@ import com.kubiki.common.model.ActionMessage;
 import com.kubiki.common.model.ActionStatusUpdate;
 import com.kubiki.themis.model.ExecutionResult;
 import com.kubiki.common.model.ExecutionStatus;
+import com.kubiki.themis.policy.ConditionEvaluator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
@@ -19,15 +20,23 @@ public class ActionQueueListener {
     private static final Logger log = LoggerFactory.getLogger(ActionQueueListener.class);
     private final List<ProtocolExecutor> executors;
     private final StatusProducer statusProducer;
+    private final ConditionEvaluator conditionEvaluator;
 
-    public ActionQueueListener(List<ProtocolExecutor> executors, StatusProducer statusProducer) {
+    public ActionQueueListener(List<ProtocolExecutor> executors, StatusProducer statusProducer, ConditionEvaluator conditionEvaluator) {
         this.executors = executors;
         this.statusProducer = statusProducer;
+        this.conditionEvaluator = conditionEvaluator;
     }
 
     @RabbitListener(queues = RabbitMQConfig.ACTION_QUEUE)
     public void receiveAction(ActionMessage message) {
         log.info("Received action from queue: {}", message.actionId());
+
+        if (!conditionEvaluator.evaluatePreConditions(message.actionId())) {
+            log.warn("Pre-conditions failed for action: {}", message.actionId());
+            statusProducer.sendUpdate(new ActionStatusUpdate(message.actionId(), ExecutionStatus.FAILED_INTERNAL, "Pre-condition failed", 0));
+            return;
+        }
         
         ProtocolExecutor executor = executors.stream()
                 .filter(e -> e.supports(message.protocol()))
