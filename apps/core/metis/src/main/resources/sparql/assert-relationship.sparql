@@ -1,0 +1,3 @@
+[[SPARQL_PREFIXES]]
+INSERT { <[[IRI::subjectIri]]> cnee:[[predicate]] <[[IRI::objectIri]]> . }
+WHERE { FILTER NOT EXISTS { <[[IRI::subjectIri]]> cnee:[[predicate]] <[[IRI::objectIri]]> } }
