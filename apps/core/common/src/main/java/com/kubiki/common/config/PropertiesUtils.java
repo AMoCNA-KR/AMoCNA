@@ -1,4 +1,4 @@
-package com.kubiki.palamedes.config;
+package com.kubiki.common.config;
 
 
 import java.util.List;
