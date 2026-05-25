@@ -22,13 +22,16 @@ public class ConditionEvaluator {
     private final AmocnaCommonProperties properties;
     private final RestClient restClient;
     private final SparqlRepository sparqlRepository;
+    private final Repository repository;
 
     public ConditionEvaluator(AmocnaCommonProperties properties,
                               RestClient.Builder restClientBuilder,
-                              SparqlRepository sparqlRepository) {
+                              SparqlRepository sparqlRepository,
+                              Repository repository) {
         this.properties = properties;
         this.restClient = restClientBuilder.build();
         this.sparqlRepository = sparqlRepository;
+        this.repository = repository;
     }
 
     public boolean evaluatePreConditions(String actionId) {
@@ -44,13 +47,14 @@ public class ConditionEvaluator {
         String actionIri = properties.ontology().actionsNamespace() + actionId;
         String propertyIri = properties.ontology().actionsNamespace() + property;
 
-        List<String> conditions = fetchConditions(actionIri, propertyIri);
+        List<org.eclipse.rdf4j.query.BindingSet> conditions = sparqlRepository.fetchConditions(actionIri, propertyIri);
         if (conditions.isEmpty()) {
             log.info("No {}-conditions found for action: {}", logPrefix, actionId);
             return true;
         }
 
-        for (String conditionQuery : conditions) {
+        for (org.eclipse.rdf4j.query.BindingSet bs : conditions) {
+            String conditionQuery = bs.getValue("condition").stringValue();
             boolean result;
             if (isPromQL(conditionQuery)) {
                 result = evaluatePromQL(conditionQuery);
@@ -67,26 +71,18 @@ public class ConditionEvaluator {
         return true;
     }
 
-    private List<String> fetchConditions(String actionIri, String property) {
-        return sparqlRepository.fetchConditions(actionIri, property);
-    }
-
     private boolean isPromQL(String query) {
         String upper = query.toUpperCase();
         return !upper.contains("ASK") && !upper.contains("SELECT") && !upper.contains("PREFIX");
     }
 
     private boolean evaluateSparqlAsk(String sparql) {
-        RemoteRepositoryManager manager = RemoteRepositoryManager.getInstance(properties.graphdb().url());
-        try {
-            manager.init();
-            Repository repo = manager.getRepository(properties.graphdb().repositoryId());
-            try (RepositoryConnection conn = repo.getConnection()) {
-                BooleanQuery query = conn.prepareBooleanQuery(QueryLanguage.SPARQL, sparql);
-                return query.evaluate();
-            }
-        } finally {
-            manager.shutDown();
+        try (RepositoryConnection conn = repository.getConnection()) {
+            BooleanQuery query = conn.prepareBooleanQuery(QueryLanguage.SPARQL, sparql);
+            return query.evaluate();
+        } catch (Exception e) {
+            log.error("Error evaluating SPARQL ASK: {}", sparql, e);
+            return false;
         }
     }
 

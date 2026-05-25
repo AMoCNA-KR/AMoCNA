@@ -5,43 +5,43 @@ import com.kubiki.daedalus.annotation.*;
 @DaedalusRepository
 public interface MetisDaedalusRepository {
 
-    @Template(resource = "sparql/insert-entity.sparql")
-    String insertEntity(
+    @SparqlUpdate(resource = "sparql/insert-entity.sparql")
+    void insertEntity(
             @Type(TemplateType.IRI) @Bind("IRI::resourceIri") String resourceIri,
             @Type(TemplateType.IRI) @Bind("IRI::ontologyType") String ontologyType,
             @Bind("resourceId") String resourceId,
             @Bind("resourceName") String resourceName,
-            @Bind("triples") String triples
+            @Type(TemplateType.PLAIN) @Bind("triples") String triples
     );
 
-    @Template(resource = "sparql/assert-relationship.sparql")
-    String assertRelationship(
+    @SparqlUpdate(resource = "sparql/assert-relationship.sparql")
+    void assertRelationship(
             @Type(TemplateType.IRI) @Bind("IRI::subjectIri") String subjectIri,
-            @Bind("predicate") String predicate,
+            @Type(TemplateType.PLAIN) @Bind("predicate") String predicate,
             @Type(TemplateType.IRI) @Bind("IRI::objectIri") String objectIri
     );
 
-    @Template(resource = "sparql/assert-relationship-pair.sparql")
-    String assertRelationshipPair(
+    @SparqlUpdate(resource = "sparql/assert-relationship-pair.sparql")
+    void assertRelationshipPair(
             @Type(TemplateType.IRI) @Bind("IRI::subjectIri") String subjectIri,
-            @Bind("predicate") String predicate,
+            @Type(TemplateType.PLAIN) @Bind("predicate") String predicate,
             @Type(TemplateType.IRI) @Bind("IRI::objectIri") String objectIri,
-            @Bind("inversePredicate") String inversePredicate
+            @Type(TemplateType.PLAIN) @Bind("inversePredicate") String inversePredicate
     );
 
-    @Template(resource = "sparql/change-state.sparql")
-    String changeState(
+    @SparqlUpdate(resource = "sparql/change-state.sparql")
+    void changeState(
             @Type(TemplateType.IRI) @Bind("IRI::resourceIri") String resourceIri,
             @Type(TemplateType.IRI) @Bind("IRI::newStateIri") String newStateIri
     );
 
-    @Template(resource = "sparql/delete-entity.sparql")
-    String deleteEntity(
+    @SparqlUpdate(resource = "sparql/delete-entity.sparql")
+    void deleteEntity(
             @Type(TemplateType.IRI) @Bind("IRI::resourceIri") String resourceIri
     );
 
-    @Template(resource = "sparql/register-metric.sparql")
-    String registerMetricMetadata(
+    @SparqlUpdate(resource = "sparql/register-metric.sparql")
+    void registerMetricMetadata(
             @Type(TemplateType.IRI) @Bind("IRI::resourceIri") String resourceIri,
             @Bind("endpointUrl") String endpointUrl,
             @Type(TemplateType.IRI) @Bind("IRI::metricIri") String metricIri,

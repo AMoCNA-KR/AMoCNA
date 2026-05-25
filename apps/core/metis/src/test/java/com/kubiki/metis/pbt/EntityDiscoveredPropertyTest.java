@@ -1,16 +1,28 @@
 package com.kubiki.metis.pbt;
 
+import com.kubiki.daedalus.context.GlobalTemplateContext;
+import com.kubiki.daedalus.core.Formatter;
+import com.kubiki.daedalus.core.format.IriFormatter;
+import com.kubiki.daedalus.core.format.LiteralFormatter;
+import com.kubiki.daedalus.core.format.PlainFormatter;
+import com.kubiki.daedalus.proxy.DaedalusInvocationHandler;
 import com.kubiki.metis.config.MetisProperties;
 import com.kubiki.metis.grpc.EntityDiscoveredEvent;
 import com.kubiki.metis.knowledge.KnowledgeBaseException;
 import com.kubiki.metis.knowledge.KnowledgeBaseWriter;
+import com.kubiki.metis.knowledge.MetisDaedalusRepository;
 import com.kubiki.metis.sensor.IriFactory;
 import net.jqwik.api.*;
+import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.ValueFactory;
+import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
+import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.repository.Repository;
+import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
 import org.eclipse.rdf4j.sail.memory.MemoryStore;
 
-import java.util.ArrayList;
+import java.lang.reflect.Proxy;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -24,37 +36,6 @@ class EntityDiscoveredPropertyTest {
 
     private static final String CNEE_NAMESPACE =
             "http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt#";
-
-    // -------------------------------------------------------------------------
-    // SPARQL-capturing subclass of KnowledgeBaseWriter
-    // -------------------------------------------------------------------------
-
-    /**
-     * Subclass that overrides the protected {@code executeUpdate} method to
-     * capture every SPARQL string before delegating to the real implementation.
-     */
-    static class CapturingKnowledgeBaseWriter extends KnowledgeBaseWriter {
-
-        private final List<String> capturedSparql = new ArrayList<>();
-
-        CapturingKnowledgeBaseWriter(Repository repository, IriFactory iriFactory) {
-            super(repository, iriFactory);
-        }
-
-        @Override
-        protected void executeUpdate(String sparql) throws KnowledgeBaseException {
-            capturedSparql.add(sparql);
-            super.executeUpdate(sparql);
-        }
-
-        List<String> getCapturedSparql() {
-            return capturedSparql;
-        }
-
-        String getAllCapturedSparql() {
-            return String.join("\n", capturedSparql);
-        }
-    }
 
     // -------------------------------------------------------------------------
     // Arbitraries
@@ -106,7 +87,7 @@ class EntityDiscoveredPropertyTest {
             @ForAll("nonEmptyStrings") String resourceId,
             @ForAll("nonEmptyStrings") String resourceName
     ) throws KnowledgeBaseException {
-        // Arrange: set up a real in-memory repository and a capturing writer
+        // Arrange: set up a real in-memory repository
         Repository repo = new SailRepository(new MemoryStore());
         repo.init();
 
@@ -116,8 +97,21 @@ class EntityDiscoveredPropertyTest {
                 null
         );
         IriFactory iriFactory = new IriFactory(props);
-        CapturingKnowledgeBaseWriter writer =
-                new CapturingKnowledgeBaseWriter(repo, iriFactory);
+
+        GlobalTemplateContext ctx = new GlobalTemplateContext();
+        ctx.set("SPARQL_PREFIXES", "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n" +
+                "PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\n" +
+                "PREFIX cnee: <" + CNEE_NAMESPACE + ">");
+
+        Formatter formatter = new Formatter(List.of(new PlainFormatter(), new IriFormatter(), new LiteralFormatter()));
+        DaedalusInvocationHandler handler = new DaedalusInvocationHandler(MetisDaedalusRepository.class, ctx, formatter, repo);
+        MetisDaedalusRepository repository = (MetisDaedalusRepository) Proxy.newProxyInstance(
+                MetisDaedalusRepository.class.getClassLoader(),
+                new Class[]{MetisDaedalusRepository.class},
+                handler
+        );
+
+        KnowledgeBaseWriter writer = new KnowledgeBaseWriter(repository, iriFactory);
 
         // Build the event
         EntityDiscoveredEvent event = EntityDiscoveredEvent.newBuilder()
@@ -130,76 +124,35 @@ class EntityDiscoveredPropertyTest {
         // Act
         writer.insertEntity(event);
 
-        // Assert: join all captured SPARQL into one string for analysis
-        String allSparql = writer.getAllCapturedSparql();
+        // Assert: verify triples directly in the repository
+        ValueFactory vf = SimpleValueFactory.getInstance();
+        IRI subject = vf.createIRI(resourceIri);
+        IRI rdfType = RDF.TYPE;
+        IRI cneeResourceId = vf.createIRI(CNEE_NAMESPACE + "resourceID");
+        IRI cneeResourceName = vf.createIRI(CNEE_NAMESPACE + "resourceName");
 
-        // The new atomic-INSERT format produces one rdf:type triple in INSERT and one in FILTER NOT EXISTS,
-        // so we expect exactly 2 occurrences of "rdf:type <CNEEOnt#...". Same for the FILTER clause check.
-        // For data properties (cnee:resourceID, cnee:resourceName), they appear only in the INSERT body
-        // (no FILTER guard per property in the new format).
-        long rdfTypeCount = countOccurrences(allSparql, "rdf:type <" + CNEE_NAMESPACE);
-        assertThat(rdfTypeCount)
-                .as("Expected rdf:type with CNEEOnt-namespaced object to appear in INSERT and FILTER (count=2):\n%s",
-                        allSparql)
-                .isEqualTo(2);
+        try (RepositoryConnection conn = repo.getConnection()) {
+            // exactly one rdf:type triple whose object IRI begins with the CNEEOnt namespace
+            long rdfTypeCount = conn.getStatements(subject, rdfType, null, false).stream()
+                    .filter(s -> s.getObject().stringValue().startsWith(CNEE_NAMESPACE))
+                    .count();
+            assertThat(rdfTypeCount)
+                    .as("Expected exactly one rdf:type with CNEEOnt-namespaced object")
+                    .isEqualTo(1);
 
-        long resourceIdCount = countOccurrences(allSparql, "cnee:resourceID");
-        assertThat(resourceIdCount)
-                .as("Expected exactly one cnee:resourceID occurrence in SPARQL:\n%s", allSparql)
-                .isEqualTo(1);
+            // exactly one cnee:resourceID data property triple
+            long resourceIdCount = conn.getStatements(subject, cneeResourceId, null, false).stream().count();
+            assertThat(resourceIdCount)
+                    .as("Expected exactly one cnee:resourceID triple")
+                    .isEqualTo(1);
 
-        long resourceNameCount = countOccurrences(allSparql, "cnee:resourceName");
-        assertThat(resourceNameCount)
-                .as("Expected exactly one cnee:resourceName occurrence in SPARQL:\n%s", allSparql)
-                .isEqualTo(1);
+            // exactly one cnee:resourceName data property triple
+            long resourceNameCount = conn.getStatements(subject, cneeResourceName, null, false).stream().count();
+            assertThat(resourceNameCount)
+                    .as("Expected exactly one cnee:resourceName triple")
+                    .isEqualTo(1);
+        }
 
         repo.shutDown();
-    }
-
-    // -------------------------------------------------------------------------
-    // Helpers
-    // -------------------------------------------------------------------------
-
-    /**
-     * Counts occurrences of {@code substring} in {@code text}.
-     */
-    private long countOccurrences(String text, String substring) {
-        if (text == null || substring == null || substring.isEmpty()) return 0;
-        long count = 0;
-        int idx = 0;
-        while ((idx = text.indexOf(substring, idx)) != -1) {
-            count++;
-            idx += substring.length();
-        }
-        return count;
-    }
-
-    /**
-     * Counts how many times a predicate/object pattern appears as a triple in an
-     * INSERT body (i.e., the line ends with " ." after the pattern).
-     *
-     * <p>The SPARQL produced by {@code KnowledgeBaseWriter.insertEntity} uses one
-     * {@code INSERT … WHERE { FILTER NOT EXISTS … }} block per triple. Each block
-     * contains the predicate twice: once in the INSERT body (ending with " .") and
-     * once in the FILTER clause (ending with " }"). This method counts only the
-     * INSERT body occurrences by looking for the pattern followed (anywhere on the
-     * same logical line) by " ." before the next newline.
-     */
-    private long countInsertTriples(String sparql, String predicatePattern) {
-        if (sparql == null || predicatePattern == null) return 0;
-        long count = 0;
-        int idx = 0;
-        while ((idx = sparql.indexOf(predicatePattern, idx)) != -1) {
-            // Find the end of this "line" (next newline or end of string)
-            int lineEnd = sparql.indexOf('\n', idx);
-            if (lineEnd == -1) lineEnd = sparql.length();
-            String line = sparql.substring(idx, lineEnd);
-            // INSERT body triples end with " ." (possibly with trailing whitespace)
-            if (line.contains(" .")) {
-                count++;
-            }
-            idx += predicatePattern.length();
-        }
-        return count;
     }
 }

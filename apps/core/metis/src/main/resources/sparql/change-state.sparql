@@ -1,10 +1,10 @@
-[[SPARQL_PREFIXES]]
+${SPARQL_PREFIXES}
 DELETE {
-  <[[IRI::resourceIri]]> cnee:hasState ?oldState .
+  ${IRI::resourceIri} cnee:hasState ?oldState .
 }
 INSERT {
-  <[[IRI::resourceIri]]> cnee:hasState <[[IRI::newStateIri]]> .
+  ${IRI::resourceIri} cnee:hasState ${IRI::newStateIri} .
 }
 WHERE {
-  OPTIONAL { <[[IRI::resourceIri]]> cnee:hasState ?oldState }
+  OPTIONAL { ${IRI::resourceIri} cnee:hasState ?oldState }
 }

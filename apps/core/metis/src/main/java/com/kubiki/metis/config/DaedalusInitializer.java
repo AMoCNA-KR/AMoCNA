@@ -14,7 +14,6 @@ import org.springframework.stereotype.Component;
 public class DaedalusInitializer {
 
     private final GlobalTemplateContext ctx;
-    private final AmocnaCommonProperties commonProperties;
     private final IriFactory iriFactory;
 
     @PostConstruct

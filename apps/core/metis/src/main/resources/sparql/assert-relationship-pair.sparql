@@ -1,8 +1,8 @@
-[[SPARQL_PREFIXES]]
+${SPARQL_PREFIXES}
 INSERT {
-  <[[IRI::subjectIri]]> cnee:[[predicate]] <[[IRI::objectIri]]> .
-  <[[IRI::objectIri]]> cnee:[[inversePredicate]] <[[IRI::subjectIri]]> .
+  ${IRI::subjectIri} cnee:${predicate} ${IRI::objectIri} .
+  ${IRI::objectIri} cnee:${inversePredicate} ${IRI::subjectIri} .
 }
 WHERE {
-  FILTER NOT EXISTS { <[[IRI::subjectIri]]> cnee:[[predicate]] <[[IRI::objectIri]]> }
+  FILTER NOT EXISTS { ${IRI::subjectIri} cnee:${predicate} ${IRI::objectIri} }
 }

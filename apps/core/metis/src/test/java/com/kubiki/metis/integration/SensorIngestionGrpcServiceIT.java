@@ -6,6 +6,13 @@ import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
 import com.kubiki.metis.grpc.*;
 import io.grpc.StatusRuntimeException;
 import io.grpc.inprocess.InProcessChannelBuilder;
+import org.eclipse.rdf4j.model.ValueFactory;
+import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
+import org.eclipse.rdf4j.model.vocabulary.RDF;
+import org.eclipse.rdf4j.repository.Repository;
+import org.eclipse.rdf4j.repository.RepositoryConnection;
+import org.eclipse.rdf4j.repository.sail.SailRepository;
+import org.eclipse.rdf4j.sail.memory.MemoryStore;
 import org.junit.jupiter.api.*;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
@@ -13,14 +20,16 @@ import org.springframework.context.ApplicationContextInitializer;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.support.TestPropertySourceUtils;
 
-import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 @SpringBootTest(
         webEnvironment = SpringBootTest.WebEnvironment.NONE,
@@ -31,15 +40,21 @@ import static org.mockito.Mockito.mock;
 )
 @ActiveProfiles("test")
 @ContextConfiguration(initializers = SensorIngestionGrpcServiceIT.WireMockInitializer.class)
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class SensorIngestionGrpcServiceIT {
 
     private static final String CNEE_NS =
             "http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt#";
-    private static final String SPARQL_UPDATE_PATH = "/repositories/test/statements";
 
     static WireMockServer wireMockServer;
-    private Object channel;
+    private io.grpc.ManagedChannel channel;
     private SensorIngestionServiceGrpc.SensorIngestionServiceBlockingStub stub;
+
+    private static Repository inMemoryRepo;
+    private final ValueFactory vf = SimpleValueFactory.getInstance();
+
+    @MockitoBean
+    private Repository realRepository;
 
     @BeforeAll
     static void startWireMock() {
@@ -55,16 +70,36 @@ class SensorIngestionGrpcServiceIT {
 
     @BeforeEach
     void setUp() {
+        if (inMemoryRepo == null) {
+            inMemoryRepo = new SailRepository(new MemoryStore());
+            inMemoryRepo.init();
+        }
+        clearRepo();
+
+        try {
+            when(realRepository.getConnection()).thenAnswer(inv -> inMemoryRepo.getConnection());
+            when(realRepository.getValueFactory()).thenReturn(vf);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
         wireMockServer.resetAll();
-        var ch = InProcessChannelBuilder.forName("test-sensor-ingestion").directExecutor().build();
-        channel = ch;
-        stub = SensorIngestionServiceGrpc.newBlockingStub(ch);
+        channel = InProcessChannelBuilder.forName("test-sensor-ingestion").directExecutor().build();
+        stub = SensorIngestionServiceGrpc.newBlockingStub(channel);
+    }
+
+    private void clearRepo() {
+        try (RepositoryConnection conn = inMemoryRepo.getConnection()) {
+            conn.begin();
+            conn.clear();
+            conn.commit();
+        }
     }
 
     @AfterEach
     void tearDown() {
         if (channel != null) {
-            ((io.grpc.ManagedChannel) channel).shutdownNow();
+            channel.shutdownNow();
         }
     }
 
@@ -91,9 +126,6 @@ class SensorIngestionGrpcServiceIT {
 
     @Test
     void validEntityDiscoveredBatch_acceptedTrueProcessedCountOne() {
-        wireMockServer.stubFor(get(urlEqualTo("/protocol")).willReturn(aResponse().withStatus(200).withBody("12")));
-        wireMockServer.stubFor(post(urlEqualTo(SPARQL_UPDATE_PATH)).willReturn(aResponse().withStatus(204)));
-
         SensorBatch batch = SensorBatch.newBuilder()
                 .setCorrelationId("corr-valid-001")
                 .addEvents(SensorEvent.newBuilder().setEntityDiscovered(
@@ -108,7 +140,14 @@ class SensorIngestionGrpcServiceIT {
         assertThat(response.getAccepted()).isTrue();
         assertThat(response.getProcessedCount()).isEqualTo(1);
         assertThat(response.getCorrelationId()).isEqualTo("corr-valid-001");
-        wireMockServer.verify(1, postRequestedFor(urlEqualTo(SPARQL_UPDATE_PATH)));
+
+        try (RepositoryConnection conn = inMemoryRepo.getConnection()) {
+            assertThat(conn.hasStatement(
+                    vf.createIRI("http://example.org/pod-1"),
+                    RDF.TYPE,
+                    vf.createIRI(CNEE_NS + "ExecutionUnit"),
+                    false)).isTrue();
+        }
     }
 
     @Test
@@ -117,13 +156,12 @@ class SensorIngestionGrpcServiceIT {
         IngestResponse response = stub.ingestBatch(batch);
         assertThat(response.getAccepted()).isTrue();
         assertThat(response.getProcessedCount()).isEqualTo(0);
-        wireMockServer.verify(0, postRequestedFor(urlEqualTo(SPARQL_UPDATE_PATH)));
     }
 
     @Test
     void graphDbReturns503_grpcStatusUnavailable() {
-        wireMockServer.stubFor(get(urlEqualTo("/protocol")).willReturn(aResponse().withStatus(200).withBody("12")));
-        wireMockServer.stubFor(post(urlEqualTo(SPARQL_UPDATE_PATH)).willReturn(aResponse().withStatus(503)));
+        // Mock connection to throw exception simulating 503
+        when(realRepository.getConnection()).thenThrow(new org.eclipse.rdf4j.repository.RepositoryException("Service Unavailable (503)"));
 
         SensorBatch batch = SensorBatch.newBuilder()
                 .setCorrelationId("corr-503")
@@ -146,6 +184,5 @@ class SensorIngestionGrpcServiceIT {
         SensorBatch batch = SensorBatch.newBuilder().setCorrelationId("x".repeat(129)).build();
         IngestResponse response = stub.ingestBatch(batch);
         assertThat(response.getAccepted()).isFalse();
-        wireMockServer.verify(0, postRequestedFor(urlEqualTo(SPARQL_UPDATE_PATH)));
     }
 }
