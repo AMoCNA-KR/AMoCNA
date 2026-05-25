@@ -8,7 +8,7 @@ import com.kubiki.palamedes.model.WorkflowState;
 import com.kubiki.palamedes.model.WorkflowStateMapper;
 import com.kubiki.palamedes.pipeline.MapePipe;
 import com.kubiki.palamedes.pipeline.WorkflowContext;
-import com.kubiki.palamedes.utils.ActionUtils;
+import com.kubiki.palamedes.saga.WorkflowPlanner;
 import lombok.RequiredArgsConstructor;
 import org.eclipse.rdf4j.model.IRI;
 import org.slf4j.Logger;
@@ -29,10 +29,8 @@ import java.util.List;
 public class HtnPlannerPipe implements MapePipe {
     private static final Logger log = LoggerFactory.getLogger(HtnPlannerPipe.class);
 
-    private final ActionUtils utils;
-    private final GraphDBGateway graphDBGateway;
+    private final WorkflowPlanner workflowPlanner;
     private final StateRepository stateRepository;
-    private final OntologyRegistry ontologyRegistry;
     private final WorkflowStateMapper mapper;
 
 
@@ -47,7 +45,7 @@ public class HtnPlannerPipe implements MapePipe {
         ActionData data = context.actionData();
         if (data instanceof ActionData.ComplexWorkflow cw) {
             log.info("Decomposing ComplexWorkflow {}", context.actionId());
-            decomposeWorkflow(cw, context.actionId());
+            workflowPlanner.planWorkflow(cw, context.actionId());
         } else if (data instanceof ActionData.SimpleAction sa) {
             log.debug("No decomposition needed for SimpleAction {}", context.actionId());
         }
@@ -57,25 +55,5 @@ public class HtnPlannerPipe implements MapePipe {
             context.metadata().put("currentState", mapper.getFragment(WorkflowState.PLANNED));
         }
         return success;
-    }
-
-    private void decomposeWorkflow(ActionData.ComplexWorkflow workflow, IRI parentIri) {
-        List<ActionData> steps = workflow.steps();
-        IRI previousStepIri = null;
-
-        for (ActionData step : steps) {
-            String stepId = utils.generateStepId();
-            IRI stepIri = ontologyRegistry.actionsOntology(stepId);
-
-            graphDBGateway.materializeActionInstance(stepIri, step, workflow.target(), parentIri);
-
-            if (previousStepIri != null) {
-                graphDBGateway.linkDependent(stepIri, previousStepIri);
-            } else {
-                graphDBGateway.transitionState(stepIri, mapper.getFragment(WorkflowState.INITIAL));
-            }
-
-            previousStepIri = stepIri;
-        }
     }
 }

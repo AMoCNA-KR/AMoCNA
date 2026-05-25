@@ -88,22 +88,35 @@ public class SagaManager {
     private void processFailure(IRI actionIri, String actionId) {
         boolean transitioned = stateRepository.transition(actionIri, WorkflowState.IN_PROGRESS, WorkflowState.FAILED);
         if (transitioned) {
-            // 1. Fail parent (recursive)
+            // 1. Mark parent as COMPENSATING
             IRI parentIri = gateway.findParent(actionIri);
             if (parentIri != null) {
-                stateRepository.transition(parentIri, WorkflowState.PLANNED, WorkflowState.FAILED);
+                stateRepository.transition(parentIri, WorkflowState.PLANNED, WorkflowState.COMPENSATING);
+                stateRepository.transition(parentIri, WorkflowState.IN_PROGRESS, WorkflowState.COMPENSATING);
+
+                // Rollback all completed siblings
+                List<IRI> siblings = gateway.findChildren(parentIri);
+                for (IRI sibling : siblings) {
+                    if (gateway.getState(sibling) == WorkflowState.SUCCEEDED) {
+                        triggerCompensation(sibling);
+                    }
+                }
             }
 
-            // 2. Trigger Compensation (Rollback)
-            IRI compensationIri = gateway.findCompensation(actionIri);
-            if (compensationIri != null) {
-                log.info("Triggering compensation {} for action {}", compensationIri, actionId);
-                String compId = utils.generateCompensationId();
-                var originalAction = gateway.fetchActionStructure(actionIri);
-                if (originalAction != null) {
-                    gateway.createActionWorkflow(originalAction.target(), compensationIri, compId);
-                    log.info("Compensation workflow {} created in State_Initial", compId);
-                }
+            // 2. Trigger Compensation for the failed action itself (if applicable)
+            triggerCompensation(actionIri);
+        }
+    }
+
+    private void triggerCompensation(IRI actionIri) {
+        IRI compensationIri = gateway.findCompensation(actionIri);
+        if (compensationIri != null) {
+            log.info("Triggering compensation {} for action {}", compensationIri, actionIri);
+            String compId = utils.generateCompensationId();
+            ActionData originalAction = gateway.fetchActionStructure(actionIri);
+            if (originalAction != null) {
+                gateway.createActionWorkflow(originalAction.target(), compensationIri, compId);
+                log.info("Compensation workflow {} created in State_Initial", compId);
             }
         }
     }
