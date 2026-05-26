@@ -48,7 +48,7 @@ class PerformanceScaleIT {
     @Autowired
     private OntologyRegistry registry;
     @MockitoSpyBean
-    private SparqlClient sparqlClient;
+    private com.kubiki.palamedes.knowledge.SparqlRepository sparqlRepository;
     @MockitoBean
     private RabbitTemplate rabbitTemplate;
     @MockitoBean
@@ -112,8 +112,8 @@ class PerformanceScaleIT {
         List<ActiveActionSummary> active = gateway.findActiveActions();
         assertTrue(active.size() >= actionCount);
 
-        // Reset sparqlClient mock to clear findActiveActions() call
-        reset(sparqlClient);
+        // Reset sparqlRepository spy to clear findActiveActions() call
+        reset(sparqlRepository);
 
         long start = System.currentTimeMillis();
         mapePipeline.run();
@@ -127,6 +127,7 @@ class PerformanceScaleIT {
 
         // 2. Check batching: fetchActionStructures should be called 4 times (200 / 50)
         // plus 1 call for findActiveActions() at the start of pipeline.run()
-        verify(sparqlClient, times(5)).executeQuery(anyString(), any());
+        verify(sparqlRepository, times(1)).findActiveActions();
+        verify(sparqlRepository, times(4)).fetchActionStructures(anyString());
     }
 }

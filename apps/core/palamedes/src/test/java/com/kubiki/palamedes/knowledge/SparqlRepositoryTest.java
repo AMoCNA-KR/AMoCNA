@@ -6,27 +6,57 @@ import com.kubiki.palamedes.config.BeanConfig;
 import com.kubiki.palamedes.config.DaedalusInitializer;
 import com.kubiki.palamedes.config.GraphDBConfig;
 import com.kubiki.palamedes.config.PalamedesProperties;
+import org.eclipse.rdf4j.model.ValueFactory;
+import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.query.BindingSet;
+import org.eclipse.rdf4j.repository.Repository;
+import org.eclipse.rdf4j.repository.RepositoryConnection;
+import org.eclipse.rdf4j.repository.sail.SailRepository;
+import org.eclipse.rdf4j.sail.memory.MemoryStore;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.when;
 
 @SpringBootTest(classes = {BeanConfig.class, DaedalusInitializer.class, GraphDBConfig.class})
 @EnableConfigurationProperties({PalamedesProperties.class, AmocnaCommonProperties.class})
 @ActiveProfiles("test")
 class SparqlRepositoryTest {
 
+    private static Repository inMemoryRepo;
+    private final ValueFactory vf = SimpleValueFactory.getInstance();
+
+    @MockitoBean
+    private Repository realRepository;
+
     @Autowired
     private SparqlRepository sparqlRepository;
 
     @Autowired
     private GlobalTemplateContext globalContext;
+
+    @BeforeEach
+    void setUp() throws Exception {
+        if (inMemoryRepo == null) {
+            inMemoryRepo = new SailRepository(new MemoryStore());
+            inMemoryRepo.init();
+        }
+        try (RepositoryConnection conn = inMemoryRepo.getConnection()) {
+            conn.begin();
+            conn.clear();
+            conn.commit();
+        }
+        when(realRepository.getConnection()).thenAnswer(inv -> inMemoryRepo.getConnection());
+        when(realRepository.getValueFactory()).thenReturn(vf);
+    }
 
     @Test
     void shouldInjectAndHydrateFindAnomalies() {

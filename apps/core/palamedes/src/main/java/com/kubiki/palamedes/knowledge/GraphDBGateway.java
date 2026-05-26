@@ -168,8 +168,8 @@ public class GraphDBGateway {
 
   public Map<IRI, ActionData> fetchActionStructures(List<IRI> actionIds) {
     String joinedIds = actionIds.stream()
-        .map(IRI::stringValue)
-        .collect(Collectors.joining("> <"));
+        .map(iri -> "<" + iri.stringValue() + ">")
+        .collect(Collectors.joining(" "));
 
     List<BindingSet> allBindings = sparqlRepository.fetchActionStructures(joinedIds);
 

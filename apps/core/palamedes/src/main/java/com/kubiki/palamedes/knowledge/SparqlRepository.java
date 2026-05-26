@@ -23,7 +23,7 @@ public interface SparqlRepository {
     List<BindingSet> fetchActionStructure(@Type(TemplateType.IRI) @Bind("IRI::actionId") String actionId);
 
     @SparqlQuery(resource = "sparql/fetch-action-structures.sparql")
-    List<BindingSet> fetchActionStructures(@Type(TemplateType.IRI) @Bind("IRI::actionIds") String actionIds);
+    List<BindingSet> fetchActionStructures(@Type(TemplateType.PLAIN) @Bind("IRI::actionIds") String actionIds);
 
     @SparqlQuery(resource = "sparql/check-idempotency.sparql")
     List<BindingSet> checkIdempotency(@Type(TemplateType.IRI) @Bind("IRI::actionId") String actionId);
