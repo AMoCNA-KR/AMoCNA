@@ -13,6 +13,8 @@ spec:
       labels:
         app: metrics-adapter
     spec:
+      imagePullSecrets:
+        - name: ghcr-login
       initContainers:
         - name: wait-for-rabbitmq
           image: curlimages/curl:8.12.1
@@ -29,7 +31,7 @@ spec:
               echo "RabbitMQ is reachable."
       containers:
         - name: metrics-adapter
-          image: docker.io/sglomski/metrics-adapter:latest
+          image: ghcr.io/amocna-kr/metrics-adapter:latest
           imagePullPolicy: IfNotPresent
           env:
             - name: GRAPHDB_URL

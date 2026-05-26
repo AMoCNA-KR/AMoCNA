@@ -3,6 +3,7 @@
 amocna.py — Unified orchestration CLI for the AMoCNA project.
 
 Usage:
+    ./amocna.py login   [--registry REG] [--user USER]
     ./amocna.py build   [--app NAME|--all] [--push] [--registry REG] [--tag TAG]
     ./amocna.py test    [--app NAME|--all]
     ./amocna.py deploy  [--app NAME|--all]
@@ -380,7 +381,7 @@ def load_config(root: Path) -> ProjectConfig:
         name=project.get("name", "amocna"),
         group_id=project.get("group_id", "com.kubiki"),
         parent_pom=project.get("parent_pom", "pom.xml"),
-        registry=project.get("registry", "sglomski"),
+        registry=project.get("registry", "ghcr.io/amocna-kr"),
         apps=apps,
         forwards=forwards,
         k8s_deploy_order=k8s.get("deploy_order") or [],
@@ -499,7 +500,38 @@ def bump_version(current: str, part: str) -> str:
     return ".".join(segments) + suffix
 
 
+def check_pat() -> str:
+    """Ensure AMOCNA_PAT is set in the environment."""
+    pat = os.environ.get("AMOCNA_PAT")
+    if not pat:
+        error("AMOCNA_PAT environment variable is not set.")
+        error("Please set it: export AMOCNA_PAT=your_github_token")
+        sys.exit(1)
+    return pat
+
+
 # ─── Subcommands ──────────────────────────────────────────────────────
+
+
+def cmd_login(cfg: ProjectConfig, args: argparse.Namespace) -> None:
+    """Login to Docker registry using PAT."""
+    registry = args.registry or cfg.registry
+    pat = check_pat()
+    user = args.user or os.environ.get("AMOCNA_USER")
+
+    if not user:
+        error("User not specified. Use --user or set AMOCNA_USER.")
+        sys.exit(1)
+
+    header(f"Logging in to {registry}")
+    # Use input to pipe PAT to docker login --password-stdin
+    subprocess.run(
+        ["docker", "login", registry, "--username", user, "--password-stdin"],
+        input=pat,
+        text=True,
+        check=True,
+    )
+    info(f"Successfully logged in to {registry}")
 
 
 def cmd_status(cfg: ProjectConfig, _args: argparse.Namespace) -> None:
@@ -820,6 +852,9 @@ def cmd_build(cfg: ProjectConfig, args: argparse.Namespace) -> None:
     tag = args.tag or "latest"
     apps_to_build = _resolve_apps(cfg, args)
 
+    if args.push and "ghcr.io" in registry:
+        check_pat()
+
     for app in apps_to_build:
         if not app.dockerfile:
             if app.app_type in ("maven-lib", "angular"):
@@ -1038,6 +1073,7 @@ def build_parser() -> argparse.ArgumentParser:
         epilog=textwrap.dedent("""\
             examples:
               ./amocna.py status
+              ./amocna.py login --user myuser
               ./amocna.py build --app themis --push
               ./amocna.py build --all --registry ghcr.io/amocna
               ./amocna.py test --app metis
@@ -1048,6 +1084,11 @@ def build_parser() -> argparse.ArgumentParser:
         """),
     )
     sub = parser.add_subparsers(dest="command", required=True)
+
+    # login
+    p_login = sub.add_parser("login", help="Login to Docker registry using PAT")
+    p_login.add_argument("--registry", help="Docker registry (overrides config & env)")
+    p_login.add_argument("--user", help="GitHub username (overrides AMOCNA_USER env)")
 
     # status
     sub.add_parser("status", help="Show project overview and app status")
@@ -1105,6 +1146,7 @@ def main() -> None:
     cfg = load_config(root)
 
     commands = {
+        "login": cmd_login,
         "status": cmd_status,
         "build": cmd_build,
         "test": cmd_test,

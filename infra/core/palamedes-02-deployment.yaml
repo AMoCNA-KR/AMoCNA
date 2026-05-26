@@ -13,6 +13,8 @@ spec:
       labels:
         app: palamedes
     spec:
+      imagePullSecrets:
+        - name: ghcr-login
       initContainers:
         - name: wait-for-graphdb
           image: curlimages/curl:8.12.1
@@ -42,7 +44,7 @@ spec:
               echo "RabbitMQ is reachable."
       containers:
         - name: palamedes
-          image: docker.io/sglomski/palamedes:latest
+          image: ghcr.io/amocna-kr/palamedes:latest
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8081

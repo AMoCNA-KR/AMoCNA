@@ -6,7 +6,14 @@ WORKDIR /app
 COPY pom.xml .
 RUN mvn install -N
 
+# Install daedalus dependency first
+COPY apps/core/daedalus/pom.xml apps/core/daedalus/
+COPY apps/core/daedalus/src apps/core/daedalus/src/
+WORKDIR /app/apps/core/daedalus
+RUN mvn clean install -DskipTests
+
 # Install common dependency first
+WORKDIR /app
 COPY apps/core/common/pom.xml apps/core/common/
 COPY apps/core/common/src apps/core/common/src/
 WORKDIR /app/apps/core/common

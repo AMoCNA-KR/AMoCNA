@@ -13,6 +13,8 @@ spec:
       labels:
         app: themis
     spec:
+      imagePullSecrets:
+        - name: ghcr-login
       initContainers:
         - name: wait-for-rabbitmq
           image: curlimages/curl:8.12.1
@@ -29,7 +31,7 @@ spec:
               echo "RabbitMQ is reachable."
       containers:
         - name: themis
-          image: docker.io/sglomski/themis:latest
+          image: ghcr.io/amocna-kr/themis:latest
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8080

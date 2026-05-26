@@ -13,9 +13,11 @@ spec:
       labels:
         app: hephaestus-gui
     spec:
+      imagePullSecrets:
+        - name: ghcr-login
       containers:
         - name: hephaestus-gui
-          image: sglomski/gui:latest
+          image: ghcr.io/amocna-kr/gui:latest
           env:
           - name: prometheus.address
             value: prometheus-kube-prometheus-prometheus.monitoring:9090
