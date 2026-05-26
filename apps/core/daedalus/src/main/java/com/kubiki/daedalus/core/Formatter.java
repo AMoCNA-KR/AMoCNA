@@ -9,7 +9,6 @@ import java.util.stream.Collectors;
 
 import static com.kubiki.daedalus.core.DaedalusConstants.EMPTY_STRING;
 
-@Component
 public class Formatter {
     private final Map<Class<?>, ValueFormatter<?>> typeRegistry;
     private final Map<TemplateType, ValueFormatter<?>> annotationRegistry;

@@ -6,6 +6,7 @@ import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -20,6 +21,11 @@ public class SparqlClient {
 
     public SparqlClient(Repository repository) {
         this.repository = repository;
+    }
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public SparqlClient(ObjectProvider<Repository> repositoryProvider) {
+        this.repository = repositoryProvider.getIfAvailable();
     }
 
     public <T> T executeQuery(String sparql, Function<Stream<BindingSet>, T> streamProcessor) {

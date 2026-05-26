@@ -10,7 +10,6 @@ import java.util.stream.Collectors;
 import static com.kubiki.daedalus.core.DaedalusConstants.COLLECTION_SEPARATOR;
 import static com.kubiki.daedalus.core.DaedalusConstants.QUOTE;
 
-@Component
 public class CollectionFormatter implements ValueFormatter<Collection<?>> {
     @Override
     public String format(Collection<?> value) {

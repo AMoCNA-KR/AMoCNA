@@ -4,7 +4,6 @@ import com.kubiki.daedalus.annotation.TemplateType;
 import com.kubiki.daedalus.core.ValueFormatter;
 import org.springframework.stereotype.Component;
 
-@Component
 public class PlainFormatter implements ValueFormatter<Object> {
     @Override
     public String format(Object value) {

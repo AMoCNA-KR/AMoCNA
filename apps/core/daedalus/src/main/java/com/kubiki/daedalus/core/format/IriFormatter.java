@@ -7,11 +7,10 @@ import org.springframework.stereotype.Component;
 import static com.kubiki.daedalus.core.DaedalusConstants.IRI_BEGIN;
 import static com.kubiki.daedalus.core.DaedalusConstants.IRI_END;
 
-@Component
 public class IriFormatter implements ValueFormatter<Object> {
     @Override
     public String format(Object value) {
-        return IRI_BEGIN + value.toString() + IRI_END;
+        return value != null ? IRI_BEGIN + value.toString() + IRI_END : "";
     }
 
     @Override

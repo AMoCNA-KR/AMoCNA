@@ -17,6 +17,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.ImportBeanDefinitionRegistrar;
 import org.springframework.core.annotation.AnnotationAttributes;
 import org.springframework.core.type.AnnotationMetadata;
+import org.springframework.beans.factory.support.AbstractBeanDefinition;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -58,6 +59,12 @@ public class DaedalusAutoConfiguration implements ImportBeanDefinitionRegistrar 
         if (!registry.containsBeanDefinition(DaedalusHydrator.class.getName())) {
             registry.registerBeanDefinition(DaedalusHydrator.class.getName(),
                     BeanDefinitionBuilder.genericBeanDefinition(DefaultDaedalusHydrator.class).getBeanDefinition());
+        }
+
+        if (!registry.containsBeanDefinition(com.kubiki.daedalus.knowledge.SparqlClient.class.getName())) {
+            AbstractBeanDefinition bd = BeanDefinitionBuilder.genericBeanDefinition(com.kubiki.daedalus.knowledge.SparqlClient.class).getBeanDefinition();
+            bd.setAutowireMode(AbstractBeanDefinition.AUTOWIRE_CONSTRUCTOR);
+            registry.registerBeanDefinition(com.kubiki.daedalus.knowledge.SparqlClient.class.getName(), bd);
         }
 
         Set<String> basePackages = getBasePackages(importingClassMetadata);

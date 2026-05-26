@@ -6,14 +6,16 @@ import org.springframework.stereotype.Component;
 
 import static com.kubiki.daedalus.core.DaedalusConstants.QUOTE;
 
-@Component
 public class LiteralFormatter implements ValueFormatter<Object> {
     @Override
     public String format(Object value) {
-        if (value instanceof String) {
-            return QUOTE + value + QUOTE;
+        if (value != null) {
+            if (value instanceof Number || value instanceof Boolean) {
+                return value.toString();
+            }
+            return QUOTE + value.toString() + QUOTE;
         }
-        return value != null ? value.toString() : "";
+        return "";
     }
 
     @Override
