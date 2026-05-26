@@ -31,7 +31,7 @@ spec:
               echo "RabbitMQ is reachable."
       containers:
         - name: metrics-adapter
-          image: ghcr.io/amocna-kr/metrics-adapter:latest
+          image: ghcr.io/amocna-kr/metrics-adapter:1.4.0-SNAPSHOT
           imagePullPolicy: IfNotPresent
           env:
             - name: GRAPHDB_URL

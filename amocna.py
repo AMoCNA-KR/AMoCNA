@@ -424,39 +424,60 @@ def run(
 
 _VERSION_RE = re.compile(r"(<version>)(.*?)(</version>)")
 _PARENT_BLOCK_RE = re.compile(r"(<parent>.*?</parent>)", re.DOTALL)
+_EXCLUDE_BLOCKS_RE = re.compile(
+    r"("
+    r"<parent\b[^>]*>.*?</parent>|"
+    r"<dependencies\b[^>]*>.*?</dependencies>|"
+    r"<dependencyManagement\b[^>]*>.*?</dependencyManagement>|"
+    r"<build\b[^>]*>.*?</build>|"
+    r"<profiles\b[^>]*>.*?</profiles>|"
+    r"<profile\b[^>]*>.*?</profile>|"
+    r"<plugins\b[^>]*>.*?</plugins>|"
+    r"<plugin\b[^>]*>.*?</plugin>"
+    r")",
+    re.DOTALL
+)
 
 
 def read_pom_version(pom_path: Path) -> str:
-    """Read the <version> directly under <project> (not inside <parent>)."""
+    """Read the <version> directly under <project> (not inside excluded blocks like parent, dependencies, build, etc.), falling back to parent version."""
     content = pom_path.read_text()
-    # Remove parent block temporarily to avoid matching parent's version
-    without_parent = _PARENT_BLOCK_RE.sub("", content)
-    m = _VERSION_RE.search(without_parent)
+    # Remove parent, dependencies, build, etc. blocks to avoid matching sub-elements
+    clean_content = _EXCLUDE_BLOCKS_RE.sub("", content)
+    
+    m = _VERSION_RE.search(clean_content)
     if m:
         return m.group(2)
+    # Fallback to parent version
+    m_parent = _PARENT_BLOCK_RE.search(content)
+    if m_parent:
+        m_ver = _VERSION_RE.search(m_parent.group(1))
+        if m_ver:
+            return m_ver.group(2)
     error(f"Could not find <version> in {pom_path}")
     sys.exit(1)
 
 
 def _set_version_in_text(text: str, new_version: str) -> str:
-    """Replace the first <version>...</version> NOT inside <parent> block."""
-    # Strategy: split on <parent>...</parent>, replace first version outside it
-    parts = _PARENT_BLOCK_RE.split(text)
+    """Replace the first <version>...</version> NOT inside excluded blocks (parent, dependencies, build, profiles, etc.)."""
+    parts = _EXCLUDE_BLOCKS_RE.split(text)
     found = False
     result_parts = []
-    for part in parts:
-        if _PARENT_BLOCK_RE.fullmatch(part):
-            # this is a parent block, leave as-is
+    for i, part in enumerate(parts):
+        if i % 2 == 1:
+            # This is an excluded block, leave as-is
             result_parts.append(part)
-        elif not found:
-            new_part, count = _VERSION_RE.subn(
-                rf"\g<1>{new_version}\g<3>", part, count=1
-            )
-            if count > 0:
-                found = True
-            result_parts.append(new_part)
         else:
-            result_parts.append(part)
+            # This is outside excluded blocks
+            if not found:
+                new_part, count = _VERSION_RE.subn(
+                    rf"\g<1>{new_version}\g<3>", part, count=1
+                )
+                if count > 0:
+                    found = True
+                result_parts.append(new_part)
+            else:
+                result_parts.append(part)
     return "".join(result_parts)
 
 
@@ -849,7 +870,9 @@ def _undeploy_graphdb(cfg: ProjectConfig, *, keep_data: bool = False) -> None:
 def cmd_build(cfg: ProjectConfig, args: argparse.Namespace) -> None:
     """Build Docker images for specified apps."""
     registry = resolve_registry(args, cfg)
-    tag = args.tag or "latest"
+    tag = args.tag
+    if not tag:
+        tag = read_pom_version(cfg.project_root / cfg.parent_pom)
     apps_to_build = _resolve_apps(cfg, args)
 
     if args.push and "ghcr.io" in registry:
@@ -966,8 +989,43 @@ def cmd_forward(cfg: ProjectConfig, args: argparse.Namespace) -> None:
         info("Forwarding stopped.")
 
 
+def _sync_infra_versions(infra_dir: Path, new_version: str, dry_run: bool = False) -> list[tuple[Path, str, str]]:
+    """Scan all yaml files in infra_dir and replace ghcr.io/amocna-kr/<app>:<tag> with new_version.
+    Returns a list of tuples: (file_path, old_version, new_version) for files that were / would be updated.
+    """
+    updated = []
+    pattern = re.compile(r"(image:\s*ghcr\.io/amocna-kr/[\w-]+:)([0-9a-zA-Z.-]+)")
+    
+    # scan both .yaml and .yml files
+    for suffix in ("*.yaml", "*.yml"):
+        for path in infra_dir.rglob(suffix):
+            if not path.is_file():
+                continue
+            content = path.read_text()
+            matches = pattern.findall(content)
+            if not matches:
+                continue
+                
+            needs_update = False
+            old_version = None
+            for prefix, tag in matches:
+                if tag != new_version:
+                    needs_update = True
+                    old_version = tag
+                    break
+                    
+            if needs_update:
+                new_content = pattern.sub(r"\g<1>" + new_version, content)
+                if not dry_run:
+                    path.write_text(new_content)
+                actual_old = old_version or matches[0][1]
+                updated.append((path, actual_old, new_version))
+                
+    return updated
+
+
 def cmd_version(cfg: ProjectConfig, args: argparse.Namespace) -> None:
-    """Synchronize versions across parent POM and all core app POMs."""
+    """Synchronize versions across parent POM, core app POMs, and infra manifests."""
     parent_pom = cfg.project_root / cfg.parent_pom
     current = read_pom_version(parent_pom)
 
@@ -993,6 +1051,30 @@ def cmd_version(cfg: ProjectConfig, args: argparse.Namespace) -> None:
                     else _C.red(f"✖ out of sync ({v})")
                 )
                 print(f"  {app.name:<20}: {match}")
+        
+        # Show infra manifests status
+        print(f"\n  {_C.bold('Infra Manifests')}:")
+        infra_dir = cfg.project_root / "infra"
+        pattern = re.compile(r"image:\s*ghcr\.io/amocna-kr/([\w-]+):([0-9a-zA-Z.-]+)")
+        infra_status = {}
+        for path in sorted(infra_dir.rglob("*.yaml")) + sorted(infra_dir.rglob("*.yml")):
+            if not path.is_file():
+                continue
+            content = path.read_text()
+            matches = pattern.findall(content)
+            for img_name, tag in matches:
+                infra_status[img_name] = tag
+                
+        if infra_status:
+            for img_name, tag in sorted(infra_status.items()):
+                match = (
+                    _C.green("✔ in sync")
+                    if tag == current
+                    else _C.red(f"✖ out of sync ({tag})")
+                )
+                print(f"    {img_name:<18}: {match}")
+        else:
+            print("    No ghcr.io/amocna-kr images found in infra")
         print()
         return
 
@@ -1011,6 +1093,11 @@ def cmd_version(cfg: ProjectConfig, args: argparse.Namespace) -> None:
         print()
         for label, pom in poms_to_update:
             print(f"  Would update: {_C.bold(label):<25} {_C.dim(str(pom))}")
+        
+        infra_updates = _sync_infra_versions(cfg.project_root / "infra", new_version, dry_run=True)
+        for path, old, new in infra_updates:
+            rel_path = path.relative_to(cfg.project_root)
+            print(f"  Would update: {_C.bold('infra image tag'):<25} {_C.dim(str(rel_path))} ({old} → {new})")
         print()
         return
 
@@ -1032,8 +1119,14 @@ def cmd_version(cfg: ProjectConfig, args: argparse.Namespace) -> None:
         else:
             warn(f"No change needed for {label}")
 
+    # Apply infra updates
+    infra_updates = _sync_infra_versions(cfg.project_root / "infra", new_version, dry_run=False)
+    for path, old, new in infra_updates:
+        rel_path = path.relative_to(cfg.project_root)
+        info(f"Updated infra image tag in {rel_path}: {old} → {new}")
+
     print()
-    info(f"All core POMs synchronized to {_C.bold(new_version)}")
+    info(f"All core POMs and infra manifests synchronized to {_C.bold(new_version)}")
     print(
         f"  {_C.dim('Tip: run')} ./amocna.py version {_C.dim('to verify sync state')}"
     )
@@ -1099,7 +1192,7 @@ def build_parser() -> argparse.ArgumentParser:
     p_build.add_argument("--all", action="store_true", help="Build all apps")
     p_build.add_argument("--push", action="store_true", help="Push image after build")
     p_build.add_argument("--registry", help="Docker registry (overrides config & env)")
-    p_build.add_argument("--tag", default="latest", help="Image tag (default: latest)")
+    p_build.add_argument("--tag", help="Image tag (default: version from pom.xml)")
 
     # test
     p_test = sub.add_parser("test", help="Run Maven tests")
