@@ -53,7 +53,11 @@ public class KnowledgeBaseWriter {
             triples.append(" .");
         }
 
-        repository.insertEntity(resourceIri, ontologyType, escapeLiteral(resourceId), escapeLiteral(resourceName), triples.toString());
+        try {
+            repository.insertEntity(resourceIri, ontologyType, escapeLiteral(resourceId), escapeLiteral(resourceName), triples.toString());
+        } catch (Exception e) {
+            throw new KnowledgeBaseException("insertEntity failed: " + e.getMessage(), e);
+        }
     }
 
     public void assertRelationship(RelationshipAssertedEvent event) throws KnowledgeBaseException {
@@ -70,10 +74,14 @@ public class KnowledgeBaseWriter {
         String inverseLocalName = inverseLocalName(predicate);
         String predicateLocalName = predicate.substring(cneeNamespace.length());
 
-        if (inverseLocalName != null) {
-            repository.assertRelationshipPair(subjectIri, predicateLocalName, objectIri, inverseLocalName);
-        } else {
-            repository.assertRelationship(subjectIri, predicateLocalName, objectIri);
+        try {
+            if (inverseLocalName != null) {
+                repository.assertRelationshipPair(subjectIri, predicateLocalName, objectIri, inverseLocalName);
+            } else {
+                repository.assertRelationship(subjectIri, predicateLocalName, objectIri);
+            }
+        } catch (Exception e) {
+            throw new KnowledgeBaseException("assertRelationship failed: " + e.getMessage(), e);
         }
     }
 
@@ -92,7 +100,11 @@ public class KnowledgeBaseWriter {
                     "changeState: new_state_iri must start with CNEEOnt namespace, got: " + newStateIri);
         }
 
-        repository.changeState(resourceIri, newStateIri);
+        try {
+            repository.changeState(resourceIri, newStateIri);
+        } catch (Exception e) {
+            throw new KnowledgeBaseException("changeState failed: " + e.getMessage(), e);
+        }
     }
 
     public void deleteEntity(EntityDeletedEvent event) throws KnowledgeBaseException {
@@ -101,7 +113,11 @@ public class KnowledgeBaseWriter {
             throw new KnowledgeBaseException("deleteEntity: resource_iri must not be blank");
         }
 
-        repository.deleteEntity(resourceIri);
+        try {
+            repository.deleteEntity(resourceIri);
+        } catch (Exception e) {
+            throw new KnowledgeBaseException("deleteEntity failed: " + e.getMessage(), e);
+        }
     }
 
     public void registerMetricMetadata(MetricMetadataRegisteredEvent event) throws KnowledgeBaseException {
@@ -131,7 +147,11 @@ public class KnowledgeBaseWriter {
         }
         String metricIri = cneeNamespace + encodeFragment(resourceLocalName) + "_" + encodeFragment(metricName);
 
-        repository.registerMetricMetadata(resourceIri, endpointUrl, metricIri, escapeLiteral(metricName));
+        try {
+            repository.registerMetricMetadata(resourceIri, endpointUrl, metricIri, escapeLiteral(metricName));
+        } catch (Exception e) {
+            throw new KnowledgeBaseException("registerMetricMetadata failed: " + e.getMessage(), e);
+        }
     }
 
     private void validateIri(String iri, String field) throws KnowledgeBaseException {
