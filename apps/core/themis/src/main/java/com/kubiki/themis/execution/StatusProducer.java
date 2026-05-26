@@ -1,7 +1,7 @@
 package com.kubiki.themis.execution;
 
-import com.kubiki.themis.config.RabbitMQConfig;
 import com.kubiki.common.model.ActionStatusUpdate;
+import com.kubiki.themis.config.RabbitMQConfig;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Service;
 

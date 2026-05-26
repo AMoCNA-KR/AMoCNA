@@ -1,6 +1,7 @@
 # Palamedes — Reasoner and Planner
 
-Palamedes is the **Reason + Plan** phase of the AMoCNA MRE-K autonomic loop. It detects anomalies in the knowledge graph, plans remediation workflows, and dispatches actions to Themis for execution.
+Palamedes is the **Reason + Plan** phase of the AMoCNA MRE-K autonomic loop. It detects anomalies in the knowledge
+graph, plans remediation workflows, and dispatches actions to Themis for execution.
 
 ---
 
@@ -32,15 +33,15 @@ flowchart LR
 
 ### Consumed
 
-| Queue | Message type | Action taken |
-|---|---|---|
-| `amocna.graph.updates` | `GraphUpdateMessage` | Triggers anomaly analysis immediately |
-| `amocna.status.queue` | `ActionStatusUpdate` | Updates workflow state via SagaManager |
+| Queue                  | Message type         | Action taken                           |
+|------------------------|----------------------|----------------------------------------|
+| `amocna.graph.updates` | `GraphUpdateMessage` | Triggers anomaly analysis immediately  |
+| `amocna.status.queue`  | `ActionStatusUpdate` | Updates workflow state via SagaManager |
 
 ### Published
 
-| Queue | Message type | When |
-|---|---|---|
+| Queue                 | Message type    | When                                         |
+|-----------------------|-----------------|----------------------------------------------|
 | `amocna.action.queue` | `ActionMessage` | When a planned action is ready for execution |
 
 ---
@@ -91,7 +92,8 @@ flowchart LR
 ## Triggering strategy
 
 - **Event-driven (primary):** Each `GraphUpdateMessage` from Metis triggers `AnomalyAgent.analyze()` immediately
-- **Fallback poll (safety net):** If no message arrives for 10 minutes, a scheduled task runs the analysis anyway — catches missed events after RabbitMQ outages
+- **Fallback poll (safety net):** If no message arrives for 10 minutes, a scheduled task runs the analysis anyway —
+  catches missed events after RabbitMQ outages
 
 ---
 
@@ -132,6 +134,7 @@ bash modules/palamedes/deployment/k8s/deploy.sh
 ```
 
 This deploys:
+
 - RabbitMQ (shared message broker)
 - Palamedes application
 - ClusterIP service on port 8081
@@ -146,10 +149,10 @@ bash modules/palamedes/deployment/k8s/undeploy.sh
 
 ## Dependencies
 
-| Service | Purpose | In-cluster URL |
-|---|---|---|
-| GraphDB | Knowledge base queries | `http://graphdb.graphdb.svc.cluster.local:7200` |
-| RabbitMQ | Message broker | `rabbitmq.rabbitmq.svc.cluster.local:5672` |
+| Service    | Purpose                     | In-cluster URL                                                                   |
+|------------|-----------------------------|----------------------------------------------------------------------------------|
+| GraphDB    | Knowledge base queries      | `http://graphdb.graphdb.svc.cluster.local:7200`                                  |
+| RabbitMQ   | Message broker              | `rabbitmq.rabbitmq.svc.cluster.local:5672`                                       |
 | Prometheus | Metric condition evaluation | `http://prometheus-kube-prometheus-prometheus.monitoring.svc.cluster.local:9090` |
 
 ---

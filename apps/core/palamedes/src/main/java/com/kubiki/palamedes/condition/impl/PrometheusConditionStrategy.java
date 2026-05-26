@@ -2,9 +2,10 @@ package com.kubiki.palamedes.condition.impl;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.kubiki.common.config.AmocnaCommonProperties;
+import com.kubiki.common.exception.ConditionEvaluationException;
 import com.kubiki.palamedes.condition.ConditionStrategy;
 import com.kubiki.palamedes.config.PalamedesProperties;
-import com.kubiki.common.exception.ConditionEvaluationException;
 import com.kubiki.palamedes.model.ActionData;
 import org.eclipse.rdf4j.model.IRI;
 import org.slf4j.Logger;
@@ -28,11 +29,11 @@ public class PrometheusConditionStrategy implements ConditionStrategy {
     private static final String FIELD_RESULT = "result";
 
     private final RestClient restClient;
-    private final PalamedesProperties properties;
+    private final AmocnaCommonProperties properties;
     private final ObjectMapper objectMapper;
 
     public PrometheusConditionStrategy(@Nullable @Qualifier("prometheusRestClient") RestClient restClient,
-                                       PalamedesProperties properties,
+                                       AmocnaCommonProperties properties,
                                        ObjectMapper objectMapper) {
         this.restClient = restClient;
         this.properties = properties;
@@ -71,7 +72,7 @@ public class PrometheusConditionStrategy implements ConditionStrategy {
 
             JsonNode response = objectMapper.readTree(responseBody);
             JsonNode statusNode = response.get(FIELD_STATUS);
-            
+
             if (statusNode == null || !RESPONSE_STATUS_SUCCESS.equals(statusNode.asText())) {
                 log.warn("Prometheus query was not successful: {}", responseBody);
                 return false;
@@ -83,7 +84,7 @@ public class PrometheusConditionStrategy implements ConditionStrategy {
                 // In this autonomic model, a non-empty result means the condition (alert) is active
                 return result != null && result.isArray() && !result.isEmpty();
             }
-            
+
             return false;
         } catch (Exception e) {
             log.error("Error evaluating Prometheus condition: {}", e.getMessage());

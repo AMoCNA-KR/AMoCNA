@@ -1,12 +1,12 @@
 package com.kubiki.palamedes.integration;
 
-import com.kubiki.common.model.ExecutionStatus;
-import com.kubiki.common.model.ActionStatusUpdate;
 import com.kubiki.common.model.ActionMessage;
+import com.kubiki.common.model.ActionStatusUpdate;
+import com.kubiki.common.model.ExecutionStatus;
 import com.kubiki.palamedes.analyzer.AnomalyAgent;
-import com.kubiki.palamedes.knowledge.OntologyRegistry;
 import com.kubiki.palamedes.knowledge.GraphDBGateway;
-import com.kubiki.palamedes.model.*;
+import com.kubiki.common.ontology.OntologyRegistry;
+import com.kubiki.palamedes.model.ActiveActionSummary;
 import com.kubiki.palamedes.pipeline.MapePipeline;
 import com.kubiki.palamedes.saga.SagaManager;
 import org.eclipse.rdf4j.model.IRI;
@@ -23,9 +23,9 @@ import org.junit.jupiter.api.Test;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import java.util.List;
 
@@ -39,29 +39,22 @@ import static org.mockito.Mockito.*;
 @DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
 class PalamedesMapeLoopIT {
 
-    @Autowired
-    private MapePipeline mapePipeline;
-
-    @Autowired
-    private SagaManager sagaManager;
-
-    @Autowired
-    private AnomalyAgent anomalyAgent;
-
-    @Autowired
-    private GraphDBGateway gateway;
-
-    @Autowired
-    private OntologyRegistry registry;
-
-    @MockitoBean
-    private RabbitTemplate rabbitTemplate;
-
-    @MockitoBean
-    private Repository realRepository;
-
     private static Repository inMemoryRepo;
     private final ValueFactory vf = SimpleValueFactory.getInstance();
+    @Autowired
+    private MapePipeline mapePipeline;
+    @Autowired
+    private SagaManager sagaManager;
+    @Autowired
+    private AnomalyAgent anomalyAgent;
+    @Autowired
+    private GraphDBGateway gateway;
+    @Autowired
+    private OntologyRegistry registry;
+    @MockitoBean
+    private RabbitTemplate rabbitTemplate;
+    @MockitoBean
+    private Repository realRepository;
 
     @BeforeEach
     void setUp() {

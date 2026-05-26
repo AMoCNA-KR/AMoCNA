@@ -18,6 +18,13 @@ core_apps:
     type: maven-lib
     description: Common libraries for other modules
 
+  metrics-adapter:
+    path: apps/core/metrics-adapter
+    type: maven-app
+    image_name: metrics-adapter
+    dockerfile: apps/core/metrics-adapter/deployment/metrics-adapter.dockerfile
+    description: Prometheus Metrics Adapter, feeds palamedes module with anomalies from metrics
+
   metis:
     path: apps/core/metis
     type: maven-app
@@ -63,15 +70,6 @@ standalone_apps:
     type: angular
     description: Hephaestus GUI Frontend (Angular)
 
-  metrics-adapter:
-    path: apps/adapters/Metrics-Adapter
-    type: maven-app
-    dockerfile: apps/adapters/Metrics-Adapter/metrics-adapter.dockerfile
-    image_name: metrics-adapter
-    ports:
-      http: 8085
-    description: Metrics Adapter (Drools)
-
   kubernetes-management:
     path: apps/demos/KubernetesManagment
     type: maven-app
@@ -107,11 +105,6 @@ forward:
     local_port: 8080
     remote_port: 8080
 
-  metrics-adapter:
-    namespace: metrics-adapter
-    service: metrics-adapter
-    local_port: 8081
-    remote_port: 8085
   graphdb:
     namespace: graphdb
     service: graphdb

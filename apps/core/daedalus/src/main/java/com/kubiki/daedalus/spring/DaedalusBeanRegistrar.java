@@ -38,6 +38,7 @@ public class DaedalusBeanRegistrar {
             registry.registerBeanDefinition(beanName, BeanDefinitionBuilder.genericBeanDefinition(repoClass, () -> {
                 GlobalTemplateContext effectiveContext = context;
                 Formatter effectiveFormatter = null;
+                org.eclipse.rdf4j.repository.Repository effectiveRepository = null;
                 if (registry instanceof BeanFactory bf) {
                     if (effectiveContext == null) {
                         try {
@@ -51,8 +52,13 @@ public class DaedalusBeanRegistrar {
                     } catch (Exception e) {
                         effectiveFormatter = (Formatter) bf.getBean(Formatter.class.getName());
                     }
+                    try {
+                        effectiveRepository = bf.getBean(org.eclipse.rdf4j.repository.Repository.class);
+                    } catch (Exception e) {
+                        // Repository might be missing if using Daedalus only for templating
+                    }
                 }
-                return Proxy.newProxyInstance(clazz.getClassLoader(), new Class[]{clazz}, new DaedalusInvocationHandler(clazz, effectiveContext, effectiveFormatter));
+                return Proxy.newProxyInstance(clazz.getClassLoader(), new Class[]{clazz}, new DaedalusInvocationHandler(clazz, effectiveContext, effectiveFormatter, effectiveRepository));
             }).getBeanDefinition());
         }
     }

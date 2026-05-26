@@ -35,6 +35,7 @@ public class AnomalyAgent {
     private static final Logger log = LoggerFactory.getLogger(AnomalyAgent.class);
 
     private final GraphDBGateway gateway;
+    private final com.kubiki.palamedes.reasoner.RcaEngine rcaEngine;
     private final ActionUtils utils;
     private final ApplicationEventPublisher publisher;
     private final PalamedesProperties palamedesProperties;
@@ -76,9 +77,15 @@ public class AnomalyAgent {
         for (var anomaly : anomalies) {
             log.info("Anomaly detected: resource {} needs {}", anomaly.resourceName(), anomaly.intentIri());
 
+            AnomalyTarget rootCause = rcaEngine.findRootCause(anomaly);
+            if (!rootCause.resourceIri().equals(anomaly.resourceIri())) {
+                log.info("Root cause analysis redirected {} -> {} (intent: {})",
+                        anomaly.resourceName(), rootCause.resourceName(), rootCause.intentIri());
+            }
+
             String actionId = utils.generateActionId();
 
-            gateway.createActionWorkflow(anomaly.resourceIri(), anomaly.intentIri(), actionId);
+            gateway.createActionWorkflow(rootCause.resourceIri(), rootCause.intentIri(), actionId);
             stateChanged = true;
         }
 

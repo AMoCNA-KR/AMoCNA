@@ -1,7 +1,7 @@
 package com.kubiki.daedalus.context;
 
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class GlobalTemplateContext {
     private final Map<String, String> globals = new ConcurrentHashMap<>();

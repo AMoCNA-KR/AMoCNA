@@ -37,25 +37,6 @@ class DaedalusInvocationHandlerTest {
         ));
     }
 
-    public record TestPojo(String id, String name, boolean active) {}
-
-    public interface TestRepository {
-        @Template(resource = "templates/test-template.txt")
-        String greet(@Type(TemplateType.PLAIN) @Bind("name") String name, @Type(TemplateType.PLAIN) @Bind("place") String place);
-
-        @Template(resource = "templates/test-template.txt")
-        String greetLiteral(@Bind("name") String name, @Bind("place") String place);
-
-        @Template(resource = "templates/test-template.txt")
-        String greetMissingBind(String name, String place);
-
-        @Template(resource = "templates/test-pojo.json")
-        TestPojo createPojo(@Type(TemplateType.PLAIN) @Bind("id") String id, @Type(TemplateType.PLAIN) @Bind("name") String name, @Type(TemplateType.PLAIN) @Bind("active") boolean active);
-
-        @Template(resource = "templates/test-default.txt")
-        String greetDefault(@Type(TemplateType.PLAIN) @Bind("name") String name);
-    }
-
     @Test
     void shouldHydrateTemplateWithPlainValues() {
         TestRepository repository = createRepository();
@@ -113,7 +94,27 @@ class DaedalusInvocationHandlerTest {
         return (TestRepository) Proxy.newProxyInstance(
                 TestRepository.class.getClassLoader(),
                 new Class[]{TestRepository.class},
-                new DaedalusInvocationHandler(TestRepository.class, globalContext, formatter)
+                new DaedalusInvocationHandler(TestRepository.class, globalContext, formatter, null)
         );
+    }
+
+    public interface TestRepository {
+        @Template(resource = "templates/test-template.txt")
+        String greet(@Type(TemplateType.PLAIN) @Bind("name") String name, @Type(TemplateType.PLAIN) @Bind("place") String place);
+
+        @Template(resource = "templates/test-template.txt")
+        String greetLiteral(@Bind("name") String name, @Bind("place") String place);
+
+        @Template(resource = "templates/test-template.txt")
+        String greetMissingBind(String name, String place);
+
+        @Template(resource = "templates/test-pojo.json")
+        TestPojo createPojo(@Type(TemplateType.PLAIN) @Bind("id") String id, @Type(TemplateType.PLAIN) @Bind("name") String name, @Type(TemplateType.PLAIN) @Bind("active") boolean active);
+
+        @Template(resource = "templates/test-default.txt")
+        String greetDefault(@Type(TemplateType.PLAIN) @Bind("name") String name);
+    }
+
+    public record TestPojo(String id, String name, boolean active) {
     }
 }

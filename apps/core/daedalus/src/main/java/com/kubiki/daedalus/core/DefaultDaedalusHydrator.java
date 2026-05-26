@@ -1,10 +1,8 @@
 package com.kubiki.daedalus.core;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.kubiki.daedalus.annotation.TemplateType;
 import com.kubiki.daedalus.context.GlobalTemplateContext;
 import com.kubiki.daedalus.exception.HydrationException;
-import com.kubiki.daedalus.exception.TemplateMappingException;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.springframework.stereotype.Service;
@@ -25,7 +23,7 @@ public class DefaultDaedalusHydrator implements DaedalusHydrator {
     public String hydrate(String template, Map<String, Object> data) {
         List<TemplateToken> tokens = parser.parse(template);
         Map<String, String> values = new HashMap<>(globalContext.getAll());
-        
+
         if (data != null) {
             data.forEach((k, v) -> {
                 values.put(k, formatter.format(v, null));

@@ -18,18 +18,18 @@ class DaedalusSpringIntegrationTest {
     @Autowired
     private GlobalTemplateContext globalContext;
 
-    @Configuration
-    @Import(DaedalusAutoConfiguration.class)
-    static class TestConfig {
-    }
-
     @Test
     void shouldInjectAndUseProxy() {
         globalContext.set("GLOBAL_VAR", "SpringValue");
-        
+
         String result = testRepo.greet("Spring", "World");
-        
+
         assertThat(result).contains("Hello \"Spring\", welcome to \"World\"!");
         assertThat(result).contains("Global: SpringValue");
+    }
+
+    @Configuration
+    @Import(DaedalusAutoConfiguration.class)
+    static class TestConfig {
     }
 }

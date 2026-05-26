@@ -6,7 +6,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 
 @SpringBootApplication(scanBasePackages = {"com.kubiki.metis", "com.kubiki.common"})
-@EnableConfigurationProperties(MetisProperties.class)
+@EnableConfigurationProperties({MetisProperties.class, com.kubiki.common.config.AmocnaCommonProperties.class})
 public class MetisApplication {
     public static void main(String[] args) {
         SpringApplication.run(MetisApplication.class, args);

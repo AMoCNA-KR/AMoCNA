@@ -5,6 +5,7 @@ import com.kubiki.metis.knowledge.CneeOntology;
 import com.kubiki.metis.sensor.IriFactory;
 import com.kubiki.metis.sensor.SensorEventPublisher;
 import com.kubiki.metis.grpc.*;
+import io.fabric8.kubernetes.api.model.OwnerReference;
 import io.fabric8.kubernetes.api.model.Pod;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.informers.ResourceEventHandler;
@@ -13,6 +14,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * Watches Kubernetes Pods and emits:
@@ -41,6 +43,7 @@ public class PodSensor extends AbstractNamespacedSensor {
 
     private final SensorEventPublisher publisher;
     private final IriFactory iriFactory;
+    private final String cneeNamespace;
 
     public PodSensor(KubernetesClient client,
                      MetisProperties properties,
@@ -49,6 +52,7 @@ public class PodSensor extends AbstractNamespacedSensor {
         super(client, properties);
         this.publisher = publisher;
         this.iriFactory = iriFactory;
+        this.cneeNamespace = properties.ontology().cneeNamespace();
     }
 
     @Override
@@ -102,6 +106,20 @@ public class PodSensor extends AbstractNamespacedSensor {
         publisher.publish(SensorEventPublisher.withTimestamp(
                 SensorEvent.newBuilder().setEntityDiscovered(discovered)));
 
+        // Discover relationships from ownerReferences
+        if (pod.getMetadata().getOwnerReferences() != null) {
+            for (OwnerReference owner : pod.getMetadata().getOwnerReferences()) {
+                String ownerIri = iriFactory.namespacedIri(owner.getKind(), ns, owner.getName());
+                RelationshipAssertedEvent rel = RelationshipAssertedEvent.newBuilder()
+                        .setSubjectIri(iri)
+                        .setPredicate(cneeNamespace + CneeOntology.PROP_IS_PART_OF)
+                        .setObjectIri(ownerIri)
+                        .build();
+                publisher.publish(SensorEventPublisher.withTimestamp(
+                        SensorEvent.newBuilder().setRelationshipAsserted(rel)));
+            }
+        }
+
         // Also emit initial state if phase is known
         String phase = podPhase(pod);
         if (phase != null) {
@@ -115,12 +133,28 @@ public class PodSensor extends AbstractNamespacedSensor {
         String oldPhase = podPhase(oldPod);
         String newPhase = podPhase(newPod);
 
+        String ns   = newPod.getMetadata().getNamespace();
+        String name = newPod.getMetadata().getName();
+        String iri  = iriFactory.namespacedIri(CneeOntology.KIND_POD, ns, name);
+
         if (newPhase != null && !newPhase.equals(oldPhase)) {
-            String ns   = newPod.getMetadata().getNamespace();
-            String name = newPod.getMetadata().getName();
-            String iri  = iriFactory.namespacedIri(CneeOntology.KIND_POD, ns, name);
             emitStateChange(iri, newPhase, oldPhase);
             log.debug("PodSensor: state change {}/{} {} → {}", ns, name, oldPhase, newPhase);
+        }
+
+        if (!Objects.equals(oldPod.getMetadata().getOwnerReferences(), newPod.getMetadata().getOwnerReferences())) {
+            if (newPod.getMetadata().getOwnerReferences() != null) {
+                for (OwnerReference owner : newPod.getMetadata().getOwnerReferences()) {
+                    String ownerIri = iriFactory.namespacedIri(owner.getKind(), ns, owner.getName());
+                    RelationshipAssertedEvent rel = RelationshipAssertedEvent.newBuilder()
+                            .setSubjectIri(iri)
+                            .setPredicate(cneeNamespace + CneeOntology.PROP_IS_PART_OF)
+                            .setObjectIri(ownerIri)
+                            .build();
+                    publisher.publish(SensorEventPublisher.withTimestamp(
+                            SensorEvent.newBuilder().setRelationshipAsserted(rel)));
+                }
+            }
         }
     }
 

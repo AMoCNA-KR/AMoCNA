@@ -2,38 +2,52 @@ package com.kubiki.themis.execution;
 
 import com.kubiki.common.model.ActionMessage;
 import com.kubiki.common.model.ActionStatusUpdate;
-import com.kubiki.themis.model.ExecutionResult;
 import com.kubiki.common.model.ExecutionStatus;
 import com.kubiki.common.model.Protocol;
+import com.kubiki.themis.model.ExecutionResult;
+import com.kubiki.themis.config.ThemisProperties;
+import com.kubiki.themis.policy.ConditionEvaluator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
-import org.springframework.http.HttpMethod;
 
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 class ActionQueueListenerTest {
 
     private ProtocolExecutor executor;
     private StatusProducer statusProducer;
+    private ConditionEvaluator conditionEvaluator;
+    private ThemisProperties properties;
     private ActionQueueListener listener;
 
     @BeforeEach
     void setUp() {
         executor = mock(ProtocolExecutor.class);
         statusProducer = mock(StatusProducer.class);
-        listener = new ActionQueueListener(List.of(executor), statusProducer);
+        conditionEvaluator = mock(ConditionEvaluator.class);
+        properties = new ThemisProperties(
+                new ThemisProperties.Secret("token"),
+                new ThemisProperties.Execution(0)
+        );
+        
+        // Default behavior: pre-conditions and post-conditions pass
+        when(conditionEvaluator.evaluatePreConditions(any())).thenReturn(true);
+        when(conditionEvaluator.evaluatePostConditions(any())).thenReturn(true);
+        
+        listener = new ActionQueueListener(List.of(executor), statusProducer, conditionEvaluator, properties);
     }
 
     @Test
     void shouldExecuteActionSuccessfully() {
         ActionMessage message = new ActionMessage(
-            "action1", Protocol.REST, "instruction", "GET", null,
-            null, 30, true, 3, 200
+                "action1", Protocol.REST, "instruction", "GET", null,
+                null, 30, true, 3, 200
         );
         when(executor.supports(Protocol.REST)).thenReturn(true);
         when(executor.executeStateless(message)).thenReturn(ExecutionResult.success(200));
@@ -52,16 +66,14 @@ class ActionQueueListenerTest {
 
     @Test
     void shouldHandleExecutorNotFound() {
-        // Updated Protocol enum might not have GRPC anymore if it was removed, 
-        // but let's assume Protocol.REST is there and we don't have an executor for it
         ActionMessage message = new ActionMessage(
-            "action1", Protocol.REST, "instruction", null, null,
-            null, 30, true, 3, 200
+                "action1", Protocol.REST, "instruction", null, null,
+                null, 30, true, 3, 200
         );
         // Ensure no executor supports this protocol
         ProtocolExecutor otherExecutor = mock(ProtocolExecutor.class);
         when(otherExecutor.supports(any())).thenReturn(false);
-        ActionQueueListener singleListener = new ActionQueueListener(List.of(otherExecutor), statusProducer);
+        ActionQueueListener singleListener = new ActionQueueListener(List.of(otherExecutor), statusProducer, conditionEvaluator, properties);
 
         singleListener.receiveAction(message);
 
@@ -76,8 +88,8 @@ class ActionQueueListenerTest {
     @Test
     void shouldHandleExecutionFailure() {
         ActionMessage message = new ActionMessage(
-            "action1", Protocol.REST, "instruction", "POST", null,
-            null, 30, true, 3, 201
+                "action1", Protocol.REST, "instruction", "POST", null,
+                null, 30, true, 3, 201
         );
         when(executor.supports(Protocol.REST)).thenReturn(true);
         when(executor.executeStateless(message)).thenReturn(ExecutionResult.failure(500, "Execution failed", ExecutionStatus.FAILED_HTTP));
@@ -96,15 +108,15 @@ class ActionQueueListenerTest {
     @Test
     void shouldRetryOnRetryableFailure() {
         ActionMessage message = new ActionMessage(
-            "action-retry", Protocol.REST, "instruction", "GET", null,
-            null, 10, true, 1, 200 // 1 retry
+                "action-retry", Protocol.REST, "instruction", "GET", null,
+                null, 10, true, 1, 200 // 1 retry
         );
         when(executor.supports(Protocol.REST)).thenReturn(true);
-        
+
         // Fail first time with timeout, succeed second time
         when(executor.executeStateless(message))
-            .thenReturn(ExecutionResult.failure(504, "Timeout", ExecutionStatus.FAILED_TIMEOUT))
-            .thenReturn(ExecutionResult.success(200));
+                .thenReturn(ExecutionResult.failure(504, "Timeout", ExecutionStatus.FAILED_TIMEOUT))
+                .thenReturn(ExecutionResult.success(200));
 
         listener.receiveAction(message);
 

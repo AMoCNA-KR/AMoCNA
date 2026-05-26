@@ -1,13 +1,14 @@
 package com.kubiki.daedalus.core;
 
 import lombok.experimental.UtilityClass;
+
 import java.util.regex.Pattern;
 
 @UtilityClass
 public class DaedalusConstants {
     // Delimiters
     public static final String DEFAULT_VALUE_SEPARATOR = ":-";
-    
+
     // Formatting
     public static final String IRI_BEGIN = "<";
     public static final String IRI_END = ">";
