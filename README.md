@@ -6,13 +6,13 @@ The repository contains the implementation of the Autonomic Management Framework
 
 The project has been restructured into the following top-level directories:
 
-* **`apps/`**: Contains all the applications and services.
-  * **`core/`**: The core AMoCNA framework (Daedalus, Metis, Palamedes, Themis). Managed by the root `pom.xml`.
-  * **`gui/`**: The Hephaestus GUI frontend (Angular) and backend (Spring Boot).
-  * **`adapters/`**: The Metrics Adapter.
-  * **`demos/`**: Example applications (Kubernetes Management, Metric Exporter).
-* **`infra/`**: Contains Kubernetes manifests and infrastructure definitions.
-* **`libs/`**: Shared libraries and schemas (e.g., ontology files).
+- **`apps/`**: Contains all the applications and services.
+  - **`core/`**: The core AMoCNA framework (Daedalus, Metis, Palamedes, Themis). Managed by the root `pom.xml`.
+  - **`gui/`**: The Hephaestus GUI frontend (Angular) and backend (Spring Boot).
+  - **`adapters/`**: The Metrics Adapter.
+  - **`demos/`**: Example applications (Kubernetes Management, Metric Exporter).
+- **`infra/`**: Contains Kubernetes manifests and infrastructure definitions.
+- **`libs/`**: Shared libraries and schemas (e.g., ontology files).
 
 ## Orchestration CLI (`amocna.py`)
 
@@ -23,6 +23,11 @@ A unified Python 3 script is provided at the root of the project to handle build
 ```bash
 # Show project status and discovered apps
 ./amocna.py status
+
+# Login to github container registry. --user is optional, if not provided, it will be taken from the environment variable AMOCNA_USER
+export AMOCNA_PAT=yourpassword
+export AMOCNA_USER=yourusername
+./amocna.py login --registry myregistry.com [--user user]
 
 # Build Docker images
 ./amocna.py build --all
@@ -36,6 +41,13 @@ A unified Python 3 script is provided at the root of the project to handle build
 
 # Sync versions across core POMs
 ./amocna.py version --bump minor
+
+# Forward ports for local access
+./amocna.py forward gui-backend
+
+# Run tests for maven modules
+./amocna.py test --all
+./amocna.py test --app themis
 ```
 
 All configurations (Docker registries, port forwarding, application definitions) are stored in `amocna.yaml`.
@@ -58,18 +70,24 @@ If this is your first time dealing with Kubernetes, Prometheus, and Hephaestus, 
 2. Start Minikube Cluster using `minikube start`.
 3. Clone [Sock Shop](https://github.com/microservices-demo/microservices-demo) repository - Microservices Demo designed to show example application deployment.
 4. Deploy Sock Shop services and monitoring services:
+
    ```bash
    kubectl apply -f microservices-demo/deploy/kubernetes/manifests
    kubectl apply -f microservices-demo/deploy/kubernetes/manifests-monitoring
    ```
+
 5. Deploy Hephaestus using the orchestration CLI:
+
    ```bash
    ./amocna.py deploy --all
    ```
+
 6. Expose the GUI service using port forwarding:
+
    ```bash
    ./amocna.py forward gui-backend
    ```
+
    This will expose the service on `http://localhost:8080/app/index.html`.
 
 7. The result of the rule engine can be seen on the Hephaestus Demo - Metrics Adapter console. Use `./amocna.py forward metrics-adapter` to access it locally on port 8081.
