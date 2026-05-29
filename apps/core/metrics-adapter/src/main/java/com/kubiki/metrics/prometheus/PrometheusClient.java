@@ -26,8 +26,8 @@ public class PrometheusClient {
         log.debug("Executing Prometheus scalar query: {}", query);
         return webClient.get()
                 .uri(uriBuilder -> uriBuilder.path("/api/v1/query")
-                        .queryParam("query", query)
-                        .build())
+                        .queryParam("query", "{query}")
+                        .build(query))
                 .retrieve()
                 .bodyToMono(PrometheusResponse.class)
                 .flatMap(response -> {
@@ -69,8 +69,8 @@ public class PrometheusClient {
         log.debug("Executing Prometheus vector query: {}", query);
         return webClient.get()
                 .uri(uriBuilder -> uriBuilder.path("/api/v1/query")
-                        .queryParam("query", query)
-                        .build())
+                        .queryParam("query", "{query}")
+                        .build(query))
                 .retrieve()
                 .bodyToMono(PrometheusResponse.class)
                 .flatMapMany(response -> {
