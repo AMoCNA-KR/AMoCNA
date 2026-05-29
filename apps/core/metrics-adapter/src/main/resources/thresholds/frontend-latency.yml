@@ -1,0 +1,8 @@
+name: "frontend-latency"
+query: "http_request_duration_seconds_sum{service='frontend'} / http_request_duration_seconds_count{service='frontend'}"
+operator: ">"
+value: 0.85
+anomalyState: "FrontendLatencyAnomaly"
+resourceKind: "Service"
+resourceLabel: "service"
+persistenceWindow: 1

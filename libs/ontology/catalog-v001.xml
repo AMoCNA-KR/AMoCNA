@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <catalog prefer="public" xmlns="urn:oasis:names:tc:entity:xmlns:xml:catalog">
+    <uri id="User Entered Import Resolution" name="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt" uri="CNEEOnt.rdf"/>
+    <uri id="User Entered Import Resolution" name="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont" uri="MoaMont.rdf"/>
     <group id="Folder Repository, directory=, recursive=true, Auto-Update=true, version=2" prefer="public">
-        <uri id="Automatically generated entry, Timestamp=1779643865703" name="http://www.semanticweb.org/patryk/ontologies/2026/4/BridgeOnt/" uri="BridgeOnt.rdf"/>
-        <uri id="Automatically generated entry, Timestamp=1779643865703" name="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont/" uri="MoaMont.rdf"/>
-        <uri id="Automatically generated entry, Timestamp=1779643865703" name="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/" uri="CNEEOnt.rdf"/>
+        <uri id="Automatically generated entry, Timestamp=1780044938302" name="http://www.semanticweb.org/patryk/ontologies/2026/4/BridgeOnt/" uri="BridgeOnt.rdf"/>
+        <uri id="Automatically generated entry, Timestamp=1780044938302" name="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont/" uri="MoaMont.rdf"/>
+        <uri id="Automatically generated entry, Timestamp=1780044938302" name="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/" uri="CNEEOnt.rdf"/>
     </group>
 </catalog>

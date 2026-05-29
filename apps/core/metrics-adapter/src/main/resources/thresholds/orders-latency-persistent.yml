@@ -1,0 +1,8 @@
+name: "orders-latency-persistent"
+query: "http_request_duration_seconds_sum{service='orders'} / http_request_duration_seconds_count{service='orders'}"
+operator: ">"
+value: 0.23
+anomalyState: "OrdersLatencyAnomaly"
+resourceKind: "Service"
+resourceLabel: "service"
+persistenceWindow: 3

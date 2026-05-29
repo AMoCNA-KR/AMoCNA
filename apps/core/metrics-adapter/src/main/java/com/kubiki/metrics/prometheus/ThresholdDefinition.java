@@ -15,6 +15,7 @@ package com.kubiki.metrics.prometheus;
  * @param resourceKind   Kubernetes kind for IRI construction (e.g. "Pod", "Node")
  * @param resourceLabel  Prometheus label containing the resource name
  * @param namespaceLabel Prometheus label containing the namespace (null for cluster-scoped)
+ * @param persistenceWindow Number of consecutive violations required to trigger the anomaly
  */
 public record ThresholdDefinition(
         String name,
@@ -24,6 +25,7 @@ public record ThresholdDefinition(
         String anomalyState,
         String resourceKind,
         String resourceLabel,
-        String namespaceLabel
+        String namespaceLabel,
+        int persistenceWindow
 ) {
 }
