@@ -339,20 +339,15 @@
         </rdfs:subClassOf>
     </rdf:Description>
 
-    <rdf:Description rdf:about="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/FrontendLatencyAnomaly">
+    
+
+    
+
+    <rdf:Description rdf:about="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/ResponseTimeSlaViolatedState">
         <rdfs:subClassOf>
             <owl:Restriction>
                 <owl:onProperty rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/BridgeOnt#isResolvedByIntent"/>
                 <owl:someValuesFrom rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#HorizontalScalingAction"/>
-            </owl:Restriction>
-        </rdfs:subClassOf>
-    </rdf:Description>
-
-    <rdf:Description rdf:about="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/OrdersLatencyAnomaly">
-        <rdfs:subClassOf>
-            <owl:Restriction>
-                <owl:onProperty rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/BridgeOnt#isResolvedByIntent"/>
-                <owl:someValuesFrom rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#VerticalScalingAction"/>
             </owl:Restriction>
         </rdfs:subClassOf>
     </rdf:Description>
