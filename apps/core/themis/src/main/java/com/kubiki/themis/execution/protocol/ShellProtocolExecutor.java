@@ -7,6 +7,9 @@ import com.kubiki.themis.execution.ProtocolExecutor;
 import com.kubiki.themis.model.ExecutionResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.io.BufferedReader;
@@ -16,9 +19,11 @@ import java.io.BufferedReader;
  * Executes hydrated Shell commands.
  */
 @Component
+@RequiredArgsConstructor
 public class ShellProtocolExecutor implements ProtocolExecutor {
     public static final String BIN_SH = "/bin/sh";
     private static final Logger log = LoggerFactory.getLogger(ShellProtocolExecutor.class);
+    private final MeterRegistry meterRegistry;
 
     @Override
     public boolean supports(Protocol protocol) {
@@ -30,7 +35,7 @@ public class ShellProtocolExecutor implements ProtocolExecutor {
         return executeCommand(action);
     }
 
-    private ExecutionResult executeCommand(ActionMessage action) {
+        private ExecutionResult executeCommand(ActionMessage action) {
         String command = action.instruction();
         String actionId = action.actionId();
         int expectedStatusCode = action.expectedStatusCode();
@@ -40,14 +45,15 @@ public class ShellProtocolExecutor implements ProtocolExecutor {
             return ExecutionResult.failure(1, "Blank instruction", ExecutionStatus.FAILED_INTERNAL);
         }
 
-        if (command.contains("FAIL_NOW")) {
-            log.warn("Simulating failure for action {} due to FAIL_NOW keyword", actionId);
-            return ExecutionResult.failure(1, "Simulated failure", ExecutionStatus.FAILED_INTERNAL);
-        }
-
-        log.info("Executing shell command for action {}: {}", actionId, command);
-
+        Timer.Sample sample = Timer.start(meterRegistry);
         try {
+            if (command.contains("FAIL_NOW")) {
+                log.warn("Simulating failure for action {} due to FAIL_NOW keyword", actionId);
+                return ExecutionResult.failure(1, "Simulated failure", ExecutionStatus.FAILED_INTERNAL);
+            }
+
+            log.info("Executing shell command for action {}: {}", actionId, command);
+
             ProcessBuilder pb = new ProcessBuilder();
             Process process = pb.command(BIN_SH, "-c", command).start();
 
@@ -69,6 +75,8 @@ public class ShellProtocolExecutor implements ProtocolExecutor {
         } catch (Exception e) {
             log.error("Failed to execute shell action {}: {}", actionId, e.getMessage());
             return ExecutionResult.failure(1, e.getMessage(), ExecutionStatus.FAILED_INTERNAL);
+        } finally {
+            sample.stop(Timer.builder("amocna.execute.shell.duration").register(meterRegistry));
         }
     }
 

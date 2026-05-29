@@ -1,121 +1,55 @@
 {
-  "annotations": {
-    "list": [
-      {
-        "builtIn": 1,
-        "datasource": {
-          "type": "grafana",
-          "uid": "-- Grafana --"
-        },
-        "enable": true,
-        "hide": true,
-        "iconColor": "rgba(0, 211, 255, 1)",
-        "name": "Annotations & Alerts",
-        "type": "dashboard"
-      }
-    ]
-  },
-  "editable": true,
-  "fiscalYearStartMonth": 0,
-  "graphTooltip": 0,
-  "id": null,
-  "links": [],
-  "liveNow": false,
   "panels": [
     {
-      "title": "Sock Shop Frontend Latency",
+      "title": "Scenario Latency: Sock Shop Frontend",
       "type": "timeseries",
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "gridPos": { "h": 6, "w": 12, "x": 0, "y": 0 },
       "targets": [
-        {
-          "expr": "sum(rate(http_request_duration_seconds_sum{service='frontend'}[1m])) / sum(rate(http_request_duration_seconds_count{service='frontend'}[1m]))",
-          "legendFormat": "Average Latency",
-          "refId": "A"
-        },
-        {
-          "expr": "0.85",
-          "legendFormat": "SLA Threshold (Scenario 1)",
-          "refId": "B"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "s"
-        }
-      }
-    },
-    {
-      "title": "Orders Service Latency (Persistent Check)",
-      "type": "timeseries",
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
-      "targets": [
-        {
-          "expr": "sum(rate(http_request_duration_seconds_sum{service='orders'}[1m])) / sum(rate(http_request_duration_seconds_count{service='orders'}[1m]))",
-          "legendFormat": "Average Latency",
-          "refId": "A"
-        },
-        {
-          "expr": "0.23",
-          "legendFormat": "SLA Threshold (Scenario 2)",
-          "refId": "B"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "s"
-        }
-      }
-    },
-    {
-      "title": "AMoCNA Component CPU Usage",
-      "type": "timeseries",
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
-      "targets": [
-        {
-          "expr": "sum(rate(container_cpu_usage_seconds_total{namespace='amocna', pod=~'palamedes.*'}[1m]))",
-          "legendFormat": "Palamedes CPU",
-          "refId": "A"
-        },
-        {
-          "expr": "sum(rate(container_cpu_usage_seconds_total{namespace='amocna', pod=~'themis.*'}[1m]))",
-          "legendFormat": "Themis CPU",
-          "refId": "B"
-        },
-        {
-          "expr": "sum(rate(container_cpu_usage_seconds_total{namespace='amocna', pod=~'metrics-adapter.*'}[1m]))",
-          "legendFormat": "Metrics Adapter CPU",
-          "refId": "C"
-        }
+        { "expr": "sum(rate(http_request_duration_seconds_sum{service='frontend'}[1m])) / sum(rate(http_request_duration_seconds_count{service='frontend'}[1m]))", "legendFormat": "Avg Latency" },
+        { "expr": "0.85", "legendFormat": "SLA" }
       ]
     },
     {
-      "title": "Petri Net Action Activity",
+      "title": "Benchmark 1: AMoCNA Semantic Pipeline (Latency)",
       "type": "timeseries",
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "gridPos": { "h": 6, "w": 12, "x": 12, "y": 0 },
       "targets": [
-        {
-          "expr": "count(rabbitmq_queue_messages{queue='amocna.actions.queue'})",
-          "legendFormat": "Pending Actions",
-          "refId": "A"
-        }
+        { "expr": "rate(amocna_monitor_scan_duration_seconds_sum[1m]) / rate(amocna_monitor_scan_duration_seconds_count[1m])", "legendFormat": "Monitoring (Adapter)" },
+        { "expr": "rate(amocna_semantic_query_anomalies_seconds_sum[1m]) / rate(amocna_semantic_query_anomalies_seconds_count[1m])", "legendFormat": "Reasoning (Palamedes)" },
+        { "expr": "rate(amocna_semantic_state_change_duration_seconds_sum[1m]) / rate(amocna_semantic_state_change_duration_seconds_count[1m])", "legendFormat": "Knowledge Update (Metis)" },
+        { "expr": "rate(amocna_execute_shell_duration_seconds_sum[1m]) / rate(amocna_execute_shell_duration_seconds_count[1m])", "legendFormat": "Execution (Themis)" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "s" } },
+      "description": "High-precision measurement of the autonomic loop components using Micrometer timers."
+    },
+    {
+      "title": "Benchmark 2: Resource Footprint (CPU)",
+      "type": "timeseries",
+      "gridPos": { "h": 6, "w": 12, "x": 0, "y": 6 },
+      "targets": [
+        { "expr": "sum(rate(container_cpu_usage_seconds_total{namespace='amocna'}[1m])) by (pod)", "legendFormat": "{{pod}}" }
+      ]
+    },
+    {
+      "title": "Benchmark 2: Resource Footprint (Memory)",
+      "type": "timeseries",
+      "gridPos": { "h": 6, "w": 12, "x": 12, "y": 6 },
+      "targets": [
+        { "expr": "sum(container_memory_working_set_bytes{namespace='amocna'}) by (pod)", "legendFormat": "{{pod}}" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "bytes" } }
+    },
+    {
+      "title": "Autonomic Action Activity (RabbitMQ)",
+      "type": "timeseries",
+      "gridPos": { "h": 6, "w": 24, "x": 0, "y": 12 },
+      "targets": [
+        { "expr": "rabbitmq_queue_messages{queue=~'amocna.*'}", "legendFormat": "{{queue}}" }
       ]
     }
   ],
+  "title": "AMoCNA Observability & Benchmark Dashboard",
+  "uid": "amocna-observability-v1",
   "refresh": "5s",
-  "schemaVersion": 36,
-  "style": "dark",
-  "tags": ["amocna", "experiments"],
-  "templating": {
-    "list": []
-  },
-  "time": {
-    "from": "now-15m",
-    "to": "now"
-  },
-  "timepicker": {},
-  "timezone": "",
-  "title": "AMoCNA Experiment Monitoring",
-  "uid": "amocna-exp-1",
-  "version": 1,
-  "weekStart": ""
+  "time": { "from": "now-15m", "to": "now" }
 }

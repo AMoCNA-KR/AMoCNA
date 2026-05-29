@@ -21,6 +21,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
 import java.util.stream.Stream;
 
 @Service
@@ -57,6 +59,7 @@ public class GraphDBGateway {
   private final WorkflowStateMapper workflowStateMapper;
   private final OntologyRegistry ontologyRegistry;
   private final PalamedesProperties properties;
+  private final MeterRegistry meterRegistry;
 
   public void transitionState(IRI actionId, String stateFragment) {
     IRI hasCurrentState = ontologyRegistry.actionsOntology(HAS_CURRENT_STATE_IRI);
@@ -211,10 +214,15 @@ public class GraphDBGateway {
   }
 
   public List<AnomalyTarget> findAnomalies() {
-    return sparqlRepository.findAnomalies().stream().map(bs -> new AnomalyTarget(
+    Timer.Sample sample = Timer.start(meterRegistry);
+    try {
+      return sparqlRepository.findAnomalies().stream().map(bs -> new AnomalyTarget(
         (IRI) bs.getValue(RESOURCE_IRI),
         bs.getValue(RESOURCE_NAME_VAR).stringValue(),
         (IRI) bs.getValue(INTENT_IRI))).collect(Collectors.toList());
+    } finally {
+      sample.stop(Timer.builder("amocna.semantic.query.anomalies").register(meterRegistry));
+    }
   }
 
   public List<AnomalyTarget> findRootCause(IRI startResource) {
@@ -222,6 +230,9 @@ public class GraphDBGateway {
         (IRI) bs.getValue(ROOT_RESOURCE_IRI),
         bs.getValue(ROOT_RESOURCE_NAME_IRI).stringValue(),
         (IRI) bs.getValue(INTENT_IRI))).collect(Collectors.toList());
+    } finally {
+      sample.stop(Timer.builder("amocna.semantic.query.anomalies").register(meterRegistry));
+    }
   }
 
   public List<IRI> findDependents(IRI actionId) {

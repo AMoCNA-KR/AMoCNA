@@ -6,6 +6,8 @@ import com.kubiki.metis.grpc.MetricMetadataRegisteredEvent;
 import com.kubiki.metis.grpc.RelationshipAssertedEvent;
 import com.kubiki.metis.grpc.StateChangedEvent;
 import com.kubiki.metis.sensor.IriFactory;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -19,10 +21,12 @@ public class KnowledgeBaseWriter {
 
     private final MetisDaedalusRepository repository;
     private final String cneeNamespace;
+    private final MeterRegistry meterRegistry;
 
-    public KnowledgeBaseWriter(MetisDaedalusRepository repository, IriFactory iriFactory) {
+    public KnowledgeBaseWriter(MetisDaedalusRepository repository, IriFactory iriFactory, MeterRegistry meterRegistry) {
         this.repository = repository;
         this.cneeNamespace = iriFactory.getCneeNamespace();
+        this.meterRegistry = meterRegistry;
     }
 
     public void insertEntity(EntityDiscoveredEvent event) throws KnowledgeBaseException {
@@ -86,6 +90,8 @@ public class KnowledgeBaseWriter {
     }
 
     public void changeState(StateChangedEvent event) throws KnowledgeBaseException {
+        Timer.Sample sample = Timer.start(meterRegistry);
+        try {
         String resourceIri = event.getResourceIri();
         String newStateIri = event.getNewStateIri();
 
@@ -102,6 +108,8 @@ public class KnowledgeBaseWriter {
 
         try {
             repository.changeState(resourceIri, newStateIri);
+        } finally {
+            sample.stop(Timer.builder("amocna.semantic.state_change.duration").register(meterRegistry));
         } catch (Exception e) {
             throw new KnowledgeBaseException("changeState failed: " + e.getMessage(), e);
         }
