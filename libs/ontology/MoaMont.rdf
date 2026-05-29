@@ -861,6 +861,22 @@ before patching).</rdfs:comment>
         <rdf:type rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#ComplexWorkflow"/>
         <rdfs:comment>Safe update with rollback capability</rdfs:comment>
     </owl:NamedIndividual>
+    <owl:NamedIndividual rdf:about="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#ConfigRemediationWorkflow">
+        <rdf:type rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#ComplexWorkflow"/>
+        <moam:isDecomposedInto rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#PatchConfigStep"/>
+        <moam:isDecomposedInto rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#RestartPodStep"/>
+        <rdfs:comment>ConfigMap patch followed by Pod restart</rdfs:comment>
+    </owl:NamedIndividual>
+
+    <owl:NamedIndividual rdf:about="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#PatchConfigStep">
+        <rdf:type rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#PatchConfigIntent"/>
+    </owl:NamedIndividual>
+
+    <owl:NamedIndividual rdf:about="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#RestartPodStep">
+        <rdf:type rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#RestartPodIntent"/>
+        <moam:dependsOn rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#PatchConfigStep"/>
+    </owl:NamedIndividual>
+
 
     <owl:NamedIndividual rdf:about="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#State_Compensating">
         <rdf:type rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#ExecutionState"/>

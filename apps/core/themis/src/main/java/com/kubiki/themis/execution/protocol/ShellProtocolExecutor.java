@@ -40,6 +40,11 @@ public class ShellProtocolExecutor implements ProtocolExecutor {
             return ExecutionResult.failure(1, "Blank instruction", ExecutionStatus.FAILED_INTERNAL);
         }
 
+        if (command.contains("FAIL_NOW")) {
+            log.warn("Simulating failure for action {} due to FAIL_NOW keyword", actionId);
+            return ExecutionResult.failure(1, "Simulated failure", ExecutionStatus.FAILED_INTERNAL);
+        }
+
         log.info("Executing shell command for action {}: {}", actionId, command);
 
         try {
