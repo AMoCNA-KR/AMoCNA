@@ -20,9 +20,7 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class SensorEventPublisherTest {
@@ -34,6 +32,17 @@ class SensorEventPublisherTest {
     private PalamedesNotifier notifier;
 
     private SensorEventPublisher publisher;
+
+    private static SensorEvent sampleEvent() {
+        return SensorEvent.newBuilder()
+                .setEntityDiscovered(EntityDiscoveredEvent.newBuilder()
+                        .setResourceIri("http://example.org/cnee#Pod_test")
+                        .setOntologyType("http://example.org/cnee#Pod")
+                        .setResourceId("test")
+                        .setResourceName("test")
+                        .build())
+                .build();
+    }
 
     @BeforeEach
     void setUp() {
@@ -72,16 +81,5 @@ class SensorEventPublisherTest {
         assertThat(secondBatch).hasSize(1);
         assertThat(firstBatch.get(0).getEntityDiscovered().getResourceIri())
                 .isEqualTo(secondBatch.get(0).getEntityDiscovered().getResourceIri());
-    }
-
-    private static SensorEvent sampleEvent() {
-        return SensorEvent.newBuilder()
-                .setEntityDiscovered(EntityDiscoveredEvent.newBuilder()
-                        .setResourceIri("http://example.org/cnee#Pod_test")
-                        .setOntologyType("http://example.org/cnee#Pod")
-                        .setResourceId("test")
-                        .setResourceName("test")
-                        .build())
-                .build();
     }
 }

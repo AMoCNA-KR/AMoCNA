@@ -1,10 +1,12 @@
 package com.kubiki.metis.sensor.kubernetes;
 
 import com.kubiki.metis.config.MetisProperties;
+import com.kubiki.metis.grpc.EntityDeletedEvent;
+import com.kubiki.metis.grpc.EntityDiscoveredEvent;
+import com.kubiki.metis.grpc.SensorEvent;
 import com.kubiki.metis.knowledge.CneeOntology;
 import com.kubiki.metis.sensor.IriFactory;
 import com.kubiki.metis.sensor.SensorEventPublisher;
-import com.kubiki.metis.grpc.*;
 import io.fabric8.kubernetes.api.model.Service;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.informers.ResourceEventHandler;
@@ -72,9 +74,9 @@ public class ServiceSensor extends AbstractNamespacedSensor {
     // -------------------------------------------------------------------------
 
     private void onServiceAdded(Service svc) {
-        String ns   = svc.getMetadata().getNamespace();
+        String ns = svc.getMetadata().getNamespace();
         String name = svc.getMetadata().getName();
-        String iri  = iriFactory.namespacedIri(CneeOntology.KIND_SERVICE, ns, name);
+        String iri = iriFactory.namespacedIri(CneeOntology.KIND_SERVICE, ns, name);
         String type = iriFactory.typeIri(ONTOLOGY_TYPE_LOCAL);
 
         EntityDiscoveredEvent discovered = EntityDiscoveredEvent.newBuilder()
@@ -91,9 +93,9 @@ public class ServiceSensor extends AbstractNamespacedSensor {
     }
 
     private void onServiceDeleted(Service svc) {
-        String ns   = svc.getMetadata().getNamespace();
+        String ns = svc.getMetadata().getNamespace();
         String name = svc.getMetadata().getName();
-        String iri  = iriFactory.namespacedIri(CneeOntology.KIND_SERVICE, ns, name);
+        String iri = iriFactory.namespacedIri(CneeOntology.KIND_SERVICE, ns, name);
         String type = iriFactory.typeIri(ONTOLOGY_TYPE_LOCAL);
 
         EntityDeletedEvent deleted = EntityDeletedEvent.newBuilder()

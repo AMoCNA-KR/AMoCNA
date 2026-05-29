@@ -1,11 +1,15 @@
 package com.kubiki.metis.sensor.kubernetes;
 
 import com.kubiki.metis.config.MetisProperties;
-import com.kubiki.metis.grpc.*;
+import com.kubiki.metis.grpc.SensorEvent;
+import com.kubiki.metis.grpc.StateChangedEvent;
 import com.kubiki.metis.knowledge.CneeOntology;
 import com.kubiki.metis.sensor.IriFactory;
 import com.kubiki.metis.sensor.SensorEventPublisher;
-import io.fabric8.kubernetes.api.model.*;
+import io.fabric8.kubernetes.api.model.ContainerStateTerminated;
+import io.fabric8.kubernetes.api.model.ContainerStateWaiting;
+import io.fabric8.kubernetes.api.model.ContainerStatus;
+import io.fabric8.kubernetes.api.model.Pod;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.informers.ResourceEventHandler;
 import io.fabric8.kubernetes.client.informers.SharedIndexInformer;
@@ -78,7 +82,7 @@ public class ContainerAnomalySensor extends AbstractNamespacedSensor {
     void detectContainerAnomalies(Pod pod) {
         if (pod.getStatus() == null) return;
 
-        String ns   = pod.getMetadata().getNamespace();
+        String ns = pod.getMetadata().getNamespace();
         String name = pod.getMetadata().getName();
         String podIri = iriFactory.namespacedIri(CneeOntology.KIND_POD, ns, name);
 

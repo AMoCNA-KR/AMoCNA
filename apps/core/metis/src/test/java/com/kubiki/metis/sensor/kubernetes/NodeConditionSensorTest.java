@@ -25,6 +25,16 @@ class NodeConditionSensorTest {
     private SensorEventPublisher publisher;
     private NodeConditionSensor sensor;
 
+    private static Node nodeWithCondition(String name, String type, String status) {
+        return new NodeBuilder()
+                .withNewMetadata().withName(name).endMetadata()
+                .withNewStatus()
+                .addToConditions(new NodeConditionBuilder()
+                        .withType(type).withStatus(status).build())
+                .endStatus()
+                .build();
+    }
+
     @BeforeEach
     void setUp() {
         MetisProperties props = new MetisProperties(
@@ -65,10 +75,10 @@ class NodeConditionSensorTest {
         Node node = new NodeBuilder()
                 .withNewMetadata().withName("healthy-node").endMetadata()
                 .withNewStatus()
-                    .addToConditions(new NodeConditionBuilder()
-                            .withType("Ready").withStatus("True").build())
-                    .addToConditions(new NodeConditionBuilder()
-                            .withType("MemoryPressure").withStatus("False").build())
+                .addToConditions(new NodeConditionBuilder()
+                        .withType("Ready").withStatus("True").build())
+                .addToConditions(new NodeConditionBuilder()
+                        .withType("MemoryPressure").withStatus("False").build())
                 .endStatus()
                 .build();
 
@@ -85,31 +95,21 @@ class NodeConditionSensorTest {
         verifyNoInteractions(publisher);
     }
 
+    // -------------------------------------------------------------------------
+
     @Test
     void multipleAnomaliesEmitMultipleEvents() {
         Node node = new NodeBuilder()
                 .withNewMetadata().withName("sick-node").endMetadata()
                 .withNewStatus()
-                    .addToConditions(new NodeConditionBuilder()
-                            .withType("Ready").withStatus("False").build())
-                    .addToConditions(new NodeConditionBuilder()
-                            .withType("MemoryPressure").withStatus("True").build())
+                .addToConditions(new NodeConditionBuilder()
+                        .withType("Ready").withStatus("False").build())
+                .addToConditions(new NodeConditionBuilder()
+                        .withType("MemoryPressure").withStatus("True").build())
                 .endStatus()
                 .build();
 
         sensor.detectNodeAnomalies(node);
         verify(publisher, times(2)).publish(any());
-    }
-
-    // -------------------------------------------------------------------------
-
-    private static Node nodeWithCondition(String name, String type, String status) {
-        return new NodeBuilder()
-                .withNewMetadata().withName(name).endMetadata()
-                .withNewStatus()
-                    .addToConditions(new NodeConditionBuilder()
-                            .withType(type).withStatus(status).build())
-                .endStatus()
-                .build();
     }
 }

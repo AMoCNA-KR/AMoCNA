@@ -14,6 +14,7 @@ import com.kubiki.metis.knowledge.KnowledgeBaseException;
 import com.kubiki.metis.knowledge.KnowledgeBaseWriter;
 import com.kubiki.metis.knowledge.MetisDaedalusRepository;
 import com.kubiki.metis.sensor.IriFactory;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import net.jqwik.api.*;
 import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
@@ -29,7 +30,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Property 4: Inverse property consistency.
- *
+ * <p>
  * Validates: Requirements 5.1, 5.2, 5.3
  */
 class InversePropertyTest {
@@ -65,8 +66,8 @@ class InversePropertyTest {
                 new Class[]{MetisDaedalusRepository.class},
                 handler
         );
-
-        KnowledgeBaseWriter writer = new KnowledgeBaseWriter(repository, iriFactory);
+        var meterRegistry = new SimpleMeterRegistry();
+        KnowledgeBaseWriter writer = new KnowledgeBaseWriter(repository, iriFactory, meterRegistry);
 
         RelationshipAssertedEvent event = RelationshipAssertedEvent.newBuilder()
                 .setSubjectIri(subjectIri)

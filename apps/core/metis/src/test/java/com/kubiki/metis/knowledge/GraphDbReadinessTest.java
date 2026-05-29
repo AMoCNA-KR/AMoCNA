@@ -7,9 +7,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.List;
 
-import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
-import static com.github.tomakehurst.wiremock.client.WireMock.get;
-import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
+import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -20,6 +18,20 @@ class GraphDbReadinessTest {
     static WireMockExtension wireMock = WireMockExtension.newInstance()
             .options(wireMockConfig().dynamicPort())
             .build();
+
+    private static GraphDbReadiness readinessForBaseUrl(String baseUrl) {
+        return readinessForBaseUrl(baseUrl, 5_000, 100, 200);
+    }
+
+    private static GraphDbReadiness readinessForBaseUrl(
+            String baseUrl, long maxWaitMs, long initialDelayMs, long maxDelayMs) {
+        MetisProperties properties = new MetisProperties(
+                new MetisProperties.GraphDB(baseUrl, "amocna", 5000),
+                new MetisProperties.Ontology("http://example.org/cnee#"),
+                new MetisProperties.Sensor(true, List.of(), 50, 500)
+        );
+        return GraphDbReadiness.forTest(properties, maxWaitMs, initialDelayMs, maxDelayMs);
+    }
 
     @Test
     void awaitReady_succeedsWhenProtocolReturnsOk() {
@@ -41,19 +53,5 @@ class GraphDbReadinessTest {
         assertThatThrownBy(readiness::awaitReady)
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("did not become reachable");
-    }
-
-    private static GraphDbReadiness readinessForBaseUrl(String baseUrl) {
-        return readinessForBaseUrl(baseUrl, 5_000, 100, 200);
-    }
-
-    private static GraphDbReadiness readinessForBaseUrl(
-            String baseUrl, long maxWaitMs, long initialDelayMs, long maxDelayMs) {
-        MetisProperties properties = new MetisProperties(
-                new MetisProperties.GraphDB(baseUrl, "amocna", 5000),
-                new MetisProperties.Ontology("http://example.org/cnee#"),
-                new MetisProperties.Sensor(true, List.of(), 50, 500)
-        );
-        return GraphDbReadiness.forTest(properties, maxWaitMs, initialDelayMs, maxDelayMs);
     }
 }

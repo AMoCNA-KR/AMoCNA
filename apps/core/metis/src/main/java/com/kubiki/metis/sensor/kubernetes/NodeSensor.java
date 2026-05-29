@@ -1,6 +1,8 @@
 package com.kubiki.metis.sensor.kubernetes;
 
-import com.kubiki.metis.grpc.*;
+import com.kubiki.metis.grpc.EntityDeletedEvent;
+import com.kubiki.metis.grpc.EntityDiscoveredEvent;
+import com.kubiki.metis.grpc.SensorEvent;
 import com.kubiki.metis.knowledge.CneeOntology;
 import com.kubiki.metis.sensor.IriFactory;
 import com.kubiki.metis.sensor.KubernetesSensor;
@@ -90,7 +92,7 @@ public class NodeSensor implements KubernetesSensor {
 
     private void onNodeAdded(Node node) {
         String name = node.getMetadata().getName();
-        String iri  = iriFactory.clusterScopedIri(CneeOntology.KIND_NODE, name);
+        String iri = iriFactory.clusterScopedIri(CneeOntology.KIND_NODE, name);
         String type = iriFactory.typeIri(ONTOLOGY_TYPE_LOCAL);
 
         EntityDiscoveredEvent discovered = EntityDiscoveredEvent.newBuilder()
@@ -108,7 +110,7 @@ public class NodeSensor implements KubernetesSensor {
 
     private void onNodeDeleted(Node node) {
         String name = node.getMetadata().getName();
-        String iri  = iriFactory.clusterScopedIri(CneeOntology.KIND_NODE, name);
+        String iri = iriFactory.clusterScopedIri(CneeOntology.KIND_NODE, name);
         String type = iriFactory.typeIri(ONTOLOGY_TYPE_LOCAL);
 
         EntityDeletedEvent deleted = EntityDeletedEvent.newBuilder()

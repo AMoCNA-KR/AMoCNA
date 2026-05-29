@@ -1,6 +1,7 @@
 package com.kubiki.metis.sensor.kubernetes;
 
-import com.kubiki.metis.grpc.*;
+import com.kubiki.metis.grpc.SensorEvent;
+import com.kubiki.metis.grpc.StateChangedEvent;
 import com.kubiki.metis.knowledge.CneeOntology;
 import com.kubiki.metis.sensor.IriFactory;
 import com.kubiki.metis.sensor.KubernetesSensor;
@@ -77,7 +78,9 @@ public class NodeConditionSensor implements KubernetesSensor {
     @Override
     public void stop() {
         if (informer != null) {
-            try { informer.stop(); } catch (Exception e) {
+            try {
+                informer.stop();
+            } catch (Exception e) {
                 log.warn("NodeConditionSensor error stopping informer: {}", e.getMessage());
             }
         }
@@ -109,7 +112,7 @@ public class NodeConditionSensor implements KubernetesSensor {
      * Returns {@code null} if the condition is healthy.
      */
     private String mapConditionToAnomaly(NodeCondition condition) {
-        String type   = condition.getType();
+        String type = condition.getType();
         String status = condition.getStatus();
 
         // Ready=False means node is not ready

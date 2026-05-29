@@ -1,6 +1,5 @@
 package com.kubiki.metis.config;
 
-import com.kubiki.common.config.AmocnaCommonProperties;
 import com.kubiki.daedalus.context.GlobalTemplateContext;
 import com.kubiki.metis.sensor.IriFactory;
 import jakarta.annotation.PostConstruct;

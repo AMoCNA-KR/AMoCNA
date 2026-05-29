@@ -5,11 +5,11 @@ import com.kubiki.common.model.ExecutionStatus;
 import com.kubiki.common.model.Protocol;
 import com.kubiki.themis.execution.ProtocolExecutor;
 import com.kubiki.themis.model.ExecutionResult;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import java.io.BufferedReader;
@@ -35,7 +35,7 @@ public class ShellProtocolExecutor implements ProtocolExecutor {
         return executeCommand(action);
     }
 
-        private ExecutionResult executeCommand(ActionMessage action) {
+    private ExecutionResult executeCommand(ActionMessage action) {
         String command = action.instruction();
         String actionId = action.actionId();
         int expectedStatusCode = action.expectedStatusCode();

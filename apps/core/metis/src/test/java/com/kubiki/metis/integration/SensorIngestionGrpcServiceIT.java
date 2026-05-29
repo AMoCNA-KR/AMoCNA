@@ -47,12 +47,10 @@ class SensorIngestionGrpcServiceIT {
             "http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt#";
 
     static WireMockServer wireMockServer;
-    private io.grpc.ManagedChannel channel;
-    private SensorIngestionServiceGrpc.SensorIngestionServiceBlockingStub stub;
-
     private static Repository inMemoryRepo;
     private final ValueFactory vf = SimpleValueFactory.getInstance();
-
+    private io.grpc.ManagedChannel channel;
+    private SensorIngestionServiceGrpc.SensorIngestionServiceBlockingStub stub;
     @MockitoBean
     private Repository realRepository;
 
@@ -100,27 +98,6 @@ class SensorIngestionGrpcServiceIT {
     void tearDown() {
         if (channel != null) {
             channel.shutdownNow();
-        }
-    }
-
-    @TestConfiguration
-    static class TestConfig {
-        @Bean @Primary
-        org.springframework.amqp.rabbit.core.RabbitTemplate mockRabbitTemplate() {
-            return mock(org.springframework.amqp.rabbit.core.RabbitTemplate.class);
-        }
-    }
-
-    static class WireMockInitializer implements ApplicationContextInitializer<ConfigurableApplicationContext> {
-        @Override
-        public void initialize(ConfigurableApplicationContext ctx) {
-            if (wireMockServer == null) {
-                wireMockServer = new WireMockServer(WireMockConfiguration.wireMockConfig().dynamicPort());
-                wireMockServer.start();
-                WireMock.configureFor("localhost", wireMockServer.port());
-            }
-            TestPropertySourceUtils.addInlinedPropertiesToEnvironment(ctx,
-                    "wiremock.port=" + wireMockServer.port(), "wiremock.grpc.port=0");
         }
     }
 
@@ -184,5 +161,27 @@ class SensorIngestionGrpcServiceIT {
         SensorBatch batch = SensorBatch.newBuilder().setCorrelationId("x".repeat(129)).build();
         IngestResponse response = stub.ingestBatch(batch);
         assertThat(response.getAccepted()).isFalse();
+    }
+
+    @TestConfiguration
+    static class TestConfig {
+        @Bean
+        @Primary
+        org.springframework.amqp.rabbit.core.RabbitTemplate mockRabbitTemplate() {
+            return mock(org.springframework.amqp.rabbit.core.RabbitTemplate.class);
+        }
+    }
+
+    static class WireMockInitializer implements ApplicationContextInitializer<ConfigurableApplicationContext> {
+        @Override
+        public void initialize(ConfigurableApplicationContext ctx) {
+            if (wireMockServer == null) {
+                wireMockServer = new WireMockServer(WireMockConfiguration.wireMockConfig().dynamicPort());
+                wireMockServer.start();
+                WireMock.configureFor("localhost", wireMockServer.port());
+            }
+            TestPropertySourceUtils.addInlinedPropertiesToEnvironment(ctx,
+                    "wiremock.port=" + wireMockServer.port(), "wiremock.grpc.port=0");
+        }
     }
 }

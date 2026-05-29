@@ -11,13 +11,13 @@ import com.kubiki.daedalus.core.format.CollectionFormatter;
 import com.kubiki.daedalus.core.format.IriFormatter;
 import com.kubiki.daedalus.core.format.LiteralFormatter;
 import com.kubiki.daedalus.core.format.PlainFormatter;
+import org.springframework.beans.factory.support.AbstractBeanDefinition;
 import org.springframework.beans.factory.support.BeanDefinitionBuilder;
 import org.springframework.beans.factory.support.BeanDefinitionRegistry;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.ImportBeanDefinitionRegistrar;
 import org.springframework.core.annotation.AnnotationAttributes;
 import org.springframework.core.type.AnnotationMetadata;
-import org.springframework.beans.factory.support.AbstractBeanDefinition;
 
 import java.util.Arrays;
 import java.util.HashSet;

@@ -12,6 +12,7 @@ import com.kubiki.metis.knowledge.KnowledgeBaseException;
 import com.kubiki.metis.knowledge.KnowledgeBaseWriter;
 import com.kubiki.metis.knowledge.MetisDaedalusRepository;
 import com.kubiki.metis.sensor.IriFactory;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import net.jqwik.api.*;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.ValueFactory;
@@ -29,7 +30,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * // Feature: metis-monitor-module, Property 2: Mandatory triples and ontology type conformance
- *
+ * <p>
  * Validates: Requirements 4.1, 4.2, 4.3, 13.1, 13.2
  */
 class EntityDiscoveredPropertyTest {
@@ -41,7 +42,9 @@ class EntityDiscoveredPropertyTest {
     // Arbitraries
     // -------------------------------------------------------------------------
 
-    /** Generates a non-empty alphanumeric string of length 1–20. */
+    /**
+     * Generates a non-empty alphanumeric string of length 1–20.
+     */
     @Provide
     Arbitrary<String> nonEmptyStrings() {
         return Arbitraries.strings()
@@ -50,13 +53,17 @@ class EntityDiscoveredPropertyTest {
                 .ofMaxLength(20);
     }
 
-    /** Generates a valid CNEEOnt-namespaced ontology type IRI. */
+    /**
+     * Generates a valid CNEEOnt-namespaced ontology type IRI.
+     */
     @Provide
     Arbitrary<String> cneeOntologyTypes() {
         return nonEmptyStrings().map(fragment -> CNEE_NAMESPACE + fragment);
     }
 
-    /** Generates a valid absolute resource IRI. */
+    /**
+     * Generates a valid absolute resource IRI.
+     */
     @Provide
     Arbitrary<String> resourceIris() {
         return nonEmptyStrings().map(s -> "http://example.org/resource/" + s);
@@ -68,16 +75,16 @@ class EntityDiscoveredPropertyTest {
 
     /**
      * Property 2: Mandatory triples and ontology type conformance.
-     *
+     * <p>
      * For any valid EntityDiscoveredEvent with a CNEEOnt-namespaced ontology_type,
      * non-empty resource_iri, resource_id, and resource_name, the SPARQL update
      * produced by KnowledgeBaseWriter must contain:
      * - exactly one rdf:type triple whose object IRI begins with the CNEEOnt namespace,
      * - exactly one cnee:resourceID data property triple,
      * - exactly one cnee:resourceName data property triple.
-     *
+     * <p>
      * // Feature: metis-monitor-module, Property 2: Mandatory triples and ontology type conformance
-     *
+     * <p>
      * Validates: Requirements 4.1, 4.2, 4.3, 13.1, 13.2
      */
     @Property(tries = 100)
@@ -111,7 +118,9 @@ class EntityDiscoveredPropertyTest {
                 handler
         );
 
-        KnowledgeBaseWriter writer = new KnowledgeBaseWriter(repository, iriFactory);
+        var meterRegistry = new SimpleMeterRegistry();
+
+        KnowledgeBaseWriter writer = new KnowledgeBaseWriter(repository, iriFactory, meterRegistry);
 
         // Build the event
         EntityDiscoveredEvent event = EntityDiscoveredEvent.newBuilder()

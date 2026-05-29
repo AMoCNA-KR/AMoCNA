@@ -5,7 +5,8 @@ import com.kubiki.metis.grpc.SensorEvent;
 import com.kubiki.metis.knowledge.CneeOntology;
 import com.kubiki.metis.sensor.IriFactory;
 import com.kubiki.metis.sensor.SensorEventPublisher;
-import io.fabric8.kubernetes.api.model.*;
+import io.fabric8.kubernetes.api.model.Pod;
+import io.fabric8.kubernetes.api.model.PodBuilder;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -22,6 +23,69 @@ class ContainerAnomalySensorTest {
 
     private SensorEventPublisher publisher;
     private ContainerAnomalySensor sensor;
+
+    private static Pod podWithWaitingReason(String name, String ns, String reason) {
+        return new PodBuilder()
+                .withNewMetadata().withName(name).withNamespace(ns).endMetadata()
+                .withNewStatus()
+                .addNewContainerStatus()
+                .withName("app")
+                .withReady(false)
+                .withNewState().withNewWaiting().withReason(reason).endWaiting().endState()
+                .endContainerStatus()
+                .endStatus()
+                .build();
+    }
+
+    private static Pod podWithTerminatedReason(String name, String ns, String reason) {
+        return new PodBuilder()
+                .withNewMetadata().withName(name).withNamespace(ns).endMetadata()
+                .withNewStatus()
+                .addNewContainerStatus()
+                .withName("app")
+                .withReady(false)
+                .withNewState().withNewTerminated().withReason(reason).endTerminated().endState()
+                .endContainerStatus()
+                .endStatus()
+                .build();
+    }
+
+    private static Pod podWithRunningButNotReady(String name, String ns) {
+        return new PodBuilder()
+                .withNewMetadata().withName(name).withNamespace(ns).endMetadata()
+                .withNewStatus()
+                .addNewContainerStatus()
+                .withName("app")
+                .withReady(false)
+                .withNewState().withNewRunning().endRunning().endState()
+                .endContainerStatus()
+                .endStatus()
+                .build();
+    }
+
+    private static Pod evictedPod(String name, String ns) {
+        return new PodBuilder()
+                .withNewMetadata().withName(name).withNamespace(ns).endMetadata()
+                .withNewStatus()
+                .withPhase("Failed")
+                .withReason("Evicted")
+                .endStatus()
+                .build();
+    }
+
+    private static Pod healthyPod(String name, String ns) {
+        return new PodBuilder()
+                .withNewMetadata().withName(name).withNamespace(ns).endMetadata()
+                .withNewStatus()
+                .withPhase("Running")
+                .addNewContainerStatus()
+                .withName("app")
+                .withReady(true)
+                .withNewState().withNewRunning().endRunning().endState()
+                .endContainerStatus()
+                .endStatus()
+                .build();
+    }
 
     @BeforeEach
     void setUp() {
@@ -44,6 +108,8 @@ class ContainerAnomalySensorTest {
         assertThat(captor.getValue().getStateChanged().getNewStateIri())
                 .isEqualTo(CNEE + CneeOntology.STATE_CONTAINER_CRASH_LOOP);
     }
+
+    // -------------------------------------------------------------------------
 
     @Test
     void detectsOOMKilled() {
@@ -92,70 +158,5 @@ class ContainerAnomalySensorTest {
                 .build();
         sensor.detectContainerAnomalies(pod);
         verifyNoInteractions(publisher);
-    }
-
-    // -------------------------------------------------------------------------
-
-    private static Pod podWithWaitingReason(String name, String ns, String reason) {
-        return new PodBuilder()
-                .withNewMetadata().withName(name).withNamespace(ns).endMetadata()
-                .withNewStatus()
-                    .addNewContainerStatus()
-                        .withName("app")
-                        .withReady(false)
-                        .withNewState().withNewWaiting().withReason(reason).endWaiting().endState()
-                    .endContainerStatus()
-                .endStatus()
-                .build();
-    }
-
-    private static Pod podWithTerminatedReason(String name, String ns, String reason) {
-        return new PodBuilder()
-                .withNewMetadata().withName(name).withNamespace(ns).endMetadata()
-                .withNewStatus()
-                    .addNewContainerStatus()
-                        .withName("app")
-                        .withReady(false)
-                        .withNewState().withNewTerminated().withReason(reason).endTerminated().endState()
-                    .endContainerStatus()
-                .endStatus()
-                .build();
-    }
-
-    private static Pod podWithRunningButNotReady(String name, String ns) {
-        return new PodBuilder()
-                .withNewMetadata().withName(name).withNamespace(ns).endMetadata()
-                .withNewStatus()
-                    .addNewContainerStatus()
-                        .withName("app")
-                        .withReady(false)
-                        .withNewState().withNewRunning().endRunning().endState()
-                    .endContainerStatus()
-                .endStatus()
-                .build();
-    }
-
-    private static Pod evictedPod(String name, String ns) {
-        return new PodBuilder()
-                .withNewMetadata().withName(name).withNamespace(ns).endMetadata()
-                .withNewStatus()
-                    .withPhase("Failed")
-                    .withReason("Evicted")
-                .endStatus()
-                .build();
-    }
-
-    private static Pod healthyPod(String name, String ns) {
-        return new PodBuilder()
-                .withNewMetadata().withName(name).withNamespace(ns).endMetadata()
-                .withNewStatus()
-                    .withPhase("Running")
-                    .addNewContainerStatus()
-                        .withName("app")
-                        .withReady(true)
-                        .withNewState().withNewRunning().endRunning().endState()
-                    .endContainerStatus()
-                .endStatus()
-                .build();
     }
 }

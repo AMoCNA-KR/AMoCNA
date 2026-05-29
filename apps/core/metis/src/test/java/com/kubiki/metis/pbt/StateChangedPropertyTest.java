@@ -14,7 +14,9 @@ import com.kubiki.metis.knowledge.KnowledgeBaseException;
 import com.kubiki.metis.knowledge.KnowledgeBaseWriter;
 import com.kubiki.metis.knowledge.MetisDaedalusRepository;
 import com.kubiki.metis.sensor.IriFactory;
-import net.jqwik.api.*;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import net.jqwik.api.ForAll;
+import net.jqwik.api.Property;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
@@ -30,7 +32,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Property 3: Functional state invariant.
- *
+ * <p>
  * Validates: Requirements 1.2, 1.3
  */
 class StateChangedPropertyTest {
@@ -57,13 +59,14 @@ class StateChangedPropertyTest {
                 new Class[]{MetisDaedalusRepository.class},
                 handler
         );
-
-        return new KnowledgeBaseWriter(repository, registry);
+        var meterRegistry = new SimpleMeterRegistry();
+        return new KnowledgeBaseWriter(repository, registry, meterRegistry);
     }
 
     @Property(tries = 50)
     void functionalStateInvariant(@ForAll String resourceIri, @ForAll String stateA, @ForAll String stateB) throws KnowledgeBaseException {
-        if (resourceIri.isBlank() || stateA.isBlank() || stateB.isBlank() || !stateA.startsWith(CNEE) || !stateB.startsWith(CNEE)) return;
+        if (resourceIri.isBlank() || stateA.isBlank() || stateB.isBlank() || !stateA.startsWith(CNEE) || !stateB.startsWith(CNEE))
+            return;
         Repository repo = new SailRepository(new MemoryStore());
         repo.init();
         KnowledgeBaseWriter writer = writerFor(repo);

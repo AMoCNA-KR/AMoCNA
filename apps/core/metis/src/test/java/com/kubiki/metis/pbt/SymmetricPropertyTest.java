@@ -14,7 +14,9 @@ import com.kubiki.metis.knowledge.KnowledgeBaseException;
 import com.kubiki.metis.knowledge.KnowledgeBaseWriter;
 import com.kubiki.metis.knowledge.MetisDaedalusRepository;
 import com.kubiki.metis.sensor.IriFactory;
-import net.jqwik.api.*;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import net.jqwik.api.ForAll;
+import net.jqwik.api.Property;
 import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.repository.Repository;
@@ -29,7 +31,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Property 5: Symmetric communicatesWith.
- *
+ * <p>
  * Validates: Requirements 6.1, 6.2
  */
 class SymmetricPropertyTest {
@@ -61,8 +63,9 @@ class SymmetricPropertyTest {
                 new Class[]{MetisDaedalusRepository.class},
                 handler
         );
+        var meterRegistry = new SimpleMeterRegistry();
 
-        KnowledgeBaseWriter writer = new KnowledgeBaseWriter(repository, iriFactory);
+        KnowledgeBaseWriter writer = new KnowledgeBaseWriter(repository, iriFactory, meterRegistry);
 
         RelationshipAssertedEvent event = RelationshipAssertedEvent.newBuilder()
                 .setSubjectIri(iriA)

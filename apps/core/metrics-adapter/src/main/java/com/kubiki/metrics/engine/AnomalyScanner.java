@@ -5,12 +5,11 @@ import com.kubiki.common.model.GraphUpdateMessage;
 import com.kubiki.metrics.graph.GraphWriter;
 import com.kubiki.metrics.prometheus.PrometheusClient;
 import com.kubiki.metrics.prometheus.ThresholdsLoader;
-import lombok.RequiredArgsConstructor;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -36,7 +35,7 @@ public class AnomalyScanner {
 
     private final Map<String, Integer> violationCounter = new ConcurrentHashMap<>();
 
-        @Scheduled(fixedDelayString = "${scanner.interval:10000}")
+    @Scheduled(fixedDelayString = "${scanner.interval:10000}")
     public void scan() {
         Timer.Sample sample = Timer.start(meterRegistry);
         log.debug("Starting anomaly scan...");

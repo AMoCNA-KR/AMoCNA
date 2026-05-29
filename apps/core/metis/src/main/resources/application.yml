@@ -25,6 +25,6 @@ metis:
     cneeNamespace: "http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt#"
   sensor:
     enabled: true
-    namespaces: []          # empty = watch all namespaces; e.g. [default, production]
+    namespaces: [ ]          # empty = watch all namespaces; e.g. [default, production]
     batch-size: 50
     flush-interval-ms: 500

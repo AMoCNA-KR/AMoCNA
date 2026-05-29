@@ -1,10 +1,13 @@
 package com.kubiki.metis.sensor.kubernetes;
 
 import com.kubiki.metis.config.MetisProperties;
+import com.kubiki.metis.grpc.EntityDeletedEvent;
+import com.kubiki.metis.grpc.EntityDiscoveredEvent;
+import com.kubiki.metis.grpc.RelationshipAssertedEvent;
+import com.kubiki.metis.grpc.SensorEvent;
 import com.kubiki.metis.knowledge.CneeOntology;
 import com.kubiki.metis.sensor.IriFactory;
 import com.kubiki.metis.sensor.SensorEventPublisher;
-import com.kubiki.metis.grpc.*;
 import io.fabric8.kubernetes.api.model.PersistentVolumeClaim;
 import io.fabric8.kubernetes.api.model.Pod;
 import io.fabric8.kubernetes.api.model.Volume;
@@ -87,7 +90,7 @@ public class StorageSensor extends AbstractNamespacedSensor {
                 SensorEvent.newBuilder().setEntityDiscovered(discovered)));
 
         log.debug("StorageSensor: added PVC {}/{}", ns, name);
-        
+
         // Find pods using this PVC and link them
         // Note: In a fully event-driven system, PodSensor would handle this, 
         // but adding it here ensures existing links are caught if PVC arrives after Pod.

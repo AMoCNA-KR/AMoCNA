@@ -2,7 +2,6 @@ package com.kubiki.daedalus.core.format;
 
 import com.kubiki.daedalus.annotation.TemplateType;
 import com.kubiki.daedalus.core.ValueFormatter;
-import org.springframework.stereotype.Component;
 
 import java.util.Collection;
 import java.util.stream.Collectors;

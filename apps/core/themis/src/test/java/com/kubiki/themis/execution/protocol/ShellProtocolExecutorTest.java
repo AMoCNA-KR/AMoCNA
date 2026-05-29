@@ -4,9 +4,12 @@ import com.kubiki.common.model.ActionMessage;
 import com.kubiki.common.model.ExecutionStatus;
 import com.kubiki.common.model.Protocol;
 import com.kubiki.themis.model.ExecutionResult;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -14,10 +17,12 @@ import static org.junit.jupiter.api.Assertions.*;
 class ShellProtocolExecutorTest {
 
     private ShellProtocolExecutor shellProtocolExecutor;
+    private MeterRegistry meterRegistry;
 
     @BeforeEach
     void setUp() {
-        shellProtocolExecutor = new ShellProtocolExecutor();
+        meterRegistry = new SimpleMeterRegistry();
+        shellProtocolExecutor = new ShellProtocolExecutor(meterRegistry);
     }
 
     @Test

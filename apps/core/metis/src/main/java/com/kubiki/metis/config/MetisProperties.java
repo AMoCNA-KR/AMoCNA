@@ -11,9 +11,11 @@ public record MetisProperties(
         @NestedConfigurationProperty Ontology ontology,
         @NestedConfigurationProperty Sensor sensor
 ) {
-    public record GraphDB(String url, String repositoryId, int timeoutMs) {}
+    public record GraphDB(String url, String repositoryId, int timeoutMs) {
+    }
 
-    public record Ontology(String cneeNamespace) {}
+    public record Ontology(String cneeNamespace) {
+    }
 
     /**
      * Configuration for the built-in Kubernetes sensor layer.
@@ -30,7 +32,9 @@ public record MetisProperties(
             int batchSize,
             long flushIntervalMs
     ) {
-        /** Defaults used when the sensor block is absent from application.yml. */
+        /**
+         * Defaults used when the sensor block is absent from application.yml.
+         */
         public Sensor {
             if (namespaces == null) namespaces = List.of();
             if (batchSize <= 0) batchSize = 50;

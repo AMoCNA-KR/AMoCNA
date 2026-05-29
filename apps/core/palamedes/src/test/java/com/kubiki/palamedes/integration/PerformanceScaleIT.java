@@ -1,6 +1,5 @@
 package com.kubiki.palamedes.integration;
 
-import com.kubiki.daedalus.knowledge.SparqlClient;
 import com.kubiki.common.ontology.OntologyRegistry;
 import com.kubiki.palamedes.knowledge.GraphDBGateway;
 import com.kubiki.palamedes.model.ActiveActionSummary;

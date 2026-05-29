@@ -5,7 +5,6 @@ import com.kubiki.daedalus.context.GlobalTemplateContext;
 import com.kubiki.daedalus.exception.HydrationException;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
-import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
 import java.util.List;

@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kubiki.common.config.AmocnaCommonProperties;
 import com.kubiki.common.exception.ConditionEvaluationException;
 import com.kubiki.palamedes.condition.ConditionStrategy;
-import com.kubiki.palamedes.config.PalamedesProperties;
 import com.kubiki.palamedes.model.ActionData;
 import org.eclipse.rdf4j.model.IRI;
 import org.slf4j.Logger;

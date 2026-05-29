@@ -60,7 +60,30 @@ public class SensorEventPublisher {
         this.sensorHostname = resolveHostname();
     }
 
-    /** Start the periodic flush scheduler. Called by {@link SensorOrchestrator}. */
+    private static String resolveHostname() {
+        try {
+            return InetAddress.getLocalHost().getHostName();
+        } catch (Exception e) {
+            return "metis-sensor";
+        }
+    }
+
+    /**
+     * Wraps a {@link SensorEvent.Builder} with the current timestamp.
+     */
+    public static SensorEvent withTimestamp(SensorEvent.Builder builder) {
+        Instant now = Instant.now();
+        return builder
+                .setTimestamp(Timestamp.newBuilder()
+                        .setSeconds(now.getEpochSecond())
+                        .setNanos(now.getNano())
+                        .build())
+                .build();
+    }
+
+    /**
+     * Start the periodic flush scheduler. Called by {@link SensorOrchestrator}.
+     */
     void startScheduler() {
         scheduler = Executors.newSingleThreadScheduledExecutor(r -> {
             Thread t = new Thread(r, "sensor-flush");
@@ -71,7 +94,11 @@ public class SensorEventPublisher {
         log.info("SensorEventPublisher started [batchSize={}, flushIntervalMs={}]", batchSize, flushIntervalMs);
     }
 
-    /** Stop the scheduler and flush any remaining buffered events. */
+    // -------------------------------------------------------------------------
+
+    /**
+     * Stop the scheduler and flush any remaining buffered events.
+     */
     void stopScheduler() {
         if (scheduler != null) {
             scheduler.shutdown();
@@ -104,8 +131,6 @@ public class SensorEventPublisher {
             flush();
         }
     }
-
-    // -------------------------------------------------------------------------
 
     /**
      * Atomically swaps the buffer and processes the swapped batch outside the lock,
@@ -196,24 +221,5 @@ public class SensorEventPublisher {
         String uuid = UUID.randomUUID().toString().replace("-", "").substring(0, 12);
         String raw = sensorHostname + "-" + uuid;
         return raw.length() > 128 ? raw.substring(0, 128) : raw;
-    }
-
-    private static String resolveHostname() {
-        try {
-            return InetAddress.getLocalHost().getHostName();
-        } catch (Exception e) {
-            return "metis-sensor";
-        }
-    }
-
-    /** Wraps a {@link SensorEvent.Builder} with the current timestamp. */
-    public static SensorEvent withTimestamp(SensorEvent.Builder builder) {
-        Instant now = Instant.now();
-        return builder
-                .setTimestamp(Timestamp.newBuilder()
-                        .setSeconds(now.getEpochSecond())
-                        .setNanos(now.getNano())
-                        .build())
-                .build();
     }
 }

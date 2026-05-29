@@ -25,7 +25,6 @@ public record PalamedesProperties(
     );
 
 
-
     public record States(Map<String, String> actionStates) {
         public States {
             Objects.requireNonNull(actionStates, "palamedes.states.actionStates must not be null");

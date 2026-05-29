@@ -29,12 +29,16 @@ public class SensorOrchestrator implements ApplicationListener<ApplicationReadyE
 
     private static final Logger log = LoggerFactory.getLogger(SensorOrchestrator.class);
 
-    private static final int  MAX_RETRY_ATTEMPTS    = 5;
+    private static final int MAX_RETRY_ATTEMPTS = 5;
     private static final long INITIAL_RETRY_DELAY_S = 2;
-    /** Cap to prevent {@code 1L << shift} overflow if MAX_RETRY_ATTEMPTS is increased. */
-    private static final int  MAX_BACKOFF_SHIFT     = 30;
-    /** Hard ceiling on a single retry delay regardless of attempt number. */
-    private static final long MAX_RETRY_DELAY_S     = 300;
+    /**
+     * Cap to prevent {@code 1L << shift} overflow if MAX_RETRY_ATTEMPTS is increased.
+     */
+    private static final int MAX_BACKOFF_SHIFT = 30;
+    /**
+     * Hard ceiling on a single retry delay regardless of attempt number.
+     */
+    private static final long MAX_RETRY_DELAY_S = 300;
 
     private final List<KubernetesSensor> sensors;
     private final SensorEventPublisher publisher;
