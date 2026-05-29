@@ -54,7 +54,7 @@ public class AnomalyScanner {
 
                             if (isViolated(result.value(), threshold.operator(), threshold.value())) {
                                 int count = violationCounter.getOrDefault(key, 0) + 1;
-                                log.warn("Threshold breached: {} for resource {} (Value: {} {} {}). Persistence: {}/{}",
+                                log.warn("[BENCHMARK] Threshold breached at {} for {}: {} for resource {} (Value: {} {} {}). Persistence: {}/{}", System.currentTimeMillis(),
                                         threshold.name(), targetResourceIri, result.value(), threshold.operator(), threshold.value(), count, threshold.persistenceWindow());
 
                                 if (count >= threshold.persistenceWindow()) {
