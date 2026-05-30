@@ -3,7 +3,15 @@ package com.kubiki.palamedes.knowledge;
 import com.kubiki.common.ontology.OntologyRegistry;
 import com.kubiki.daedalus.knowledge.SparqlClient;
 import com.kubiki.palamedes.config.PalamedesProperties;
-import com.kubiki.palamedes.model.*;
+import com.kubiki.palamedes.analyzer.ImageRemediationPlanner;
+import com.kubiki.palamedes.model.ActionData;
+import com.kubiki.palamedes.model.ActiveActionSummary;
+import com.kubiki.palamedes.model.AnomalyTarget;
+import com.kubiki.palamedes.model.ImageInTopology;
+import com.kubiki.palamedes.model.ImageUpdateTarget;
+import com.kubiki.palamedes.model.WorkflowState;
+import com.kubiki.palamedes.model.WorkflowStateMapper;
+import com.kubiki.palamedes.knowledge.Result;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import lombok.RequiredArgsConstructor;
@@ -233,6 +241,70 @@ public class GraphDBGateway {
         } finally {
             sample.stop(Timer.builder("amocna.semantic.query.anomalies").register(meterRegistry));
         }
+    }
+
+    public List<ImageUpdateTarget> findWorkloadsByVulnerableImage(IRI imageIri) {
+        return sparqlRepository.findWorkloadsByVulnerableImage(imageIri.stringValue()).stream()
+                .map(bs -> new ImageUpdateTarget(
+                        (IRI) bs.getValue("deployment"),
+                        bs.getValue("deploymentName").stringValue(),
+                        ImageRemediationPlanner.parseNamespaceFromDeploymentIri((IRI) bs.getValue("deployment")),
+                        bs.getValue("containerName").stringValue(),
+                        bs.getValue("imageRepository").stringValue(),
+                        bs.getValue("currentVersion").stringValue(),
+                        null,
+                        bs.hasBinding("service") ? (IRI) bs.getValue("service") : null,
+                        bs.hasBinding("serviceName") ? bs.getValue("serviceName").stringValue() : null
+                ))
+                .toList();
+    }
+
+    public List<ImageInTopology> findImagesInTopology() {
+        return sparqlRepository.findImagesInTopology().stream()
+                .map(bs -> new ImageInTopology(
+                        (IRI) bs.getValue("image"),
+                        bs.getValue("imageRepository").stringValue(),
+                        bs.getValue("version").stringValue()))
+                .toList();
+    }
+
+    public void storeImageUpdateHydration(String actionId, ImageUpdateTarget target) {
+        IRI actionIri = ontologyRegistry.actionsOntology(actionId);
+        IRI hydrationKey = ontologyRegistry.actionsOntology("hydrationPayload");
+        String payload = String.join("|",
+                target.containerName(),
+                target.imageRepository(),
+                target.targetVersion(),
+                target.namespace());
+        sparqlClient.executeWithConnection(conn -> {
+            var vf = conn.getValueFactory();
+            conn.begin();
+            conn.remove(actionIri, hydrationKey, null);
+            conn.add(actionIri, hydrationKey, vf.createLiteral(payload));
+            conn.commit();
+            return null;
+        });
+    }
+
+    public Map<String, String> findImageUpdateHydration(IRI actionIri) {
+        IRI hydrationKey = ontologyRegistry.actionsOntology("hydrationPayload");
+        return sparqlClient.executeWithConnection(conn -> {
+            var statements = conn.getStatements(actionIri, hydrationKey, null);
+            if (!statements.hasNext()) {
+                return Map.of();
+            }
+            String payload = statements.next().getObject().stringValue();
+            String[] parts = payload.split("\\|", 4);
+            if (parts.length < 4) {
+                return Map.of();
+            }
+            return Map.of(
+                    "containerName", parts[0],
+                    "imageRepository", parts[1],
+                    "targetVersion", parts[2],
+                    "namespace", parts[3]
+            );
+        });
     }
 
     public List<IRI> findDependents(IRI actionId) {

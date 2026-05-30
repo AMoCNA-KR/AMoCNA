@@ -28,7 +28,7 @@ class BenchmarkPlugin(BasePlugin):
         )
         p_run.add_argument(
             "--scenario",
-            choices=["1", "2", "3", "4", "all"],
+            choices=["1", "2", "3", "4", "5", "all"],
             required=True,
             help="Scenario to run",
         )
@@ -249,6 +249,19 @@ except Exception as e:
                 "-n",
                 "sock-shop",
                 "--replicas=1",
+            ],
+            check=False,
+        )
+        info("Resetting front-end image to baseline 0.3.0...")
+        run(
+            [
+                "kubectl",
+                "set",
+                "image",
+                "deployment/front-end",
+                "front-end=weaveworksdemos/frontend:0.3.0",
+                "-n",
+                "sock-shop",
             ],
             check=False,
         )
@@ -627,9 +640,66 @@ except Exception as e:
                 ]
             )
 
+        elif scenario == "5":
+            info("Initializing Scenario 5: End-to-End Vulnerability Remediation...")
+            info("Step 1: Resetting front-end to vulnerable image weaveworksdemos/frontend:0.3.0...")
+            run(
+                [
+                    "kubectl",
+                    "set",
+                    "image",
+                    "deployment/front-end",
+                    "front-end=weaveworksdemos/frontend:0.3.0",
+                    "-n",
+                    "sock-shop",
+                ],
+                check=False,
+            )
+            info("Waiting for rollout to settle...")
+            time.sleep(15)
+
+            info(
+                "Step 2: Waiting for Metis topology sync and Palamedes catalog scan (45s)..."
+            )
+            time.sleep(45)
+
+            start_time = time.time()
+            success = False
+            info("Step 3: Polling front-end image for autonomic security patch to 0.3.1...")
+            for i in range(24):
+                time.sleep(5)
+                image = run_capture(
+                    [
+                        "kubectl",
+                        "get",
+                        "deployment",
+                        "front-end",
+                        "-n",
+                        "sock-shop",
+                        "-o",
+                        "jsonpath={.spec.template.spec.containers[0].image}",
+                    ]
+                )
+                if "0.3.1" in image:
+                    duration = time.time() - start_time
+                    info(
+                        _C.green(
+                            f"✔ SUCCESS: Front-end autonomically patched to secure version (0.3.1) in {duration:.1f}s!"
+                        )
+                    )
+                    success = True
+                    break
+                else:
+                    print(f"    Current image: {image}... ({i * 5}s)")
+
+            if not success:
+                error(
+                    "✖ TIMEOUT: Autonomic vulnerability loop failed to patch front-end within 120s."
+                )
+
         elif scenario == "all":
             info("Starting complete automated benchmark cycle...")
-            for sc in ["1", "2", "3", "4"]:
+            for sc in ["1", "2", "3", "4", "5"]:
                 run(["./amocna.py", "benchmark", "run", "--scenario", sc])
                 info("Waiting 15 seconds between scenarios...")
                 time.sleep(15)

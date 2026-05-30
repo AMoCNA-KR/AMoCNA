@@ -1,0 +1,10 @@
+vulnerabilities:
+  - id: CVE-2024-DEMO-001
+    imageRepository: weaveworksdemos/frontend
+    affectedVersions:
+      - "0.3.0"
+    fixedVersions:
+      - "0.3.1"
+      - "0.4.0"
+      - "1.0.0"
+    severity: HIGH

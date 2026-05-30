@@ -43,4 +43,10 @@ public interface SparqlRepository {
 
     @SparqlQuery(resource = "sparql/find-root-cause.sparql")
     List<BindingSet> findRootCause(@Type(TemplateType.IRI) @Bind("IRI::startResource") String startResource);
+
+    @SparqlQuery(resource = "sparql/find-workloads-by-vulnerable-image.sparql")
+    List<BindingSet> findWorkloadsByVulnerableImage(@Type(TemplateType.IRI) @Bind("IRI::imageIri") String imageIri);
+
+    @SparqlQuery(resource = "sparql/find-images-in-topology.sparql")
+    List<BindingSet> findImagesInTopology();
 }
