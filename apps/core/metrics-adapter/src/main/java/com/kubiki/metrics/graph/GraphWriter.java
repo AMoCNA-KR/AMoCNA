@@ -60,6 +60,9 @@ public class GraphWriter {
             log.info("Instantiated anomaly {} for resource {}", anomalyIri, targetResourceIri);
         } catch (Exception e) {
             log.error("Failed to instantiate anomaly in GraphDB for resource {}", targetResourceIri, e);
+            if (e instanceof InterruptedException || (e.getCause() != null && e.getCause() instanceof InterruptedException)) {
+                Thread.currentThread().interrupt();
+            }
         }
     }
 }

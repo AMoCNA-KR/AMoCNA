@@ -42,6 +42,10 @@ public class AnomalyScanner {
 
         Flux.fromIterable(thresholdsLoader.getThresholds())
                 .flatMap(threshold -> prometheusClient.query(threshold.query())
+                        .onErrorResume(e -> {
+                            log.error("Failed to query Prometheus for threshold: {}", threshold.name(), e);
+                            return Flux.empty();
+                        })
                         .flatMap(result -> {
                             String resourceName = result.labels().get(threshold.resourceLabel());
                             String namespace = threshold.namespaceLabel() != null
@@ -63,7 +67,11 @@ public class AnomalyScanner {
 
                                 if (count >= threshold.persistenceWindow()) {
                                     violationCounter.remove(key);
-                                    return triggerAnomaly(targetResourceIri, threshold.anomalyState());
+                                    return triggerAnomaly(targetResourceIri, threshold.anomalyState())
+                                            .onErrorResume(e -> {
+                                                log.error("Failed to trigger anomaly for {}: {}", targetResourceIri, e.getMessage());
+                                                return Mono.empty();
+                                            });
                                 } else {
                                     violationCounter.put(key, count);
                                     return Mono.empty();
@@ -73,7 +81,10 @@ public class AnomalyScanner {
                                 return Mono.empty();
                             }
                         }))
-                .blockLast();
+                .collectList()
+                .doOnError(e -> log.error("Unexpected error during anomaly scan", e))
+                .onErrorResume(e -> Mono.empty())
+                .block();
         sample.stop(Timer.builder("amocna.monitor.scan.duration").register(meterRegistry));
     }
 
