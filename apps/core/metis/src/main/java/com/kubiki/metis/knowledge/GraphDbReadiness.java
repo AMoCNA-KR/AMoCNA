@@ -3,6 +3,7 @@ package com.kubiki.metis.knowledge;
 import com.kubiki.metis.config.MetisProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -43,6 +44,15 @@ public class GraphDbReadiness {
     static GraphDbReadiness forTest(
             MetisProperties properties, long maxWaitMs, long initialDelayMs, long maxDelayMs) {
         return new GraphDbReadiness(properties, maxWaitMs, initialDelayMs, maxDelayMs);
+    }
+
+    private static void sleep(long delayMs) {
+        try {
+            Thread.sleep(delayMs);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException("Interrupted while waiting for GraphDB", e);
+        }
     }
 
     /**
@@ -88,15 +98,6 @@ public class GraphDbReadiness {
         } catch (Exception e) {
             log.debug("GraphDB not reachable yet: {}", e.getMessage());
             return false;
-        }
-    }
-
-    private static void sleep(long delayMs) {
-        try {
-            Thread.sleep(delayMs);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new IllegalStateException("Interrupted while waiting for GraphDB", e);
         }
     }
 }

@@ -1,0 +1,6 @@
+PREFIX cnee: <http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/>
+DELETE WHERE {
+  ?s cnee:hasState ?state .
+  ?state a ?stateType .
+  FILTER(?stateType IN (cnee:ResponseTimeSlaViolatedState, cnee:SecurityVulnerabilityDetectedState, cnee:ConfigDriftState))
+}

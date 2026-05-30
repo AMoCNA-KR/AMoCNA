@@ -31,8 +31,8 @@ public class RelationshipAssertedHandler implements SensorEventHandler {
         RelationshipAssertedEvent rel = event.getRelationshipAsserted();
 
         String subjectIri = rel.getSubjectIri();
-        String objectIri  = rel.getObjectIri();
-        String predicate  = rel.getPredicate();
+        String objectIri = rel.getObjectIri();
+        String predicate = rel.getPredicate();
 
         if (subjectIri == null || subjectIri.isBlank()) {
             return HandlerResult.failure("subject_iri must not be blank");

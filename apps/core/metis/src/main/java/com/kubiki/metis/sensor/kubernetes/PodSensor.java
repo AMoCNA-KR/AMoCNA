@@ -1,10 +1,10 @@
 package com.kubiki.metis.sensor.kubernetes;
 
 import com.kubiki.metis.config.MetisProperties;
+import com.kubiki.metis.grpc.*;
 import com.kubiki.metis.knowledge.CneeOntology;
 import com.kubiki.metis.sensor.IriFactory;
 import com.kubiki.metis.sensor.SensorEventPublisher;
-import com.kubiki.metis.grpc.*;
 import io.fabric8.kubernetes.api.model.OwnerReference;
 import io.fabric8.kubernetes.api.model.Pod;
 import io.fabric8.kubernetes.client.KubernetesClient;
@@ -34,11 +34,11 @@ public class PodSensor extends AbstractNamespacedSensor {
 
     // Kubernetes phase → CNEEOnt state local name
     private static final Map<String, String> PHASE_TO_STATE = Map.of(
-            "Pending",   CneeOntology.STATE_PENDING,
-            "Running",   CneeOntology.STATE_RUNNING,
-            "Failed",    CneeOntology.STATE_FAILED,
+            "Pending", CneeOntology.STATE_PENDING,
+            "Running", CneeOntology.STATE_RUNNING,
+            "Failed", CneeOntology.STATE_FAILED,
             "Succeeded", CneeOntology.STATE_SUCCEEDED,
-            "Unknown",   CneeOntology.STATE_UNKNOWN
+            "Unknown", CneeOntology.STATE_UNKNOWN
     );
 
     private final SensorEventPublisher publisher;
@@ -55,10 +55,19 @@ public class PodSensor extends AbstractNamespacedSensor {
         this.cneeNamespace = properties.ontology().cneeNamespace();
     }
 
+    private static String podPhase(Pod pod) {
+        if (pod.getStatus() == null) return null;
+        return pod.getStatus().getPhase();
+    }
+
     @Override
     public String name() {
         return "PodSensor";
     }
+
+    // -------------------------------------------------------------------------
+    // Event handlers — package-visible to allow direct unit testing.
+    // -------------------------------------------------------------------------
 
     @Override
     protected SharedIndexInformer<Pod> createInformer(KubernetesClient client, String namespace) {
@@ -86,14 +95,10 @@ public class PodSensor extends AbstractNamespacedSensor {
         return informer;
     }
 
-    // -------------------------------------------------------------------------
-    // Event handlers — package-visible to allow direct unit testing.
-    // -------------------------------------------------------------------------
-
     void onPodAdded(Pod pod) {
-        String ns   = pod.getMetadata().getNamespace();
+        String ns = pod.getMetadata().getNamespace();
         String name = pod.getMetadata().getName();
-        String iri  = iriFactory.namespacedIri(CneeOntology.KIND_POD, ns, name);
+        String iri = iriFactory.namespacedIri(CneeOntology.KIND_POD, ns, name);
         String type = iriFactory.typeIri(ONTOLOGY_TYPE_LOCAL);
 
         EntityDiscoveredEvent discovered = EntityDiscoveredEvent.newBuilder()
@@ -133,9 +138,9 @@ public class PodSensor extends AbstractNamespacedSensor {
         String oldPhase = podPhase(oldPod);
         String newPhase = podPhase(newPod);
 
-        String ns   = newPod.getMetadata().getNamespace();
+        String ns = newPod.getMetadata().getNamespace();
         String name = newPod.getMetadata().getName();
-        String iri  = iriFactory.namespacedIri(CneeOntology.KIND_POD, ns, name);
+        String iri = iriFactory.namespacedIri(CneeOntology.KIND_POD, ns, name);
 
         if (newPhase != null && !newPhase.equals(oldPhase)) {
             emitStateChange(iri, newPhase, oldPhase);
@@ -159,9 +164,9 @@ public class PodSensor extends AbstractNamespacedSensor {
     }
 
     void onPodDeleted(Pod pod) {
-        String ns   = pod.getMetadata().getNamespace();
+        String ns = pod.getMetadata().getNamespace();
         String name = pod.getMetadata().getName();
-        String iri  = iriFactory.namespacedIri(CneeOntology.KIND_POD, ns, name);
+        String iri = iriFactory.namespacedIri(CneeOntology.KIND_POD, ns, name);
         String type = iriFactory.typeIri(ONTOLOGY_TYPE_LOCAL);
 
         EntityDeletedEvent deleted = EntityDeletedEvent.newBuilder()
@@ -177,7 +182,7 @@ public class PodSensor extends AbstractNamespacedSensor {
 
     private void emitStateChange(String resourceIri, String phase, String previousPhase) {
         String stateLocalName = PHASE_TO_STATE.getOrDefault(phase, CneeOntology.STATE_UNKNOWN);
-        String newStateIri    = iriFactory.typeIri(stateLocalName);
+        String newStateIri = iriFactory.typeIri(stateLocalName);
 
         StateChangedEvent.Builder builder = StateChangedEvent.newBuilder()
                 .setResourceIri(resourceIri)
@@ -190,10 +195,5 @@ public class PodSensor extends AbstractNamespacedSensor {
 
         publisher.publish(SensorEventPublisher.withTimestamp(
                 SensorEvent.newBuilder().setStateChanged(builder.build())));
-    }
-
-    private static String podPhase(Pod pod) {
-        if (pod.getStatus() == null) return null;
-        return pod.getStatus().getPhase();
     }
 }

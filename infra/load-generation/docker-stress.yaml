@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cluster-stress
+  namespace: default
+spec:
+  replicas: 0 # Start with 0, manually scale up to trigger scenarios
+  selector:
+    matchLabels:
+      app: cluster-stress
+  template:
+    metadata:
+      labels:
+        app: cluster-stress
+    spec:
+      containers:
+        - name: stress
+          image: progrium/stress
+          args:
+            [
+              "--cpu",
+              "2",
+              "--io",
+              "1",
+              "--vm",
+              "2",
+              "--vm-bytes",
+              "512M",
+              "--timeout",
+              "600s",
+            ]
+          resources:
+            limits:
+              cpu: "2"
+              memory: "1Gi"
+            requests:
+              cpu: "1"
+              memory: "512Mi"

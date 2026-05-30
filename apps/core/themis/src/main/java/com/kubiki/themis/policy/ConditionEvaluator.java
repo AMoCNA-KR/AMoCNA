@@ -1,13 +1,10 @@
 package com.kubiki.themis.policy;
 
 import com.kubiki.common.config.AmocnaCommonProperties;
-import com.kubiki.common.ontology.OntologyRegistry;
-import com.kubiki.themis.config.ThemisProperties;
 import org.eclipse.rdf4j.query.BooleanQuery;
 import org.eclipse.rdf4j.query.QueryLanguage;
 import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
-import org.eclipse.rdf4j.repository.manager.RemoteRepositoryManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;

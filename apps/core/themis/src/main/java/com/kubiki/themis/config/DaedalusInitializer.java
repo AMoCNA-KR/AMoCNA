@@ -4,7 +4,6 @@ import com.kubiki.common.config.AmocnaCommonProperties;
 import com.kubiki.daedalus.context.GlobalTemplateContext;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 @Component

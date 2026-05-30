@@ -1,7 +1,7 @@
 package com.kubiki.palamedes.saga;
 
-import com.kubiki.palamedes.knowledge.GraphDBGateway;
 import com.kubiki.common.ontology.OntologyRegistry;
+import com.kubiki.palamedes.knowledge.GraphDBGateway;
 import com.kubiki.palamedes.model.ActionData;
 import com.kubiki.palamedes.model.WorkflowState;
 import com.kubiki.palamedes.model.WorkflowStateMapper;

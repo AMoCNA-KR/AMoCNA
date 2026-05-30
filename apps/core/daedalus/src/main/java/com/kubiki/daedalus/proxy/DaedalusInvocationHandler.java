@@ -1,12 +1,7 @@
 package com.kubiki.daedalus.proxy;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.kubiki.daedalus.annotation.Bind;
-import com.kubiki.daedalus.annotation.SparqlQuery;
-import com.kubiki.daedalus.annotation.SparqlUpdate;
-import com.kubiki.daedalus.annotation.Template;
-import com.kubiki.daedalus.annotation.TemplateType;
-import com.kubiki.daedalus.annotation.Type;
+import com.kubiki.daedalus.annotation.*;
 import com.kubiki.daedalus.context.GlobalTemplateContext;
 import com.kubiki.daedalus.core.Formatter;
 import com.kubiki.daedalus.core.TemplateParser;
@@ -132,7 +127,7 @@ public class DaedalusInvocationHandler implements InvocationHandler {
         }
 
         String hydrated = sb.toString();
-        
+
         if (Boolean.TRUE.equals(isUpdate.get(method))) {
             if (repository == null) {
                 throw new DaedalusException("Cannot execute @SparqlUpdate: Repository bean not found in context");
@@ -153,7 +148,7 @@ public class DaedalusInvocationHandler implements InvocationHandler {
                 if (method.getReturnType().equals(Boolean.class) || method.getReturnType().equals(boolean.class)) {
                     return conn.prepareBooleanQuery(hydrated).evaluate();
                 }
-                
+
                 try (TupleQueryResult result = conn.prepareTupleQuery(hydrated).evaluate()) {
                     if (method.getReturnType().equals(List.class)) {
                         return result.stream().toList();

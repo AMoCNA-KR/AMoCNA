@@ -33,7 +33,7 @@ public class EntityDeletedHandler implements SensorEventHandler {
     @Override
     public HandlerResult handle(SensorEvent event, String correlationId) {
         var entityDeleted = event.getEntityDeleted();
-        String resourceIri  = entityDeleted.getResourceIri();
+        String resourceIri = entityDeleted.getResourceIri();
         String ontologyType = entityDeleted.getOntologyType();
 
         if (resourceIri == null || resourceIri.isBlank()) {

@@ -1,7 +1,6 @@
 package com.kubiki.daedalus.core;
 
 import com.kubiki.daedalus.annotation.TemplateType;
-import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Map;

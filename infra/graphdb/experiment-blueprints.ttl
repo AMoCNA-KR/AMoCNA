@@ -1,0 +1,42 @@
+@prefix moam: <http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+# Scenario 1
+moam:HorizontalScalingAction moam:hasExecutionProtocol "SHELL" ;
+                             moam:hasExecutionInstruction "kubectl scale deployment ${resourceName} --replicas=3" ;
+                             moam:hasExpectedStatusCode "0"^^xsd:integer ;
+                             moam:hasFunctionalIntent moam:HorizontalScalingAction ;
+                             moam:hasLayerBoundary moam:ContainerizationLayer .
+
+# Scenario 2
+moam:VerticalScalingAction moam:hasExecutionProtocol "SHELL" ;
+                           moam:hasExecutionInstruction "kubectl patch deployment ${resourceName} --patch '{\"spec\": {\"template\": {\"spec\": {\"containers\": [{\"name\": \"${resourceName}\", \"resources\": {\"requests\": {\"cpu\": \"1\"}}}]}}}}'" ;
+                           moam:hasExpectedStatusCode "0"^^xsd:integer ;
+                           moam:hasFunctionalIntent moam:VerticalScalingAction ;
+                           moam:hasLayerBoundary moam:ContainerizationLayer .
+
+# Scenario 3
+moam:ImageUpdateIntent moam:hasExecutionProtocol "SHELL" ;
+                       moam:hasExecutionInstruction "kubectl set image deployment/${resourceName} ${resourceName}=weaveworksdemos/frontend:0.3.1" ;
+                       moam:hasExpectedStatusCode "0"^^xsd:integer ;
+                       moam:hasFunctionalIntent moam:ImageUpdateAction ;
+                       moam:hasLayerBoundary moam:ContainerizationLayer .
+
+# Scenario 4
+moam:PatchConfigIntent moam:hasExecutionProtocol "SHELL" ;
+                       moam:hasExecutionInstruction "kubectl patch configmap ${resourceName}-config --type merge -p '{\"data\":{\"updated\":\"true\"}}'" ;
+                       moam:hasExpectedStatusCode "0"^^xsd:integer ;
+                       moam:hasFunctionalIntent moam:PatchConfigAction ;
+                       moam:hasLayerBoundary moam:ContainerizationLayer .
+
+moam:RestartPodIntent moam:hasExecutionProtocol "SHELL" ;
+                      moam:hasExecutionInstruction "kubectl rollout restart deployment/${resourceName}" ;
+                      moam:hasExpectedStatusCode "0"^^xsd:integer ;
+                      moam:hasFunctionalIntent moam:RestartPodAction ;
+                      moam:hasLayerBoundary moam:ContainerizationLayer .
+
+moam:RollbackConfigIntent moam:hasExecutionProtocol "SHELL" ;
+                          moam:hasExecutionInstruction "kubectl patch configmap ${resourceName}-config --type merge -p '{\"data\":{\"updated\":\"false\"}}'" ;
+                          moam:hasExpectedStatusCode "0"^^xsd:integer ;
+                          moam:hasFunctionalIntent moam:RollbackConfigAction ;
+                          moam:hasLayerBoundary moam:ContainerizationLayer .

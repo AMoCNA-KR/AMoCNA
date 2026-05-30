@@ -10,7 +10,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 @EnableConfigurationProperties({MetisProperties.class, com.kubiki.common.config.AmocnaCommonProperties.class})
 @EnableDaedalusRepositories(basePackages = "com.kubiki.metis.knowledge")
 public class MetisApplication {
-    public static void main(String[] args) {
+    static void main(String[] args) {
         SpringApplication.run(MetisApplication.class, args);
     }
 }

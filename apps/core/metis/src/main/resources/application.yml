@@ -5,12 +5,18 @@ spring:
   profiles:
     active: dev
   main:
-    web-application-type: none
+    web-application-type: servlet
   rabbitmq:
     host: ${RABBITMQ_HOST:localhost}
     port: ${RABBITMQ_PORT:5672}
     username: ${RABBITMQ_USER:guest}
     password: ${RABBITMQ_PASS:guest}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
 
 grpc:
   server:
@@ -25,6 +31,6 @@ metis:
     cneeNamespace: "http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt#"
   sensor:
     enabled: true
-    namespaces: []          # empty = watch all namespaces; e.g. [default, production]
+    namespaces: [ ]          # empty = watch all namespaces; e.g. [default, production]
     batch-size: 50
     flush-interval-ms: 500

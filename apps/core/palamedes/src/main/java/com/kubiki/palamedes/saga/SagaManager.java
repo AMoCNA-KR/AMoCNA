@@ -2,10 +2,10 @@ package com.kubiki.palamedes.saga;
 
 import com.kubiki.common.model.ActionStatusUpdate;
 import com.kubiki.common.model.ExecutionStatus;
+import com.kubiki.common.ontology.OntologyRegistry;
 import com.kubiki.palamedes.condition.ConditionFactory;
 import com.kubiki.palamedes.condition.ConditionStrategy;
 import com.kubiki.palamedes.knowledge.GraphDBGateway;
-import com.kubiki.common.ontology.OntologyRegistry;
 import com.kubiki.palamedes.knowledge.StateRepository;
 import com.kubiki.palamedes.model.ActionData;
 import com.kubiki.palamedes.model.WorkflowState;

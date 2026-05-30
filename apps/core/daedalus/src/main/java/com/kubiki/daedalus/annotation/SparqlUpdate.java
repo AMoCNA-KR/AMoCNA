@@ -9,5 +9,6 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 public @interface SparqlUpdate {
     String resource() default "";
+
     String value() default "";
 }

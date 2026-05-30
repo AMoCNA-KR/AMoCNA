@@ -19,19 +19,24 @@ import java.util.concurrent.TimeUnit;
 @Component
 public class PalamedesNotifier {
 
+    public static final String EXCHANGE = "amocna.direct.exchange";
+    public static final String ROUTING_KEY = "graph.updates";
     private static final Logger log = LoggerFactory.getLogger(PalamedesNotifier.class);
-
     private static final int MAX_PUBLISH_ATTEMPTS = 5;
     private static final long INITIAL_RETRY_DELAY_MS = 1_000;
     private static final long MAX_RETRY_DELAY_MS = 8_000;
-
-    public static final String EXCHANGE = "amocna.direct.exchange";
-    public static final String ROUTING_KEY = "graph.updates";
-
     private final RabbitTemplate rabbitTemplate;
 
     public PalamedesNotifier(RabbitTemplate rabbitTemplate) {
         this.rabbitTemplate = rabbitTemplate;
+    }
+
+    private static void sleep(long delayMs) {
+        try {
+            TimeUnit.MILLISECONDS.sleep(delayMs);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
     }
 
     /**
@@ -65,14 +70,6 @@ public class PalamedesNotifier {
                 sleep(delayMs);
                 delayMs = Math.min(delayMs * 2, MAX_RETRY_DELAY_MS);
             }
-        }
-    }
-
-    private static void sleep(long delayMs) {
-        try {
-            TimeUnit.MILLISECONDS.sleep(delayMs);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
         }
     }
 }

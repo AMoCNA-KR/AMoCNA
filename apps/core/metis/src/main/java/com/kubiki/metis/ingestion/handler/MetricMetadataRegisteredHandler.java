@@ -33,8 +33,8 @@ public class MetricMetadataRegisteredHandler implements SensorEventHandler {
     @Override
     public HandlerResult handle(SensorEvent event, String correlationId) {
         MetricMetadataRegisteredEvent metricEvent = event.getMetricMetadataRegistered();
-        String resourceIri  = metricEvent.getResourceIri();
-        String endpointUrl  = metricEvent.getEndpointUrl();
+        String resourceIri = metricEvent.getResourceIri();
+        String endpointUrl = metricEvent.getEndpointUrl();
 
         if (resourceIri == null || resourceIri.isBlank()) {
             return HandlerResult.failure("MetricMetadataRegisteredHandler: resource_iri must not be blank");

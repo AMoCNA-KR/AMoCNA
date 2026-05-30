@@ -16,11 +16,13 @@ public record HandlerResult(
         boolean graphDbFailed
 ) {
 
-    /** Change kind constants — matches the values Palamedes expects. */
-    public static final String CREATED       = "CREATED";
-    public static final String UPDATED       = "UPDATED";
+    /**
+     * Change kind constants — matches the values Palamedes expects.
+     */
+    public static final String CREATED = "CREATED";
+    public static final String UPDATED = "UPDATED";
     public static final String STATE_CHANGED = "STATE_CHANGED";
-    public static final String DELETED       = "DELETED";
+    public static final String DELETED = "DELETED";
 
     /**
      * Creates a successful result carrying the IRI, ontology type, and change kind

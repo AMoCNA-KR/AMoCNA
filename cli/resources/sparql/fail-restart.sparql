@@ -1,0 +1,7 @@
+PREFIX moam: <http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#>
+DELETE DATA {
+  moam:RestartPodIntent moam:hasExecutionInstruction "kubectl rollout restart deployment/${resourceName}" .
+};
+INSERT DATA {
+  moam:RestartPodIntent moam:hasExecutionInstruction "kubectl rollout restart deployment/${resourceName} FAIL_NOW" .
+}

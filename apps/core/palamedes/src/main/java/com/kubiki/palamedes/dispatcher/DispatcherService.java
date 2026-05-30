@@ -21,7 +21,7 @@ public class DispatcherService {
     }
 
     public void dispatch(ActionMessage message) {
-        log.info("Dispatching action {} to Themis", message.actionId());
+        log.info("[BENCHMARK] Dispatching action {} to Themis at {}", message.actionId(), System.currentTimeMillis());
         // Update GraphDB: Set current state to State_InProgress
         // graphDBGateway.updateActionStatus(message.actionId(), "State_InProgress"); 
 

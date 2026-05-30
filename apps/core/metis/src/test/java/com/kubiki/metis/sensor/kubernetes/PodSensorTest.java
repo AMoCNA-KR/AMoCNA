@@ -31,6 +31,13 @@ class PodSensorTest {
     private SensorEventPublisher publisher;
     private PodSensor sensor;
 
+    private static Pod pod(String name, String namespace, String phase) {
+        return new PodBuilder()
+                .withNewMetadata().withName(name).withNamespace(namespace).endMetadata()
+                .withNewStatus().withPhase(phase).endStatus()
+                .build();
+    }
+
     @BeforeEach
     void setUp() {
         MetisProperties props = new MetisProperties(
@@ -139,6 +146,8 @@ class PodSensorTest {
         org.mockito.Mockito.verifyNoInteractions(publisher);
     }
 
+    // -------------------------------------------------------------------------
+
     @Test
     void onPodDeleted_emitsEntityDeleted() {
         sensor.onPodDeleted(pod("doomed", "ns", "Running"));
@@ -152,14 +161,5 @@ class PodSensorTest {
                 .isEqualTo(CNEE + "Pod_ns_doomed");
         assertThat(event.getEntityDeleted().getOntologyType())
                 .isEqualTo(CNEE + "ExecutionUnit");
-    }
-
-    // -------------------------------------------------------------------------
-
-    private static Pod pod(String name, String namespace, String phase) {
-        return new PodBuilder()
-                .withNewMetadata().withName(name).withNamespace(namespace).endMetadata()
-                .withNewStatus().withPhase(phase).endStatus()
-                .build();
     }
 }

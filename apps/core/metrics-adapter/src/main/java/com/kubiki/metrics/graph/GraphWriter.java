@@ -8,7 +8,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.manager.RemoteRepositoryManager;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -61,6 +60,9 @@ public class GraphWriter {
             log.info("Instantiated anomaly {} for resource {}", anomalyIri, targetResourceIri);
         } catch (Exception e) {
             log.error("Failed to instantiate anomaly in GraphDB for resource {}", targetResourceIri, e);
+            if (e instanceof InterruptedException || (e.getCause() != null && e.getCause() instanceof InterruptedException)) {
+                Thread.currentThread().interrupt();
+            }
         }
     }
 }

@@ -77,4 +77,20 @@ class PrometheusClientTest {
         StepVerifier.create(result)
                 .verifyError();
     }
+
+    @Test
+    void queryScalar_WithBraces() {
+        String query = "kube_node_status_condition{condition=\"DiskPressure\",status=\"true\"}";
+        stubFor(get(urlPathEqualTo("/api/v1/query"))
+                .withQueryParam("query", equalTo(query))
+                .willReturn(aResponse()
+                        .withHeader("Content-Type", "application/json")
+                        .withBody("{\"status\":\"success\",\"data\":{\"resultType\":\"vector\",\"result\":[{\"metric\":{},\"value\":[1716550000.000,\"1.0\"]}]}}")));
+
+        Mono<Double> result = prometheusClient.queryScalar(query);
+
+        StepVerifier.create(result)
+                .expectNext(1.0)
+                .verifyComplete();
+    }
 }

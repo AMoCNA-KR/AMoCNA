@@ -3,7 +3,6 @@ package com.kubiki.metrics.prometheus;
 import com.kubiki.common.config.AmocnaCommonProperties;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
@@ -27,8 +26,8 @@ public class PrometheusClient {
         log.debug("Executing Prometheus scalar query: {}", query);
         return webClient.get()
                 .uri(uriBuilder -> uriBuilder.path("/api/v1/query")
-                        .queryParam("query", query)
-                        .build())
+                        .queryParam("query", "{query}")
+                        .build(query))
                 .retrieve()
                 .bodyToMono(PrometheusResponse.class)
                 .flatMap(response -> {
@@ -70,8 +69,8 @@ public class PrometheusClient {
         log.debug("Executing Prometheus vector query: {}", query);
         return webClient.get()
                 .uri(uriBuilder -> uriBuilder.path("/api/v1/query")
-                        .queryParam("query", query)
-                        .build())
+                        .queryParam("query", "{query}")
+                        .build(query))
                 .retrieve()
                 .bodyToMono(PrometheusResponse.class)
                 .flatMapMany(response -> {

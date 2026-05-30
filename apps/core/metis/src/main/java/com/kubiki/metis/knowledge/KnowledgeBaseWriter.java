@@ -1,13 +1,11 @@
 package com.kubiki.metis.knowledge;
 
-import com.kubiki.metis.grpc.EntityDeletedEvent;
-import com.kubiki.metis.grpc.EntityDiscoveredEvent;
-import com.kubiki.metis.grpc.MetricMetadataRegisteredEvent;
-import com.kubiki.metis.grpc.RelationshipAssertedEvent;
-import com.kubiki.metis.grpc.StateChangedEvent;
+import com.kubiki.metis.grpc.*;
 import com.kubiki.metis.sensor.IriFactory;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -19,27 +17,29 @@ public class KnowledgeBaseWriter {
 
     private final MetisDaedalusRepository repository;
     private final String cneeNamespace;
+    private final MeterRegistry meterRegistry;
 
-    public KnowledgeBaseWriter(MetisDaedalusRepository repository, IriFactory iriFactory) {
+    public KnowledgeBaseWriter(MetisDaedalusRepository repository, IriFactory iriFactory, MeterRegistry meterRegistry) {
         this.repository = repository;
         this.cneeNamespace = iriFactory.getCneeNamespace();
+        this.meterRegistry = meterRegistry;
     }
 
     public void insertEntity(EntityDiscoveredEvent event) throws KnowledgeBaseException {
-        String resourceIri  = event.getResourceIri();
+        String resourceIri = event.getResourceIri();
         String ontologyType = event.getOntologyType();
-        String resourceId   = event.getResourceId();
+        String resourceId = event.getResourceId();
         String resourceName = event.getResourceName();
 
-        if (!isValidCneeIri(ontologyType)) {
+        if (isValidCneeIri(ontologyType)) {
             throw new KnowledgeBaseException(
                     "Rejected: ontology_type '" + ontologyType +
-                    "' does not start with CNEEOnt namespace '" + cneeNamespace + "'");
+                            "' does not start with CNEEOnt namespace '" + cneeNamespace + "'");
         }
 
         StringBuilder triples = new StringBuilder();
         for (Map.Entry<String, String> entry : event.getPropertiesMap().entrySet()) {
-            String key   = entry.getKey();
+            String key = entry.getKey();
             String value = entry.getValue();
 
             if (key == null || key.isEmpty() || value == null) continue;
@@ -62,12 +62,12 @@ public class KnowledgeBaseWriter {
 
     public void assertRelationship(RelationshipAssertedEvent event) throws KnowledgeBaseException {
         String subjectIri = event.getSubjectIri();
-        String predicate  = event.getPredicate();
-        String objectIri  = event.getObjectIri();
+        String predicate = event.getPredicate();
+        String objectIri = event.getObjectIri();
 
         validateIri(subjectIri, "subject_iri");
         validateIri(objectIri, "object_iri");
-        if (!isValidCneeIri(predicate)) {
+        if (isValidCneeIri(predicate)) {
             throw new KnowledgeBaseException("predicate does not start with CNEEOnt namespace: " + predicate);
         }
 
@@ -86,24 +86,33 @@ public class KnowledgeBaseWriter {
     }
 
     public void changeState(StateChangedEvent event) throws KnowledgeBaseException {
-        String resourceIri = event.getResourceIri();
-        String newStateIri = event.getNewStateIri();
-
-        if (resourceIri == null || resourceIri.isBlank()) {
-            throw new KnowledgeBaseException("changeState: resource_iri must not be blank");
-        }
-        if (newStateIri == null || newStateIri.isBlank()) {
-            throw new KnowledgeBaseException("changeState: new_state_iri must not be blank");
-        }
-        if (!isValidCneeIri(newStateIri)) {
-            throw new KnowledgeBaseException(
-                    "changeState: new_state_iri must start with CNEEOnt namespace, got: " + newStateIri);
-        }
-
+        Timer.Sample sample = Timer.start(meterRegistry);
         try {
-            repository.changeState(resourceIri, newStateIri);
-        } catch (Exception e) {
-            throw new KnowledgeBaseException("changeState failed: " + e.getMessage(), e);
+            String resourceIri = event.getResourceIri();
+            String newStateIri = event.getNewStateIri();
+
+            if (resourceIri == null || resourceIri.isBlank()) {
+                throw new KnowledgeBaseException("changeState: resource_iri must not be blank");
+            }
+            if (newStateIri == null || newStateIri.isBlank()) {
+                throw new KnowledgeBaseException("changeState: new_state_iri must not be blank");
+            }
+            if (isValidCneeIri(newStateIri)) {
+                throw new KnowledgeBaseException(
+                        "changeState: new_state_iri must start with CNEEOnt namespace, got: " + newStateIri);
+            }
+
+            try {
+                repository.changeState(resourceIri, newStateIri);
+            } catch (Exception e) {
+                meterRegistry.counter("amocna.semantic.state_change.failure").increment();
+                throw new KnowledgeBaseException("changeState failed: " + e.getMessage(), e);
+            } finally {
+                sample.stop(Timer.builder("amocna.semantic.state_change.duration").register(meterRegistry));
+            }
+        } catch (KnowledgeBaseException e) {
+            meterRegistry.counter("amocna.semantic.state_change.failure").increment();
+            throw e;
         }
     }
 
@@ -123,7 +132,7 @@ public class KnowledgeBaseWriter {
     public void registerMetricMetadata(MetricMetadataRegisteredEvent event) throws KnowledgeBaseException {
         String resourceIri = event.getResourceIri();
         String endpointUrl = event.getEndpointUrl();
-        String metricName  = event.getMetricName();
+        String metricName = event.getMetricName();
 
         if (resourceIri == null || resourceIri.isBlank()) {
             throw new KnowledgeBaseException("registerMetricMetadata: resource_iri must not be blank");
@@ -163,24 +172,24 @@ public class KnowledgeBaseWriter {
     private String inverseLocalName(String predicate) {
         String localName = predicate.substring(cneeNamespace.length());
         return switch (localName) {
-            case CneeOntology.PROP_CONTAINS          -> CneeOntology.PROP_IS_PART_OF;
-            case CneeOntology.PROP_IS_PART_OF        -> CneeOntology.PROP_CONTAINS;
-            case CneeOntology.PROP_HOSTS             -> CneeOntology.PROP_IS_HOSTED_ON;
-            case CneeOntology.PROP_IS_HOSTED_ON      -> CneeOntology.PROP_HOSTS;
+            case CneeOntology.PROP_CONTAINS -> CneeOntology.PROP_IS_PART_OF;
+            case CneeOntology.PROP_IS_PART_OF -> CneeOntology.PROP_CONTAINS;
+            case CneeOntology.PROP_HOSTS -> CneeOntology.PROP_IS_HOSTED_ON;
+            case CneeOntology.PROP_IS_HOSTED_ON -> CneeOntology.PROP_HOSTS;
             case CneeOntology.PROP_COMMUNICATES_WITH -> CneeOntology.PROP_COMMUNICATES_WITH;
-            default                                  -> null;
+            default -> null;
         };
     }
 
     private boolean isValidCneeIri(String iri) {
-        return iri != null && iri.startsWith(cneeNamespace);
+        return iri == null || !iri.startsWith(cneeNamespace);
     }
 
     private String localNameOf(String iri) {
         if (iri == null || iri.isBlank()) return null;
-        int hash  = iri.lastIndexOf('#');
+        int hash = iri.lastIndexOf('#');
         int slash = iri.lastIndexOf('/');
-        int idx   = Math.max(hash, slash);
+        int idx = Math.max(hash, slash);
         if (idx < 0 || idx >= iri.length() - 1) return null;
         return iri.substring(idx + 1);
     }
@@ -188,12 +197,13 @@ public class KnowledgeBaseWriter {
     private String escapeLiteral(String raw) {
         if (raw == null) return "";
         return raw.replace("\\", "\\\\")
-                  .replace("\"", "\\\"")
-                  .replace("\n", "\\n")
-                  .replace("\r", "\\r");
+                .replace("\"", "\\\"")
+                .replace("\n", "\\n")
+                .replace("\r", "\\r");
     }
 
     private String encodeFragment(String raw) {
         return URLEncoder.encode(raw, StandardCharsets.UTF_8).replace("+", "%20");
     }
 }
+

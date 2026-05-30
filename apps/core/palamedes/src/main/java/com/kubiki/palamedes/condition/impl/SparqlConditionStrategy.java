@@ -2,7 +2,6 @@ package com.kubiki.palamedes.condition.impl;
 
 import com.kubiki.common.config.AmocnaCommonProperties;
 import com.kubiki.palamedes.condition.ConditionStrategy;
-import com.kubiki.palamedes.config.PalamedesProperties;
 import com.kubiki.palamedes.knowledge.GraphDBGateway;
 import com.kubiki.palamedes.model.ActionData;
 import lombok.RequiredArgsConstructor;

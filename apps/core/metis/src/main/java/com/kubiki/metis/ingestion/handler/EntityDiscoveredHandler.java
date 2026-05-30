@@ -27,7 +27,7 @@ public class EntityDiscoveredHandler implements SensorEventHandler {
 
     @Override
     public HandlerResult handle(SensorEvent event, String correlationId) {
-        String resourceIri  = event.getEntityDiscovered().getResourceIri();
+        String resourceIri = event.getEntityDiscovered().getResourceIri();
         String ontologyType = event.getEntityDiscovered().getOntologyType();
 
         if (resourceIri == null || resourceIri.isBlank()) {

@@ -123,10 +123,10 @@ k8s:
     - rabbitmq
     - metis
     - palamedes
+    - metrics-adapter
     - themis
     - hephaestus-business
     # - kubernetes-management
-    # - metrics-adapter
     # - kie
   cluster_resources:
     - { kind: storageclass, name: hephaestus-manual }

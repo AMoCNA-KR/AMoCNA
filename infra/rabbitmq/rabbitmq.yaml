@@ -21,6 +21,11 @@ spec:
               name: amqp
             - containerPort: 15672
               name: management
+            - containerPort: 15692
+              name: prometheus
+          env:
+            - name: RABBITMQ_CONTAINER_ADDITIONAL_PLUGINS
+              value: "rabbitmq_prometheus"
           readinessProbe:
             exec:
               command: ["rabbitmq-diagnostics", "-q", "check_running"]
@@ -42,4 +47,7 @@ spec:
     - name: management
       port: 15672
       targetPort: 15672
+    - name: prometheus
+      port: 15692
+      targetPort: 15692
   type: ClusterIP

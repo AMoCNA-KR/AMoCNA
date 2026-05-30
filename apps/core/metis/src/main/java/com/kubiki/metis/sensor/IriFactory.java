@@ -29,6 +29,10 @@ public class IriFactory {
         this.cneeNamespace = properties.ontology().cneeNamespace();
     }
 
+    private static String encode(String raw) {
+        return URLEncoder.encode(raw, StandardCharsets.UTF_8).replace("+", "%20");
+    }
+
     /**
      * @return the configured CNEEOnt namespace IRI prefix
      */
@@ -59,6 +63,8 @@ public class IriFactory {
         return cneeNamespace + encode(kind) + "_" + encode(name);
     }
 
+    // -------------------------------------------------------------------------
+
     /**
      * CNEEOnt type IRI for a given local class name.
      *
@@ -67,11 +73,5 @@ public class IriFactory {
      */
     public String typeIri(String localName) {
         return cneeNamespace + localName;
-    }
-
-    // -------------------------------------------------------------------------
-
-    private static String encode(String raw) {
-        return URLEncoder.encode(raw, StandardCharsets.UTF_8).replace("+", "%20");
     }
 }

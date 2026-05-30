@@ -2,7 +2,6 @@ package com.kubiki.daedalus.core.format;
 
 import com.kubiki.daedalus.annotation.TemplateType;
 import com.kubiki.daedalus.core.ValueFormatter;
-import org.springframework.stereotype.Component;
 
 import static com.kubiki.daedalus.core.DaedalusConstants.QUOTE;
 
@@ -13,7 +12,7 @@ public class LiteralFormatter implements ValueFormatter<Object> {
             if (value instanceof Number || value instanceof Boolean) {
                 return value.toString();
             }
-            return QUOTE + value.toString() + QUOTE;
+            return QUOTE + value + QUOTE;
         }
         return "";
     }
