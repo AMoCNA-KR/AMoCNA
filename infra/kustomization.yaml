@@ -4,6 +4,7 @@ kind: Kustomization
 resources:
   - core/
   - rabbitmq/
+  - prometheus/amocna-monitors.yaml
   # - manifests/
   # - volume-creation/
   # - demo-metrics-adapter/

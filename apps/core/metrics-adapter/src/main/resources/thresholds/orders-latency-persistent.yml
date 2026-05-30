@@ -1,8 +1,9 @@
 name: "orders-latency-persistent"
-query: "http_request_duration_seconds_sum{service='orders'} / http_request_duration_seconds_count{service='orders'}"
+query: "sum(rate(request_duration_seconds_sum{name='orders'}[1m])) by (name, kubernetes_namespace) / sum(rate(request_duration_seconds_count{name='orders'}[1m])) by (name, kubernetes_namespace)"
 operator: ">"
 value: 0.23
 anomalyState: "ResponseTimeSlaViolatedState"
 resourceKind: "Service"
-resourceLabel: "service"
+resourceLabel: "name"
+namespaceLabel: "kubernetes_namespace"
 persistenceWindow: 3
