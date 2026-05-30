@@ -45,7 +45,7 @@ spec:
               echo "RabbitMQ is reachable."
       containers:
         - name: metis
-          image: ghcr.io/amocna-kr/metis:1.6.0-SNAPSHOT
+          image: ghcr.io/amocna-kr/metis:1.6.2-SNAPSHOT
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 50052
