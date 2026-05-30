@@ -28,6 +28,7 @@ flowchart LR
 | Sensor | Watches | CNEEOnt type | Events emitted |
 |---|---|---|---|
 | `PodSensor` | Pods | `cnee:ExecutionUnit` | EntityDiscovered, StateChanged, EntityDeleted |
+| `ContainerImageSensor` | Pod container specs | `cnee:Container`, `cnee:Image` | EntityDiscovered, RelationshipAsserted (`contains`, `usesImage`) |
 | `ServiceSensor` | Services | `cnee:Service` | EntityDiscovered, EntityDeleted |
 | `NodeSensor` | Nodes | `cnee:Node` | EntityDiscovered, EntityDeleted |
 | `BindingSensor` | Pods + Services | — | RelationshipAsserted: `cnee:contains`, `cnee:isHostedOn` |

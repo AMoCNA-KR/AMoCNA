@@ -62,4 +62,4 @@ spec:
             - name: METIS_SENSOR_ENABLED
               value: "true"
             - name: METIS_SENSOR_NAMESPACES
-              value: "hephaestus-business"
+              value: "hephaestus-business,sock-shop"

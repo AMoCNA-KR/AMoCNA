@@ -30,7 +30,7 @@ metis:
   ontology:
     cneeNamespace: "http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt#"
   sensor:
-    enabled: true
-    namespaces: [ ]          # empty = watch all namespaces; e.g. [default, production]
+    enabled: ${METIS_SENSOR_ENABLED:true}
+    namespaces: ${METIS_SENSOR_NAMESPACES:}
     batch-size: 50
     flush-interval-ms: 500

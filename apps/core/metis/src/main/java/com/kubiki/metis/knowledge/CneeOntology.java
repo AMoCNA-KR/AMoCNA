@@ -27,7 +27,13 @@ public final class CneeOntology {
     public static final String KIND_STATEFULSET = "StatefulSet";
     public static final String KIND_PV = "PersistentVolume";
     public static final String KIND_PVC = "PersistentVolumeClaim";
+    public static final String KIND_CONTAINER = "Container";
+    public static final String KIND_IMAGE = "Image";
+    public static final String KIND_IMAGE_REGISTRY = "ImageRegistry";
     public static final String CLASS_EXECUTION_UNIT = "ExecutionUnit";
+    public static final String CLASS_CONTAINER = "Container";
+    public static final String CLASS_IMAGE = "Image";
+    public static final String CLASS_IMAGE_REGISTRY = "ImageRegistry";
 
     // -------------------------------------------------------------------------
     // CNEEOnt classes — local names.
@@ -74,6 +80,9 @@ public final class CneeOntology {
     public static final String STATE_NODE_CPU_SATURATED = "NodeCPUSaturatedState";
     public static final String STATE_NODE_MEMORY_STARVED = "NodeMemoryStarvedState";
     public static final String PROP_CONTAINS = "contains";
+    public static final String PROP_USES_IMAGE = "usesImage";
+    public static final String PROP_PULLS_IMAGE_FROM = "pullsImageFrom";
+    public static final String PROP_VERSION = "version";
 
     // -------------------------------------------------------------------------
     // CNEEOnt object properties — local names.
