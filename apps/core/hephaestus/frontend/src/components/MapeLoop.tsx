@@ -15,8 +15,6 @@ import {
   Layers, 
   Server, 
   Database, 
-  Play, 
-  Pause,
   MessageSquare
 } from 'lucide-react';
 import { useStore } from '../lib/store';
@@ -82,12 +80,8 @@ const nodeTypes = {
   mapeNode: MapeNode,
 };
 
-interface MapeLoopProps {
-  triggerMockViolation: () => void;
-}
-
-export default function MapeLoop({ triggerMockViolation }: MapeLoopProps) {
-  const { activeNode, isSimulating, setIsSimulating, servicesHealth } = useStore();
+export default function MapeLoop() {
+  const { activeNode, activeAnomalies, servicesHealth } = useStore();
 
   // Define static node positions and stages
   const rawNodes = useMemo(() => [
@@ -174,7 +168,7 @@ export default function MapeLoop({ triggerMockViolation }: MapeLoopProps) {
         (n.id === 'metis' && activeNode === 'plan') ||
         (n.id === 'themis' && activeNode === 'execute') ||
         (n.id === 'graphdb' && activeNode === 'knowledge') ||
-        (n.id === 'rabbitmq' && !isSimulating); // Pulsate broker when simulation runs
+        (n.id === 'rabbitmq' && activeAnomalies > 0); // Pulsate broker when real anomalies are active
 
       return {
         ...n,
@@ -185,7 +179,7 @@ export default function MapeLoop({ triggerMockViolation }: MapeLoopProps) {
         },
       };
     });
-  }, [rawNodes, activeNode, servicesHealth, isSimulating]);
+  }, [rawNodes, activeNode, servicesHealth, activeAnomalies]);
 
   // Dynamically define connections (edges) with active path animations
   const edges: Edge[] = useMemo(() => {
@@ -283,18 +277,6 @@ export default function MapeLoop({ triggerMockViolation }: MapeLoopProps) {
         <div>
           <h2>🔄 Dynamic MAPE-K Autonomic Loop</h2>
           <p>Real-time system mapping with automated microservice pod status probe detection</p>
-        </div>
-        <div className={styles.controlButtons}>
-          <button 
-            className={`${styles.btnControl} ${isSimulating ? styles.active : ''}`}
-            onClick={() => setIsSimulating(!isSimulating)}
-          >
-            {isSimulating ? <Pause size={12} /> : <Play size={12} />}
-            {isSimulating ? 'Pause Sim' : 'Resume Sim'}
-          </button>
-          <button className={`${styles.btnControl} ${styles.triggerBtn}`} onClick={triggerMockViolation}>
-            Simulate SLA Anomaly
-          </button>
         </div>
       </div>
 
