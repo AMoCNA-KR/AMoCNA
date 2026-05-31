@@ -181,9 +181,10 @@ def k8s_wait_job_complete(job_name: str, namespace: str | None = None, timeout: 
         cmd.extend(["-n", namespace])
     return cmd
 
-def k8s_port_forward(namespace: str, service: str, local_port: int, remote_port: int) -> list[str]:
+def k8s_port_forward(namespace: str, target: str, local_port: int, remote_port: int) -> list[str]:
     """Build a kubectl port-forward command."""
-    return ["kubectl", "port-forward", "-n", namespace, f"svc/{service}", f"{local_port}:{remote_port}"]
+    resource = target if "/" in target else f"svc/{target}"
+    return ["kubectl", "port-forward", "-n", namespace, resource, f"{local_port}:{remote_port}"]
 
 def k8s_run_pod(name: str, image: str, cmd_args: list[str]) -> list[str]:
     """Build a kubectl run pod command."""

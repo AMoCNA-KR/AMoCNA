@@ -6,7 +6,7 @@ from typing_extensions import Annotated
 import typer
 
 from amocna_cli.config import ProjectConfig
-from amocna_cli.utils.ui import console, header, info, error, run
+from amocna_cli.utils.ui import console, header, info, error, run, run_capture
 from amocna_cli.utils.shell import k8s_port_forward
 
 app = typer.Typer()
@@ -17,7 +17,7 @@ def forward_cmd(
     name: Annotated[str, typer.Argument(help="Forward target name")],
     local_port: Annotated[Optional[int], typer.Option("--local-port", help="Override local port")] = None,
 ):
-    """Port-forward a K8s service to localhost."""
+    """Port-forward a K8s service or pod to localhost."""
     if ctx.invoked_subcommand is not None:
         return
 
@@ -31,14 +31,23 @@ def forward_cmd(
     fwd = cfg.forwards[name]
     resolved_local_port = local_port or fwd.local_port
 
+    target = fwd.service
+    if fwd.pod_label:
+        target_name = run_capture(["kubectl", "get", "pod", "-n", fwd.namespace, "-l", fwd.pod_label, "-o", "name"])
+        if not target_name:
+            error(f"No pods found in namespace {fwd.namespace} matching label {fwd.pod_label}")
+            sys.exit(1)
+        # If multiple pods match, take the first one
+        target = target_name.splitlines()[0]
+
     header(f"Forwarding {name}")
     info(
-        f"http://localhost:{resolved_local_port} → {fwd.namespace}/{fwd.service}:{fwd.remote_port}"
+        f"http://localhost:{resolved_local_port} → {fwd.namespace}/{target}:{fwd.remote_port}"
     )
     console.print("  [dim]Press Ctrl+C to stop.[/dim]\n")
 
     try:
-        run(k8s_port_forward(fwd.namespace, fwd.service, resolved_local_port, fwd.remote_port))
+        run(k8s_port_forward(fwd.namespace, target, resolved_local_port, fwd.remote_port))
     except KeyboardInterrupt:
         console.print()
         info("Forwarding stopped.")

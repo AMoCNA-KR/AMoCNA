@@ -72,7 +72,10 @@ def status_cmd(ctx: typer.Context):
     forward_table.add_column("Service Target")
 
     for name, fwd in cfg.forwards.items():
-        target = f"{fwd.namespace}/{fwd.service}:{fwd.remote_port}"
+        if fwd.pod_label:
+            target = f"{fwd.namespace}/pod(label={fwd.pod_label}):{fwd.remote_port}"
+        else:
+            target = f"{fwd.namespace}/{fwd.service}:{fwd.remote_port}"
         forward_table.add_row(name, str(fwd.local_port), target)
 
     console.print(forward_table)

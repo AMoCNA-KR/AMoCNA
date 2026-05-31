@@ -31,7 +31,8 @@ class AppDef(BaseModel):
 class ForwardDef(BaseModel):
     name: str
     namespace: str = "default"
-    service: str
+    service: Optional[str] = None
+    pod_label: Optional[str] = None
     local_port: int = 8080
     remote_port: int = 8080
 
@@ -82,9 +83,9 @@ class ProjectConfig(BaseModel):
         for name, data in self.forward.items():
             if not isinstance(data, dict):
                 continue
-            service = data.get("service") or name
             fwd_data = data.copy()
-            fwd_data["service"] = service
+            if "service" not in fwd_data and "pod_label" not in fwd_data:
+                fwd_data["service"] = name
             self.forwards[name] = ForwardDef(name=name, **fwd_data)
 
     @property
