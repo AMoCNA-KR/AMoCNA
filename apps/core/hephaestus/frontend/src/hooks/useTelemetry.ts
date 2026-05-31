@@ -1,23 +1,24 @@
-import { useState, useEffect } from 'react';
-import type { LogEntry } from '../types/telemetry';
+import { useEffect } from 'react';
 import { useStore } from '../lib/store';
 
 export function useTelemetry() {
-  const setActiveNode = useStore((state) => state.setActiveNode);
-  const [logs, setLogs] = useState<LogEntry[]>([]);
-  const [activeAnomalies, setActiveAnomalies] = useState<number>(0);
-  const [totalInterventions, setTotalInterventions] = useState<number>(142);
-  const [avgLatency] = useState<number>(2.48);
-  const [successRate] = useState<number>(98.2);
-
-  const appendTerminalLine = (tag: 'system' | 'monitor' | 'analyze' | 'execute' | 'plan', msg: string) => {
-    const time = new Date().toTimeString().split(' ')[0];
-    setLogs(prev => [...prev, { time, tag, msg }]);
-  };
+  const {
+    logs,
+    activeAnomalies,
+    totalInterventions,
+    avgLatency,
+    successRate,
+    setActiveNode,
+    setActiveAnomalies,
+    setTotalInterventions,
+    appendTerminalLine,
+  } = useStore();
 
   // Setup EventSource subscription
   useEffect(() => {
-    appendTerminalLine('system', 'Initialized telemetry portal. Connecting to RabbitMQ direct exchange...');
+    if (logs.length === 0) {
+      appendTerminalLine('system', 'Initialized telemetry portal. Connecting to RabbitMQ direct exchange...');
+    }
     
     const eventSource = new EventSource('/api/stream/events');
 
