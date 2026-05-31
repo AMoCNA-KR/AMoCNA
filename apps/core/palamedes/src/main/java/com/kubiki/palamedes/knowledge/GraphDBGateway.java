@@ -268,14 +268,13 @@ public class GraphDBGateway {
                 .toList();
     }
 
-    public void storeImageUpdateHydration(String actionId, ImageUpdateTarget target) {
+    public void storeActionHydration(String actionId, Map<String, String> parameters) {
+        if (parameters == null || parameters.isEmpty()) {
+            return;
+        }
         IRI actionIri = ontologyRegistry.actionsOntology(actionId);
         IRI hydrationKey = ontologyRegistry.actionsOntology("hydrationPayload");
-        String payload = String.join("|",
-                target.containerName(),
-                target.imageRepository(),
-                target.targetVersion(),
-                target.namespace());
+        String payload = ActionHydrationPayload.serialize(parameters);
         sparqlClient.executeWithConnection(conn -> {
             var vf = conn.getValueFactory();
             conn.begin();
@@ -286,7 +285,7 @@ public class GraphDBGateway {
         });
     }
 
-    public Map<String, String> findImageUpdateHydration(IRI actionIri) {
+    public Map<String, String> findActionHydration(IRI actionIri) {
         IRI hydrationKey = ontologyRegistry.actionsOntology("hydrationPayload");
         return sparqlClient.executeWithConnection(conn -> {
             var statements = conn.getStatements(actionIri, hydrationKey, null);
@@ -294,16 +293,7 @@ public class GraphDBGateway {
                 return Map.of();
             }
             String payload = statements.next().getObject().stringValue();
-            String[] parts = payload.split("\\|", 4);
-            if (parts.length < 4) {
-                return Map.of();
-            }
-            return Map.of(
-                    "containerName", parts[0],
-                    "imageRepository", parts[1],
-                    "targetVersion", parts[2],
-                    "namespace", parts[3]
-            );
+            return ActionHydrationPayload.deserialize(payload);
         });
     }
 

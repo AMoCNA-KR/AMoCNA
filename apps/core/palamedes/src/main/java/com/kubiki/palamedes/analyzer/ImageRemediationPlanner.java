@@ -90,7 +90,11 @@ public class ImageRemediationPlanner {
         for (ImageUpdateTarget target : uniqueByDeployment.values()) {
             String actionId = utils.generateActionId();
             gateway.createActionWorkflow(target.deploymentIri(), intentIri, actionId);
-            gateway.storeImageUpdateHydration(actionId, target);
+            gateway.storeActionHydration(actionId, Map.of(
+                    "containerName", target.containerName(),
+                    "imageRepository", target.imageRepository(),
+                    "targetVersion", target.targetVersion(),
+                    "namespace", target.namespace()));
             log.info("Planned image update for deployment {}/{} (service: {}) -> {}:{}",
                     target.namespace(), target.deploymentName(),
                     target.serviceName() != null ? target.serviceName() : "n/a",

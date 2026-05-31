@@ -64,7 +64,7 @@ public class MapePipeline {
                 WorkflowContext context = new WorkflowContext(action.actionIri(), data);
                 context.metadata().put("resourceName", action.resourceName());
                 context.metadata().put("currentState", action.stateFragment());
-                context.metadata().putAll(graphDBGateway.findImageUpdateHydration(action.actionIri()));
+                context.metadata().putAll(graphDBGateway.findActionHydration(action.actionIri()));
 
                 for (MapePipe pipe : pipes) {
                     if (!pipe.process(context)) {
