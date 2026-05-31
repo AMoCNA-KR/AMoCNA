@@ -125,7 +125,7 @@ public class WorkloadSensor extends AbstractNamespacedSensor {
             return;
         }
         for (io.fabric8.kubernetes.api.model.Container container : containers) {
-            imageEmitter.emitTemplateContainer(ns, name, container);
+            imageEmitter.emitTemplateContainer(ns, CneeOntology.KIND_DEPLOYMENT, name, container);
         }
     }
 
@@ -141,7 +141,7 @@ public class WorkloadSensor extends AbstractNamespacedSensor {
             return;
         }
         for (io.fabric8.kubernetes.api.model.Container container : containers) {
-            imageEmitter.emitTemplateContainer(ns, name, container);
+            imageEmitter.emitTemplateContainer(ns, CneeOntology.KIND_STATEFULSET, name, container);
         }
     }
 

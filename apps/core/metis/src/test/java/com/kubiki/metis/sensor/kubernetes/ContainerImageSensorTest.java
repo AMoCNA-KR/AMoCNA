@@ -20,7 +20,7 @@ import static org.mockito.Mockito.verify;
 
 class ContainerImageSensorTest {
 
-    private static final String CNEE = "http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt#";
+    private static final String CNEE = "http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/";
 
     private SensorEventPublisher publisher;
     private ContainerImageSensor sensor;

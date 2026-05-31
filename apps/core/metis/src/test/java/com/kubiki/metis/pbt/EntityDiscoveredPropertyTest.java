@@ -36,7 +36,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class EntityDiscoveredPropertyTest {
 
     private static final String CNEE_NAMESPACE =
-            "http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt#";
+            "http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/";
 
     // -------------------------------------------------------------------------
     // Arbitraries

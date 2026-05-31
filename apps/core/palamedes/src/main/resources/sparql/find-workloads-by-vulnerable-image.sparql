@@ -5,12 +5,11 @@ WHERE {
   ${IRI::imageIri} cnee:resourceName ?imageRepository .
   ${IRI::imageIri} cnee:version ?currentVersion .
   ?container cnee:usesImage ${IRI::imageIri} .
-  ?pod cnee:contains ?container .
   ?container cnee:resourceName ?containerName .
-  ?pod cnee:isPartOf ?deployment .
+  ?deployment cnee:contains ?container .
   ?deployment cnee:resourceName ?deploymentName .
   OPTIONAL {
-    ?service cnee:contains ?pod .
+    ?service cnee:contains ?deployment .
     ?service cnee:resourceName ?serviceName .
   }
   FILTER NOT EXISTS {

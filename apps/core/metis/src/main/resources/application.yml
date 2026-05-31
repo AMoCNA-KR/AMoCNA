@@ -28,7 +28,7 @@ metis:
     repositoryId: ${METIS_GRAPHDB_REPOSITORYID:amocna}
     timeoutMs: 5000
   ontology:
-    cneeNamespace: "http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt#"
+    cneeNamespace: "http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/"
   sensor:
     enabled: ${METIS_SENSOR_ENABLED:true}
     namespaces: ${METIS_SENSOR_NAMESPACES:}

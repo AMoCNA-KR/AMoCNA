@@ -10,7 +10,7 @@ package com.kubiki.metis.knowledge;
 public final class CneeOntology {
 
     public static final String DEFAULT_NAMESPACE =
-            "http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt#";
+            "http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/";
 
     // -------------------------------------------------------------------------
     // Default namespace (overridable via metis.ontology.cneeNamespace).

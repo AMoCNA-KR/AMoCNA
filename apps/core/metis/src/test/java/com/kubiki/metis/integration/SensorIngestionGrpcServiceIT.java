@@ -44,7 +44,7 @@ import static org.mockito.Mockito.when;
 class SensorIngestionGrpcServiceIT {
 
     private static final String CNEE_NS =
-            "http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt#";
+            "http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/";
 
     static WireMockServer wireMockServer;
     private static Repository inMemoryRepo;

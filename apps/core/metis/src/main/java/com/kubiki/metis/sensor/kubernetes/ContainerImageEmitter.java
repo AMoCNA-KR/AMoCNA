@@ -36,13 +36,16 @@ public final class ContainerImageEmitter {
         emitPodPullsImageFrom(podIri, ref);
     }
 
-    public void emitTemplateContainer(String namespace, String workloadName, Container container) {
+    public void emitTemplateContainer(String namespace, String workloadKind, String workloadName, Container container) {
         if (container == null || container.getName() == null) {
             return;
         }
+        String workloadIri = iriFactory.namespacedIri(workloadKind, namespace, workloadName);
         String containerIri = iriFactory.containerIri(namespace, workloadName, container.getName());
         ImageReference ref = ImageReference.parse(container.getImage());
+        publishEntity(containerIri, CneeOntology.CLASS_CONTAINER, container.getName());
         emitImageOnly(ref);
+        emitRelationship(workloadIri, CneeOntology.PROP_CONTAINS, containerIri);
         emitRelationship(containerIri, CneeOntology.PROP_USES_IMAGE, imageIriFor(ref));
     }
 
