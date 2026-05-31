@@ -18,7 +18,8 @@ from amocna_cli.utils.shell import (
     k8s_scale,
     k8s_patch,
     k8s_get_jsonpath,
-    k8s_get_pods_jsonpath
+    k8s_get_pods_jsonpath,
+    k8s_delete_resource,
 )
 
 app = typer.Typer(no_args_is_help=True)
@@ -313,7 +314,7 @@ def benchmark_run(
             text=True,
             check=True,
         )
-        run(k8s_run_pod("amocna-cm-apply-helper", "curlimages/curl:8.12.1", ["echo"]) ) # Wait, let's keep the exact command run
+        # Apply the generated ConfigMap manifest.
         # Original: run(["kubectl", "apply", "-f", "-"], input=create_cm.stdout)
         subprocess.run(
             ["kubectl", "apply", "-f", "-"],
