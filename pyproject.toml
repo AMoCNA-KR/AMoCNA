@@ -6,7 +6,7 @@ readme = "README.md"
 authors = [
   { name = "Zajdel Patryk", email = "57092803+xMOROx@users.noreply.github.com" },
 ]
-requires-python = ">=3.14"
+requires-python = ">=3.12"
 dependencies = [
   "pydantic>=2.13.4",
   "pyyaml>=6.0.3",
