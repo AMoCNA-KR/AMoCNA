@@ -67,7 +67,7 @@ spec:
       - rabbitmq
   endpoints:
     - port: prometheus
-      path: /metrics
+      path: /metrics/per-object
       interval: 15s
 ---
 apiVersion: monitoring.coreos.com/v1
