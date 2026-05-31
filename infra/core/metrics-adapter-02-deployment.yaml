@@ -31,8 +31,11 @@ spec:
               echo "RabbitMQ is reachable."
       containers:
         - name: metrics-adapter
-          image: ghcr.io/amocna-kr/metrics-adapter:1.6.2-SNAPSHOT
+          image: ghcr.io/amocna-kr/metrics-adapter:1.6.4-SNAPSHOT
           imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+              name: http
           env:
             - name: GRAPHDB_URL
               value: "http://graphdb.graphdb.svc.cluster.local:7200"
