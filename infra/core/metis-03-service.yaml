@@ -3,6 +3,8 @@ kind: Service
 metadata:
   name: metis
   namespace: metis
+  labels:
+    app: metis
 spec:
   selector:
     app: metis

@@ -16,7 +16,7 @@ WORKDIR /app
 
 # 1. Build Translator (Local dependency)
 COPY apps/adapters/Metrics-Translator/ /app/Metrics-Translator/
-RUN cd Metrics-Translator/Translator && mvn clean install -DskipTests
+RUN cd Metrics-Translator/Translator && mvn clean install -DskipTests -B -ntp
 
 # 2. Prepare GUI Backend
 COPY apps/gui/Hphaestus-GUI-Backend/ /app/Hphaestus-GUI-Backend/
@@ -24,7 +24,7 @@ COPY apps/gui/Hphaestus-GUI-Backend/ /app/Hphaestus-GUI-Backend/
 COPY --from=gui-builder /app/gui/dist/hephaestus-gui/* /app/Hphaestus-GUI-Backend/hephaestus-backend/src/main/resources/static/app/
 
 # Build GUI Backend
-RUN cd Hphaestus-GUI-Backend/hephaestus-backend && mvn clean package -DskipTests
+RUN cd Hphaestus-GUI-Backend/hephaestus-backend && mvn clean package -DskipTests -B -ntp
 
 # ==========================================
 # STAGE 3: Final Runtime Image

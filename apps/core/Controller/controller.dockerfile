@@ -4,7 +4,7 @@ WORKDIR /app
 
 # Copy the Controller source code
 COPY apps/core/Controller/ /app/
-RUN mvn clean package -DskipTests
+RUN mvn clean package -DskipTests -B -ntp
 
 # Runtime stage
 FROM eclipse-temurin:17-jre

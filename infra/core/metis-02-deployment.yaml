@@ -45,11 +45,13 @@ spec:
               echo "RabbitMQ is reachable."
       containers:
         - name: metis
-          image: ghcr.io/amocna-kr/metis:1.6.2-SNAPSHOT
+          image: ghcr.io/amocna-kr/metis:1.6.4-SNAPSHOT
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 50052
               name: grpc
+            - containerPort: 8080
+              name: http
           env:
             - name: METIS_GRAPHDB_URL
               value: "http://graphdb.graphdb.svc.cluster.local:7200"
