@@ -17,6 +17,7 @@ from amocna_cli.utils.shell import (
     k8s_exec,
     k8s_scale,
     k8s_patch,
+    k8s_set_image,
     k8s_get_jsonpath,
     k8s_get_pods_jsonpath,
     k8s_delete_resource,
@@ -142,7 +143,7 @@ def benchmark_load(
 @app.command("run")
 def benchmark_run(
     ctx: typer.Context,
-    scenario: Annotated[str, typer.Option(help="Scenario to run (1, 2, 3, 4, all)")],
+    scenario: Annotated[str, typer.Option(help="Scenario to run (1, 2, 3, 4, 5, all)")],
 ):
     """Run a specific scenario or all benchmarks."""
     cfg: ProjectConfig = ctx.obj
@@ -370,9 +371,58 @@ def benchmark_run(
             k8s_delete_resource("configmap", "orders-config", namespace="sock-shop")
         )
 
+    elif scenario == "5":
+        info("Initializing Scenario 5: End-to-End Vulnerability Remediation...")
+        info("Step 1: Resetting front-end to vulnerable image weaveworksdemos/frontend:0.3.0...")
+        run(
+            k8s_set_image(
+                "sock-shop",
+                "front-end",
+                "front-end=weaveworksdemos/frontend:0.3.0",
+            ),
+            check=False,
+        )
+        info("Waiting for rollout to settle...")
+        time.sleep(15)
+
+        info(
+            "Step 2: Waiting for Metis topology sync and Palamedes catalog scan (45s)..."
+        )
+        time.sleep(45)
+
+        start_time = time.time()
+        success = False
+        info("Step 3: Polling front-end image for autonomic security patch to 0.3.1...")
+        for i in range(24):
+            time.sleep(5)
+            image = run_capture(
+                k8s_get_jsonpath(
+                    "sock-shop",
+                    "deployment",
+                    "front-end",
+                    "{.spec.template.spec.containers[0].image}",
+                ),
+                check=False,
+            )
+            if "0.3.1" in image:
+                duration = time.time() - start_time
+                info(
+                    "[green]✔ SUCCESS: Front-end autonomically patched to secure version (0.3.1) in "
+                    f"{duration:.1f}s![/green]"
+                )
+                success = True
+                break
+            else:
+                console.print(f"    Current image: {image or 'unknown'}... ({i * 5}s)")
+
+        if not success:
+            error(
+                "✖ TIMEOUT: Autonomic vulnerability loop failed to patch front-end within 120s."
+            )
+
     elif scenario == "all":
         info("Starting complete automated benchmark cycle...")
-        for sc in ["1", "2", "3", "4"]:
+        for sc in ["1", "2", "3", "4", "5"]:
             run(["amocna", "benchmark", "run", "--scenario", sc])
             info("Waiting 15 seconds between scenarios...")
             time.sleep(15)

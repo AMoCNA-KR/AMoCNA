@@ -31,10 +31,9 @@ graph TD
 
 ### 1.1 Core Components
 
-- **Root Launcher (`/amocna.py`)**: A minimal, lightweight loader that bootstraps the execution by delegating to the modular core.
-- **CLI Core (`/cli/core.py`)**: Houses the configuration loader (supporting custom YAML parsing), execution utilities (process streams and color outputs), and the **Dynamic Plugin Discovery Engine**.
-- **Plugin Contract (`/cli/plugins/base.py`)**: Defines the abstract `BasePlugin` class that all CLI command modules must subclass.
-- **External SPARQL Templates (`/cli/resources/sparql/`)**: Zero-logic, pure SPARQL files, isolating graph query operations from the Python application code.
+- **Root Launcher (`/amocna.py`)**: Re-executes via `uv run` when the package is not installed; otherwise calls `amocna_cli.main`.
+- **CLI package (`/src/amocna_cli/`)**: Typer-based commands (`commands/`), shared config (`config.py`), and kubectl helpers (`utils/shell.py`).
+- **External SPARQL Templates (`/cli/resources/sparql/`)**: Zero-logic, pure SPARQL files used by the benchmark command.
 
 ---
 
@@ -100,10 +99,10 @@ All SPARQL queries used in automated benchmarks have been externalized into `/cl
 
 ### 3.1 Resolving Queries at Runtime
 
-The `BenchmarkPlugin` loads queries dynamically from disk:
+The benchmark command loads queries dynamically from disk:
 
 ```python
-def _load_sparql_query(self, cfg: ProjectConfig, filename: str) -> str:
+def _load_sparql_query(cfg: ProjectConfig, filename: str) -> str:
     path = cfg.project_root / "cli" / "resources" / "sparql" / filename
     return path.read_text().strip()
 ```
