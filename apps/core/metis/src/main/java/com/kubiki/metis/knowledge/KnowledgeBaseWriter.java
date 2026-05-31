@@ -37,24 +37,27 @@ public class KnowledgeBaseWriter {
                             "' does not start with CNEEOnt namespace '" + cneeNamespace + "'");
         }
 
-        StringBuilder triples = new StringBuilder();
+        StringBuilder extraProperties = new StringBuilder();
         for (Map.Entry<String, String> entry : event.getPropertiesMap().entrySet()) {
             String key = entry.getKey();
             String value = entry.getValue();
 
             if (key == null || key.isEmpty() || value == null) continue;
-            if (!key.startsWith("http://") && !key.startsWith("https://")) continue;
+            if (!key.startsWith(cneeNamespace)) continue;
 
-            triples.append("    <").append(key).append("> \"")
-                    .append(escapeLiteral(value)).append("\"^^xsd:string ;\n");
+            String localName = key.substring(cneeNamespace.length());
+            extraProperties.append(" ;\n    cnee:").append(localName).append(" \"")
+                    .append(escapeLiteral(value)).append("\"^^xsd:string");
         }
-        if (triples.length() > 2) {
-            triples.setLength(triples.length() - 2);
-            triples.append(" .");
-        }
+        String triplesSuffix = extraProperties.isEmpty() ? " ." : extraProperties + " .";
 
         try {
-            repository.insertEntity(resourceIri, ontologyType, escapeLiteral(resourceId), escapeLiteral(resourceName), triples.toString());
+            repository.insertEntity(
+                    resourceIri,
+                    ontologyType,
+                    escapeLiteral(resourceId),
+                    escapeLiteral(resourceName),
+                    triplesSuffix);
         } catch (Exception e) {
             throw new KnowledgeBaseException("insertEntity failed: " + e.getMessage(), e);
         }
