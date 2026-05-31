@@ -212,6 +212,18 @@ def k8s_patch(namespace: str, resource: str, patch_spec: str, dry_run: bool = Fa
         cmd.append("--dry-run=server")
     return cmd
 
+def k8s_set_image(namespace: str, deployment: str, container_image: str) -> list[str]:
+    """Build a kubectl set image command (container_image e.g. front-end=repo:tag)."""
+    return [
+        "kubectl",
+        "set",
+        "image",
+        f"deployment/{deployment}",
+        container_image,
+        "-n",
+        namespace,
+    ]
+
 def k8s_get_jsonpath(namespace: str, resource_type: str, resource_name: str, jsonpath: str) -> list[str]:
     """Build a kubectl get command with jsonpath output."""
     return ["kubectl", "get", resource_type, resource_name, "-n", namespace, f"-o=jsonpath={jsonpath}"]

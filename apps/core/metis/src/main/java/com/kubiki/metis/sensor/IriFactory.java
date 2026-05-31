@@ -1,6 +1,7 @@
 package com.kubiki.metis.sensor;
 
 import com.kubiki.metis.config.MetisProperties;
+import com.kubiki.metis.knowledge.CneeOntology;
 import org.springframework.stereotype.Component;
 
 import java.net.URLEncoder;
@@ -73,5 +74,27 @@ public class IriFactory {
      */
     public String typeIri(String localName) {
         return cneeNamespace + localName;
+    }
+
+    /**
+     * IRI for a container image reference (repository + tag).
+     */
+    public String imageIri(String repository, String tag) {
+        return cneeNamespace + encode(CneeOntology.KIND_IMAGE)
+                + "_" + encode(repository) + "_" + encode(tag);
+    }
+
+    /**
+     * IRI for an OCI/Docker registry host (e.g. docker.io).
+     */
+    public String imageRegistryIri(String registryHost) {
+        return cneeNamespace + encode(CneeOntology.KIND_IMAGE_REGISTRY) + "_" + encode(registryHost);
+    }
+
+    /**
+     * IRI for a container running inside a pod.
+     */
+    public String containerIri(String namespace, String podName, String containerName) {
+        return namespacedIri(CneeOntology.KIND_CONTAINER, namespace, podName + "_" + containerName);
     }
 }

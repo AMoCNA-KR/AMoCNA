@@ -12,5 +12,6 @@ resources:
   - palamedes-02-deployment.yaml
   - palamedes-03-service.yaml
   - themis-00-namespace.yaml
+  - themis-01-rbac.yaml
   - themis-02-deployment.yaml
   - themis-03-service.yaml

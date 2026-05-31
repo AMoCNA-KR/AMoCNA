@@ -36,7 +36,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 class SymmetricPropertyTest {
 
-    private static final String CNEE = "http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt#";
+    private static final String CNEE = "http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/";
 
     @Property(tries = 50)
     void symmetricCommunicatesWith(@ForAll String iriA, @ForAll String iriB) throws KnowledgeBaseException {

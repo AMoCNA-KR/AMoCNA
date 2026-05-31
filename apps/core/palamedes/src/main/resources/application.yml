@@ -44,6 +44,11 @@ palamedes:
     action-prefix: "action-"
     compensation-prefix: "compensation-"
     size-of-generated-uuid: 12
+  vulnerability:
+    enabled: ${PALAMEDES_VULNERABILITY_ENABLED:true}
+    scan-interval-ms: ${PALAMEDES_VULNERABILITY_SCAN_INTERVAL_MS:30000}
+    upgrade-policy: ${PALAMEDES_VULNERABILITY_UPGRADE_POLICY:PATCH}
+    catalog-location: ${PALAMEDES_VULNERABILITY_CATALOG_LOCATION:classpath:vulnerabilities/demo-catalog.yaml}
 
 management:
   endpoints:

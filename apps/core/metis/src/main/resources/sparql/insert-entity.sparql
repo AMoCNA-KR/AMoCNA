@@ -2,8 +2,7 @@ ${SPARQL_PREFIXES}
 INSERT {
   ${IRI::resourceIri} rdf:type ${IRI::ontologyType} ;
     cnee:resourceID ${resourceId}^^xsd:string ;
-    cnee:resourceName ${resourceName}^^xsd:string .
-  ${triples}
+    cnee:resourceName ${resourceName}^^xsd:string${triples}
 }
 WHERE {
   FILTER NOT EXISTS { ${IRI::resourceIri} rdf:type ${IRI::ontologyType} }

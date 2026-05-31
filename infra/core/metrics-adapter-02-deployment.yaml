@@ -31,8 +31,8 @@ spec:
               echo "RabbitMQ is reachable."
       containers:
         - name: metrics-adapter
-          image: ghcr.io/amocna-kr/metrics-adapter:1.6.4-SNAPSHOT
-          imagePullPolicy: IfNotPresent
+          image: ghcr.io/amocna-kr/metrics-adapter:1.6.5-SNAPSHOT
+          imagePullPolicy: Always
           ports:
             - containerPort: 8080
               name: http

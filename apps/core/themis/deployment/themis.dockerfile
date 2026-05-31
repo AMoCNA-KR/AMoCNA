@@ -30,9 +30,22 @@ COPY apps/core/themis/src ./src
 
 RUN mvn clean package -DskipTests -B -ntp
 
-FROM eclipse-temurin:25-jre as runtime
+FROM eclipse-temurin:25-jre AS runtime
+ARG TARGETARCH=amd64
 WORKDIR /app
 COPY --from=builder /app/apps/core/themis/target/*.jar app.jar
+
+# kubectl for SHELL blueprint actions (e.g. ImageUpdateIntent)
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends ca-certificates curl \
+    && KUBECTL_VERSION="$(curl -fsSL https://dl.k8s.io/release/stable.txt)" \
+    && curl -fsSL "https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/${TARGETARCH}/kubectl" \
+         -o /usr/local/bin/kubectl \
+    && chmod +x /usr/local/bin/kubectl \
+    && kubectl version --client \
+    && apt-get purge -y curl \
+    && apt-get autoremove -y \
+    && rm -rf /var/lib/apt/lists/*
 
 EXPOSE 8080 50051
 

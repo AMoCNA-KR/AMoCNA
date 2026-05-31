@@ -729,6 +729,7 @@
                 <owl:someValuesFrom rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
             </owl:Restriction>
         </rdfs:subClassOf>
+        <rdfs:comment>A container image artifact. Use cnee:resourceName for the repository path (e.g. weaveworksdemos/frontend) and cnee:version for the tag (e.g. 0.3.0). Referenced by cnee:usesImage from Container.</rdfs:comment>
     </owl:Class>
     
 
@@ -737,6 +738,7 @@
 
     <owl:Class rdf:about="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/ImageRegistry">
         <rdfs:subClassOf rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/ManagementElement"/>
+        <rdfs:comment>An OCI/Docker registry endpoint (e.g. docker.io, ghcr.io). Use cnee:resourceName for the registry host. Referenced by cnee:pullsImageFrom from ExecutionUnit.</rdfs:comment>
     </owl:Class>
     
 
@@ -1304,6 +1306,7 @@
     <owl:Class rdf:about="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/SecurityVulnerabilityDetectedState">
         <rdfs:subClassOf rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/State"/>
         <rdfs:subClassOf rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/Anomaly"/>
+        <rdfs:comment>Marker anomaly state indicating a known security vulnerability in the referenced Image (matched via cnee:resourceName and cnee:version). Remediation target versions and CVE identifiers belong in the vulnerability feed (e.g. demo-catalog.yaml), not in this ontology.</rdfs:comment>
     </owl:Class>
 
     <owl:Class rdf:about="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/ConfigDriftState">

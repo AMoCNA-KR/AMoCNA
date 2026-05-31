@@ -11,8 +11,15 @@ import java.util.Objects;
 public record PalamedesProperties(
         @NestedConfigurationProperty Engine engine,
         @NestedConfigurationProperty States states,
-        @NestedConfigurationProperty Utilities utilities
+        @NestedConfigurationProperty Utilities utilities,
+        @NestedConfigurationProperty Vulnerability vulnerability
 ) {
+
+    public PalamedesProperties {
+        if (vulnerability == null) {
+            vulnerability = new Vulnerability(true, 30_000, "PATCH", "classpath:vulnerabilities/demo-catalog.yaml");
+        }
+    }
 
     private final static List<String> AVAILABLE_STATE_KEYS = List.of(
             "initial",
@@ -49,6 +56,25 @@ public record PalamedesProperties(
             Objects.requireNonNull(stepPrefix, "palamedes.utilities.stepPrefix must not be null");
             Objects.requireNonNull(compensationPrefix, "palamedes.utilities.compensationPrefix must not be null");
             com.kubiki.common.config.PropertiesUtils.requiredPositive(sizeOfGeneratedUuid, "palamedes.utilities.sizeOfGeneratedUuid");
+        }
+    }
+
+    public record Vulnerability(
+            boolean enabled,
+            long scanIntervalMs,
+            String upgradePolicy,
+            String catalogLocation
+    ) {
+        public Vulnerability {
+            if (scanIntervalMs <= 0) {
+                scanIntervalMs = 30_000;
+            }
+            if (upgradePolicy == null || upgradePolicy.isBlank()) {
+                upgradePolicy = "PATCH";
+            }
+            if (catalogLocation == null || catalogLocation.isBlank()) {
+                catalogLocation = "classpath:vulnerabilities/demo-catalog.yaml";
+            }
         }
     }
 }

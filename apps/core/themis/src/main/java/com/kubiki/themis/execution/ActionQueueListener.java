@@ -54,7 +54,7 @@ public class ActionQueueListener {
         ExecutionResult result = executeWithRetry(executor, message);
 
         if (result.success()) {
-            int delay = properties.execution().postConditionDelayMs();
+            int delay = properties.execution() != null ? properties.execution().postConditionDelayMs() : 0;
             if (delay > 0) {
                 try {
                     log.info("Waiting {}ms for cluster stabilization before post-condition verification", delay);

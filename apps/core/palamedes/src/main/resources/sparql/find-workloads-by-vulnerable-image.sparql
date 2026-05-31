@@ -1,0 +1,20 @@
+${SPARQL_PREFIXES}
+SELECT DISTINCT ?deployment ?deploymentName ?containerName ?imageRepository ?currentVersion ?service ?serviceName
+WHERE {
+  ${IRI::imageIri} a cnee:Image .
+  ${IRI::imageIri} cnee:resourceName ?imageRepository .
+  ${IRI::imageIri} cnee:version ?currentVersion .
+  ?container cnee:usesImage ${IRI::imageIri} .
+  ?container cnee:resourceName ?containerName .
+  ?deployment cnee:contains ?container .
+  ?deployment cnee:resourceName ?deploymentName .
+  OPTIONAL {
+    ?service cnee:contains ?deployment .
+    ?service cnee:resourceName ?serviceName .
+  }
+  FILTER NOT EXISTS {
+    ?action ${PREFIX::ACTIONS_PREFIX}:targetsEntity ?deployment .
+    ?action ${PREFIX::ACTIONS_PREFIX}:hasCurrentState ?currentState .
+    FILTER(?currentState IN (${PREFIX::ACTIONS_PREFIX}:${INDIVIDUAL::STATE_INITIAL}, ${PREFIX::ACTIONS_PREFIX}:${INDIVIDUAL::STATE_PLANNED}, ${PREFIX::ACTIONS_PREFIX}:${INDIVIDUAL::STATE_VALIDATED}, ${PREFIX::ACTIONS_PREFIX}:${INDIVIDUAL::STATE_INPROGRESS}, ${PREFIX::ACTIONS_PREFIX}:${INDIVIDUAL::STATE_COMPENSATING}))
+  }
+}

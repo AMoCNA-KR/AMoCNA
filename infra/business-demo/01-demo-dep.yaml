@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: business-demo
-          image: ghcr.io/amocna-kr/business-demo:1.6.4-SNAPSHOT
+          image: ghcr.io/amocna-kr/business-demo:1.6.5-SNAPSHOT
           env:
           - name: pod
             valueFrom:

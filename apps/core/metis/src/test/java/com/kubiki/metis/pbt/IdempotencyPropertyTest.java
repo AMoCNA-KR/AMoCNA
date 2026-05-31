@@ -35,7 +35,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 class IdempotencyPropertyTest {
 
-    private static final String CNEE = "http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt#";
+    private static final String CNEE = "http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/";
 
     private KnowledgeBaseWriter writerFor(Repository repo) {
         MetisProperties props = new MetisProperties(

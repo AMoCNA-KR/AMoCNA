@@ -17,7 +17,7 @@ moam:VerticalScalingAction moam:hasExecutionProtocol "SHELL" ;
 
 # Scenario 3
 moam:ImageUpdateIntent moam:hasExecutionProtocol "SHELL" ;
-                       moam:hasExecutionInstruction "kubectl set image deployment/${resourceName} ${resourceName}=weaveworksdemos/frontend:0.3.1" ;
+                       moam:hasExecutionInstruction "kubectl set image deployment/${resourceName} ${containerName}=${imageRepository}:${targetVersion} -n ${namespace}" ;
                        moam:hasExpectedStatusCode "0"^^xsd:integer ;
                        moam:hasFunctionalIntent moam:ImageUpdateAction ;
                        moam:hasLayerBoundary moam:ContainerizationLayer .

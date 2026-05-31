@@ -4,7 +4,7 @@ metis:
     repositoryId: "test"
     timeoutMs: 1000
   ontology:
-    cneeNamespace: "http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt#"
+    cneeNamespace: "http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/"
   sensor:
     enabled: false
 

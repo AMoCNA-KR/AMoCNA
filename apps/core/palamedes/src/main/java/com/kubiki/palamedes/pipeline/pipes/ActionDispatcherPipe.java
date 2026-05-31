@@ -15,13 +15,20 @@ import org.slf4j.LoggerFactory;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
+import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 @Order(4)
 @Component
 @RequiredArgsConstructor
 public class ActionDispatcherPipe implements MapePipe {
+
     private static final Logger log = LoggerFactory.getLogger(ActionDispatcherPipe.class);
+
+    /** Pipeline control keys — not passed to instruction template hydration. */
+    private static final Set<String> PIPELINE_METADATA_KEYS = Set.of("currentState");
+
     private final StateRepository stateRepository;
     private final DispatcherService dispatcherService;
     private final PlannerService plannerService;
@@ -37,7 +44,7 @@ public class ActionDispatcherPipe implements MapePipe {
 
         return switch (context.actionData()) {
             case ActionData.SimpleAction simpleAction -> {
-                Map<String, String> hydrationData = Map.of("resourceName", (String) context.metadata().get("resourceName"));
+                Map<String, String> hydrationData = hydrationFromContext(context);
                 ActionMessage message = plannerService.buildActionMessage(simpleAction, hydrationData);
 
                 dispatcherService.dispatch(message);
@@ -49,5 +56,18 @@ public class ActionDispatcherPipe implements MapePipe {
                 yield true;
             }
         };
+    }
+
+    static Map<String, String> hydrationFromContext(WorkflowContext context) {
+        Map<String, String> hydration = new HashMap<>();
+        for (Map.Entry<String, Object> entry : context.metadata().entrySet()) {
+            if (PIPELINE_METADATA_KEYS.contains(entry.getKey())) {
+                continue;
+            }
+            if (entry.getValue() != null) {
+                hydration.put(entry.getKey(), entry.getValue().toString());
+            }
+        }
+        return hydration;
     }
 }

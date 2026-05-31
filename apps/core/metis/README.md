@@ -28,6 +28,7 @@ flowchart LR
 | Sensor | Watches | CNEEOnt type | Events emitted |
 |---|---|---|---|
 | `PodSensor` | Pods | `cnee:ExecutionUnit` | EntityDiscovered, StateChanged, EntityDeleted |
+| `ContainerImageSensor` | Pod container specs | `cnee:Container`, `cnee:Image` | EntityDiscovered, RelationshipAsserted (`contains`, `usesImage`) |
 | `ServiceSensor` | Services | `cnee:Service` | EntityDiscovered, EntityDeleted |
 | `NodeSensor` | Nodes | `cnee:Node` | EntityDiscovered, EntityDeleted |
 | `BindingSensor` | Pods + Services | — | RelationshipAsserted: `cnee:contains`, `cnee:isHostedOn` |
@@ -55,8 +56,8 @@ After each successful batch write to GraphDB, Metis publishes to:
 **Message format (JSON):**
 ```json
 {
-  "resourceIri": "http://...CNEEOnt#Pod_default_my-pod",
-  "ontologyType": "http://...CNEEOnt#ExecutionUnit",
+  "resourceIri": "http://...CNEEOnt/Pod_default_my-pod",
+  "ontologyType": "http://...CNEEOnt/ExecutionUnit",
   "changeKind": "CREATED",
   "correlationId": "metis-abc123-def456"
 }
@@ -86,7 +87,7 @@ metis:
     repositoryId: "amocna"
     timeoutMs: 5000
   ontology:
-    cneeNamespace: "http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt#"
+    cneeNamespace: "http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/"
   sensor:
     enabled: true
     namespaces: []          # empty = all namespaces

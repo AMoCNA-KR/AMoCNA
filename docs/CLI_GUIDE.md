@@ -31,10 +31,9 @@ graph TD
 
 ### 1.1 Core Components
 
-- **Root Launcher (`/amocna.py`)**: A minimal, lightweight loader that bootstraps the execution by delegating to the modular core.
-- **CLI Core (`/cli/core.py`)**: Houses the configuration loader (supporting custom YAML parsing), execution utilities (process streams and color outputs), and the **Dynamic Plugin Discovery Engine**.
-- **Plugin Contract (`/cli/plugins/base.py`)**: Defines the abstract `BasePlugin` class that all CLI command modules must subclass.
-- **External SPARQL Templates (`/cli/resources/sparql/`)**: Zero-logic, pure SPARQL files, isolating graph query operations from the Python application code.
+- **Root Launcher (`/amocna.py`)**: Re-executes via `uv run` when the package is not installed; otherwise calls `amocna_cli.main`.
+- **CLI package (`/src/amocna_cli/`)**: Typer-based commands (`commands/`), shared config (`config.py`), and kubectl helpers (`utils/shell.py`).
+- **External SPARQL Templates (`/cli/resources/sparql/`)**: Zero-logic, pure SPARQL files used by the benchmark command.
 
 ---
 
@@ -100,10 +99,10 @@ All SPARQL queries used in automated benchmarks have been externalized into `/cl
 
 ### 3.1 Resolving Queries at Runtime
 
-The `BenchmarkPlugin` loads queries dynamically from disk:
+The benchmark command loads queries dynamically from disk:
 
 ```python
-def _load_sparql_query(self, cfg: ProjectConfig, filename: str) -> str:
+def _load_sparql_query(cfg: ProjectConfig, filename: str) -> str:
     path = cfg.project_root / "cli" / "resources" / "sparql" / filename
     return path.read_text().strip()
 ```
@@ -240,6 +239,17 @@ The `benchmark` subcommand provides automated control loops to run evaluation sc
 
   ```bash
   ./amocna.py benchmark run --scenario 4
+  ```
+
+#### Scenario 5: End-to-End Container Vulnerability Remediation
+
+- **Goal**: Detect a known vulnerable container image version via Metis sensors and a pluggable vulnerability catalog, then autonomically patch all affected deployments.
+- **Process**: Resets `front-end` to vulnerable image `docker.io/weaveworksdemos/front-end:0.3.0`. Metis `ContainerImageSensor` writes `Container`/`Image`/`ImageRegistry` topology to GraphDB (no vulnerability facts). Palamedes periodically scans sensed images against the CVE catalog, selects a fix under upgrade policy (default `PATCH` → `0.3.12`), and fans out `ImageUpdateIntent` workflows; Themis runs `kubectl set image` with an explicit `docker.io/` prefix. The CLI polls until image `0.3.12` is deployed.
+- **Upgrade policy** (`palamedes.vulnerability.upgrade-policy`): `PATCH` | `MINOR` | `MAJOR` controls which fix version Palamedes selects from the catalog.
+- **Scan interval** (`palamedes.vulnerability.scan-interval-ms`, default 30s): how often Palamedes re-checks GraphDB images against the catalog.
+- **Execution**:
+  ```bash
+  ./amocna.py benchmark run --scenario 5
   ```
 
 ### 5.2 Helper Routines
