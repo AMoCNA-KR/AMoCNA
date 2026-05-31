@@ -1,0 +1,83 @@
+.rulesSidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 520px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.rulesSidebar::-webkit-scrollbar {
+  width: 4px;
+}
+
+.rulesSidebar::-webkit-scrollbar-thumb {
+  background: var(--border-glass);
+  border-radius: 4px;
+}
+
+.ruleCard {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-glass);
+  border-radius: 12px;
+  padding: 14px;
+  cursor: pointer;
+  transition: var(--transition-fast);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.ruleCard:hover {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.ruleCard.selected {
+  background: rgba(170, 59, 255, 0.08);
+  border-color: var(--c-analyze);
+  box-shadow: 0 0 15px rgba(170, 59, 255, 0.1);
+}
+
+.ruleMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.ruleName {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-bright);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ruleQuery {
+  font-size: 10px;
+  color: var(--text-muted);
+  font-family: var(--mono);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ruleBadge {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--c-analyze);
+  background: rgba(170, 59, 255, 0.12);
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px solid rgba(170, 59, 255, 0.2);
+  flex-shrink: 0;
+}
+
+.ruleCard.selected .ruleBadge {
+  color: var(--text-bright);
+  background: var(--c-analyze);
+}

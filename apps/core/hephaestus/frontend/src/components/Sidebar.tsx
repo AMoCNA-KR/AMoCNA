@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router';
-import { LayoutDashboard, Sliders, Activity } from 'lucide-react';
+import { LayoutDashboard, Sliders } from 'lucide-react';
 import styles from './Sidebar.module.css';
 
 export default function Sidebar() {
@@ -15,14 +15,6 @@ export default function Sidebar() {
         >
           <LayoutDashboard size={18} />
           <span>Dashboard</span>
-        </Link>
-        <Link 
-          to="/analytics" 
-          activeProps={{ className: styles.activeLink }}
-          className={styles.sidebarLink}
-        >
-          <Activity size={18} />
-          <span>Analytics</span>
         </Link>
         <Link 
           to="/thresholds" 

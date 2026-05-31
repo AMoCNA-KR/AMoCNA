@@ -1,4 +1,5 @@
 import type { Threshold } from '../../../types/threshold';
+import styles from './ThresholdList.module.css';
 
 interface ThresholdListProps {
   thresholds: Threshold[];
@@ -8,18 +9,18 @@ interface ThresholdListProps {
 
 export default function ThresholdList({ thresholds, selectedThresholdName, loadRuleIntoEditor }: ThresholdListProps) {
   return (
-    <div className="rules-sidebar">
+    <div className={styles.rulesSidebar}>
       {thresholds.map((rule, idx) => (
         <div 
           key={idx} 
-          className={`rule-card ${selectedThresholdName === rule.name ? 'selected' : ''}`}
+          className={`${styles.ruleCard} ${selectedThresholdName === rule.name ? styles.selected : ''}`}
           onClick={() => loadRuleIntoEditor(rule)}
         >
-          <div className="rule-meta">
-            <span className="rule-name">{rule.name}</span>
-            <span className="rule-query" title={rule.query}>{rule.query}</span>
+          <div className={styles.ruleMeta}>
+            <span className={styles.ruleName}>{rule.name}</span>
+            <span className={styles.ruleQuery} title={rule.query}>{rule.query}</span>
           </div>
-          <span className="rule-badge">{rule.operator} {rule.value}</span>
+          <span className={styles.ruleBadge}>{rule.operator} {rule.value}</span>
         </div>
       ))}
     </div>

@@ -1,0 +1,232 @@
+.flowWrapper {
+  height: 480px;
+  width: 100%;
+  position: relative;
+  background: rgba(8, 10, 20, 0.5);
+  border: 1px solid var(--border-glass);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.6);
+}
+
+.customNode {
+  background: rgba(14, 17, 34, 0.85);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 10px 14px;
+  width: 220px;
+  color: var(--text-bright);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+  transition: all 0.5s cubic-bezier(0.25, 0.8, 0.25, 1);
+  position: relative;
+}
+
+.customNode:hover {
+  border-color: var(--node-color);
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.6), 0 0 15px rgba(255, 255, 255, 0.05);
+  transform: translateY(-2px);
+}
+
+.nodeActive {
+  border-color: var(--node-color);
+  background: rgba(18, 22, 45, 0.95);
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.6), 0 0 25px var(--node-color);
+  animation: node-glow 2.5s infinite ease-in-out;
+}
+
+@keyframes node-glow {
+  0%, 100% {
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.6), 0 0 18px var(--node-color);
+  }
+  50% {
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.6), 0 0 28px var(--node-color);
+    border-color: #ffffff;
+  }
+}
+
+.nodeHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  padding-bottom: 6px;
+}
+
+.nodeStage {
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--text-muted);
+  letter-spacing: 1.5px;
+}
+
+.healthBadge {
+  font-size: 8px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.healthUp {
+  background: rgba(67, 233, 123, 0.1);
+  color: var(--c-knowledge);
+  border: 1px solid rgba(67, 233, 123, 0.25);
+  box-shadow: 0 0 8px rgba(67, 233, 123, 0.2);
+}
+
+.healthDown {
+  background: rgba(255, 94, 98, 0.1);
+  color: var(--c-execute);
+  border: 1px solid rgba(255, 94, 98, 0.25);
+  box-shadow: 0 0 8px rgba(255, 94, 98, 0.2);
+}
+
+.healthChecking {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-muted);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.nodeBody {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.nodeIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  filter: drop-shadow(0 0 4px currentColor);
+}
+
+.nodeDetails {
+  display: flex;
+  flex-direction: column;
+}
+
+.nodeName {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+}
+
+.nodeRole {
+  font-size: 10px;
+  color: var(--text-muted);
+  margin-top: 1px;
+}
+
+.handle {
+  width: 6px;
+  height: 6px;
+  background: var(--node-color);
+  border: 1px solid var(--bg-main);
+  opacity: 0; /* Fully transparent handles, ReactFlow will still connect them! */
+  transition: opacity 0.3s;
+}
+
+.customNode:hover .handle {
+  opacity: 0.8;
+}
+
+.flowControls {
+  background: rgba(14, 17, 34, 0.85) !important;
+  border: 1px solid var(--border-glass) !important;
+  border-radius: 8px !important;
+  overflow: hidden;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.5) !important;
+}
+
+.flowControls button {
+  background: transparent !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+  fill: var(--text-main) !important;
+  color: var(--text-main) !important;
+  transition: var(--transition-fast) !important;
+}
+
+.flowControls button:hover {
+  background: rgba(255, 255, 255, 0.05) !important;
+  fill: var(--text-bright) !important;
+}
+
+.controlButtons {
+  display: flex;
+  gap: 12px;
+}
+
+.btnControl {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-glass);
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-main);
+  cursor: pointer;
+  transition: var(--transition-smooth);
+}
+
+.btnControl:hover {
+  color: var(--text-bright);
+  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.btnControl.active {
+  color: var(--c-plan);
+  background: rgba(249, 217, 73, 0.08);
+  border-color: rgba(249, 217, 73, 0.3);
+}
+
+.triggerBtn {
+  background: linear-gradient(135deg, rgba(170, 59, 255, 0.15) 0%, rgba(255, 94, 98, 0.15) 100%);
+  border: 1px solid rgba(170, 59, 255, 0.3);
+  color: var(--text-bright);
+}
+
+.triggerBtn:hover {
+  border-color: rgba(255, 94, 98, 0.5);
+  box-shadow: 0 0 15px rgba(170, 59, 255, 0.2);
+}
+
+.legendRow {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 20px;
+  margin-top: 16px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.01);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.legendColor {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  box-shadow: 0 0 8px currentColor;
+}
+
+.legendItem span {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}

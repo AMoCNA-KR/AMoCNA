@@ -1,6 +1,8 @@
 import * as Select from '@radix-ui/react-select';
 import { Save, ChevronDown, Check } from 'lucide-react';
 import type { Threshold } from '../../../types/threshold';
+import styles from './ThresholdEditor.module.css';
+import formStyles from '../../../components/Forms.module.css';
 
 interface ThresholdEditorProps {
   editThreshold: Threshold;
@@ -16,26 +18,27 @@ export default function ThresholdEditor({
   isSaving
 }: ThresholdEditorProps) {
   return (
-    <div className="rule-editor-pane">
-      <h3 className="editor-title">✏️ Rule Configuration Editor</h3>
-      <div className="editor-form">
-        <div className="form-group">
-          <label>Rule Filename</label>
-          <input type="text" value={editThreshold.name} readOnly style={{ opacity: 0.6 }} />
+    <div className={styles.ruleEditorPane}>
+      <h3 className={styles.editorTitle}>✏️ Rule Configuration Editor</h3>
+      <div className={styles.editorForm}>
+        <div className={formStyles.formGroup}>
+          <label className={formStyles.label}>Rule Filename</label>
+          <input type="text" className={formStyles.input} value={editThreshold.name} readOnly style={{ opacity: 0.6 }} />
         </div>
 
-        <div className="form-group">
-          <label>PromQL Query</label>
+        <div className={formStyles.formGroup}>
+          <label className={formStyles.label}>PromQL Query</label>
           <textarea 
+            className={formStyles.textarea}
             value={editThreshold.query} 
             onChange={(e) => onFieldChange('query', e.target.value)} 
             rows={2} 
           />
         </div>
 
-        <div className="form-row">
-          <div className="form-group">
-            <label>Operator</label>
+        <div className={formStyles.formRow}>
+          <div className={formStyles.formGroup}>
+            <label className={formStyles.label}>Operator</label>
             <Select.Root 
               value={editThreshold.operator} 
               onValueChange={(val) => onFieldChange('operator', val)}
@@ -53,7 +56,7 @@ export default function ThresholdEditor({
                     {['>', '>=', '<', '<=', '=='].map((op) => (
                       <Select.Item key={op} value={op} className="radix-select-item">
                         <Select.ItemText>{op}</Select.ItemText>
-                        <Select.ItemIndicator>
+                        <Select.ItemIndicator className="radix-select-item-indicator">
                           <Check size={14} />
                         </Select.ItemIndicator>
                       </Select.Item>
@@ -63,10 +66,11 @@ export default function ThresholdEditor({
               </Select.Portal>
             </Select.Root>
           </div>
-          <div className="form-group">
-            <label>Threshold Value</label>
+          <div className={formStyles.formGroup}>
+            <label className={formStyles.label}>Threshold Value</label>
             <input 
               type="number" 
+              className={formStyles.input}
               step="any" 
               value={editThreshold.value} 
               onChange={(e) => onFieldChange('value', parseFloat(e.target.value) || 0)} 
@@ -74,29 +78,31 @@ export default function ThresholdEditor({
           </div>
         </div>
 
-        <div className="form-row">
-          <div className="form-group">
-            <label>Persistence Window</label>
+        <div className={formStyles.formRow}>
+          <div className={formStyles.formGroup}>
+            <label className={formStyles.label}>Persistence Window</label>
             <input 
               type="number" 
+              className={formStyles.input}
               min={0} 
               value={editThreshold.persistenceWindow} 
               onChange={(e) => onFieldChange('persistenceWindow', parseInt(e.target.value, 10) || 0)} 
             />
           </div>
-          <div className="form-group">
-            <label>CNEEOnt Anomaly State</label>
+          <div className={formStyles.formGroup}>
+            <label className={formStyles.label}>CNEEOnt Anomaly State</label>
             <input 
               type="text" 
+              className={formStyles.input}
               value={editThreshold.anomalyState} 
               onChange={(e) => onFieldChange('anomalyState', e.target.value)} 
             />
           </div>
         </div>
 
-        <div className="form-row">
-          <div className="form-group">
-            <label>Resource Kind</label>
+        <div className={formStyles.formRow}>
+          <div className={formStyles.formGroup}>
+            <label className={formStyles.label}>Resource Kind</label>
             <Select.Root 
               value={editThreshold.resourceKind} 
               onValueChange={(val) => onFieldChange('resourceKind', val)}
@@ -114,7 +120,7 @@ export default function ThresholdEditor({
                     {['Pod', 'Node', 'Service'].map((kind) => (
                       <Select.Item key={kind} value={kind} className="radix-select-item">
                         <Select.ItemText>{kind}</Select.ItemText>
-                        <Select.ItemIndicator>
+                        <Select.ItemIndicator className="radix-select-item-indicator">
                           <Check size={14} />
                         </Select.ItemIndicator>
                       </Select.Item>
@@ -124,26 +130,28 @@ export default function ThresholdEditor({
               </Select.Portal>
             </Select.Root>
           </div>
-          <div className="form-group">
-            <label>Resource Label</label>
+          <div className={formStyles.formGroup}>
+            <label className={formStyles.label}>Resource Label</label>
             <input 
               type="text" 
+              className={formStyles.input}
               value={editThreshold.resourceLabel} 
               onChange={(e) => onFieldChange('resourceLabel', e.target.value)} 
             />
           </div>
         </div>
 
-        <div className="form-group">
-          <label>Namespace Label (Optional)</label>
+        <div className={formStyles.formGroup}>
+          <label className={formStyles.label}>Namespace Label (Optional)</label>
           <input 
             type="text" 
+            className={formStyles.input}
             value={editThreshold.namespaceLabel || ''} 
             onChange={(e) => onFieldChange('namespaceLabel', e.target.value || null)} 
           />
         </div>
 
-        <button className="btn-save" onClick={onSave} disabled={isSaving}>
+        <button className={formStyles.btnSave} onClick={onSave} disabled={isSaving}>
           <Save size={16} />
           {isSaving ? 'Saving...' : 'Save & Trigger Hot-Reload'}
         </button>

@@ -1,0 +1,24 @@
+.ruleEditorPane {
+  background: rgba(255, 255, 255, 0.01);
+  border: 1px solid var(--border-glass);
+  border-radius: 16px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.editorTitle {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-bright);
+  border-bottom: 1px solid var(--border-glass);
+  padding-bottom: 8px;
+  margin: 0;
+}
+
+.editorForm {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}

@@ -5,6 +5,8 @@ import ThresholdList from './components/ThresholdList';
 import ThresholdEditor from './components/ThresholdEditor';
 import ThresholdStats from '../../components/ThresholdStats';
 import type { Threshold } from '../../types/threshold';
+import styles from './ThresholdsView.module.css';
+import panelStyles from '../../components/Panel.module.css';
 
 const fetchThresholds = async (): Promise<Threshold[]> => {
   try {
@@ -71,9 +73,9 @@ export default function ThresholdsView() {
   if (isLoading) return <div>Loading thresholds...</div>;
 
   return (
-    <div className="panel">
+    <div className={panelStyles.panel}>
       <Tabs.Root defaultValue="audit">
-        <div className="panel-header" style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div className={panelStyles.panelHeader} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
             <h2>⚙️ Threshold Configuration</h2>
             <p>Manage rule sets inside classpath:thresholds/</p>
@@ -88,7 +90,7 @@ export default function ThresholdsView() {
           </Tabs.List>
         </div>
 
-        <div className="config-grid">
+        <div className={styles.configGrid}>
           <ThresholdList 
             thresholds={thresholds}
             selectedThresholdName={editThreshold?.name || ''}

@@ -1,0 +1,120 @@
+.statsGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.statCard {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-glass);
+  border-radius: 10px;
+  padding: 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.statLabel {
+  font-size: 9px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.statValue {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-bright);
+  font-family: var(--mono);
+}
+
+.breachStatus {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 4px;
+  letter-spacing: 0.5px;
+}
+
+.breachStatus.active {
+  background: rgba(255, 94, 98, 0.15);
+  color: var(--c-execute);
+  border: 1px solid rgba(255, 94, 98, 0.3);
+}
+
+.breachStatus.healthy {
+  background: rgba(67, 233, 123, 0.15);
+  color: var(--c-knowledge);
+  border: 1px solid rgba(67, 233, 123, 0.3);
+}
+
+.resourceMetadata {
+  background: rgba(6, 7, 12, 0.4);
+  border: 1px solid var(--border-glass);
+  border-radius: 12px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.metadataRow {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+}
+
+.metadataLabel {
+  color: var(--text-muted);
+}
+
+.metadataValue {
+  color: var(--text-bright);
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.metadataValueMono {
+  color: var(--text-bright);
+  font-family: var(--mono);
+}
+
+.tickerBox {
+  background: rgba(6, 7, 12, 0.85);
+  border: 1px solid var(--border-glass);
+  border-radius: 8px;
+  padding: 12px;
+  height: 140px;
+  overflow-y: auto;
+  font-family: var(--mono);
+  font-size: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.5);
+}
+
+.tickerLine {
+  display: flex;
+  gap: 8px;
+  line-height: 1.4;
+}
+
+.tickerTime {
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.tickerMsgBreach {
+  color: var(--c-execute);
+}
+
+.tickerMsgAction {
+  color: var(--c-analyze);
+}
+
+.tickerMsgOk {
+  color: rgba(255, 255, 255, 0.7);
+}

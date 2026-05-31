@@ -1,0 +1,47 @@
+.terminalContainer {
+  background: var(--bg-terminal);
+  border: 1px solid var(--border-glass);
+  border-radius: 12px;
+  padding: 16px;
+  height: 200px;
+  overflow-y: auto;
+  font-family: var(--mono);
+  font-size: 11px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.8);
+}
+
+.terminalLine {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  line-height: 1.5;
+}
+
+.logTime {
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.logTag {
+  font-weight: 600;
+  text-transform: uppercase;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 9px;
+  letter-spacing: 0.5px;
+  flex-shrink: 0;
+}
+
+.tagMonitor { background: rgba(0, 242, 254, 0.12); color: var(--c-monitor); border: 1px solid rgba(0, 242, 254, 0.2); }
+.tagAnalyze { background: rgba(170, 59, 255, 0.12); color: var(--c-analyze); border: 1px solid rgba(170, 59, 255, 0.2); }
+.tagPlan { background: rgba(249, 217, 73, 0.12); color: var(--c-plan); border: 1px solid rgba(249, 217, 73, 0.2); }
+.tagExecute { background: rgba(255, 94, 98, 0.12); color: var(--c-execute); border: 1px solid rgba(255, 94, 98, 0.2); }
+.tagKnowledge { background: rgba(67, 233, 123, 0.12); color: var(--c-knowledge); border: 1px solid rgba(67, 233, 123, 0.2); }
+.tagSystem { background: rgba(100, 106, 130, 0.12); color: var(--text-muted); border: 1px solid rgba(100, 106, 130, 0.2); }
+
+.logMsg {
+  color: var(--text-bright);
+}

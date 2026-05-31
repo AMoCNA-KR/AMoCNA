@@ -1,0 +1,20 @@
+.workspaceGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 24px;
+  align-items: start;
+}
+
+.visualizerColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+@media (min-width: 1200px) {
+  /* Note: The inline style in DashboardView.tsx overrides this to 1fr currently, 
+     but the design system originally had it as 55% 45%. 
+     I'll keep it as 1fr for now to match current behavior or 55% 45% if I want to restore it.
+     Let's check DashboardView.tsx again. 
+  */
+}
