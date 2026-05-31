@@ -9,7 +9,7 @@ COPY apps/demos/ /app/Business-Demo/
 COPY apps/core/Controller/ /app/Controller/
 
 # Build Kubernetes Management
-RUN cd Business-Demo/KubernetesManagment && mvn clean package -DskipTests
+RUN cd Business-Demo/KubernetesManagment && mvn clean package -DskipTests -B -ntp
 
 # ==========================================
 # STAGE 2: Final Runtime Image

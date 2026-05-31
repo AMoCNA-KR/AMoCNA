@@ -6,11 +6,11 @@ WORKDIR /app
 
 # 1. Build Translator (Local dependency)
 COPY apps/adapters/Metrics-Translator/ /app/Metrics-Translator/
-RUN cd Metrics-Translator/Translator && mvn clean install -DskipTests
+RUN cd Metrics-Translator/Translator && mvn clean install -DskipTests -B -ntp
 
 # 2. Build Metrics Adapter
 COPY apps/adapters/Metrics-Adapter/ /app/Metrics-Adapter/
-RUN cd Metrics-Adapter && mvn clean package -DskipTests
+RUN cd Metrics-Adapter && mvn clean package -DskipTests -B -ntp
 
 # ==========================================
 # STAGE 2: Final Runtime Image
