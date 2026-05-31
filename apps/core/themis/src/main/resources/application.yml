@@ -37,3 +37,5 @@ amocna:
 themis:
   secret:
     bearer-token: ${THEMIS_BEARER_TOKEN:}
+  execution:
+    post-condition-delay-ms: ${THEMIS_POST_CONDITION_DELAY_MS:5000}

@@ -63,13 +63,14 @@ def _deploy_graphdb(cfg: ProjectConfig, dry_run: bool = False) -> None:
     else:
         warn(f"No license found. Place graphdb.license in {graphdb_dir}")
 
-    info("Creating graphdb-ontologies ConfigMap...")
+    info("Creating graphdb-ontologies ConfigMap (OWL + action blueprints)...")
     ontology_files = sorted(ontology_dir.glob("*.rdf"))
-    if ontology_files:
-        files_list = [str(path) for path in ontology_files]
-    else:
+    blueprint_files = sorted(graphdb_dir.glob("*.ttl"))
+    files_list = [str(path) for path in ontology_files + blueprint_files]
+    if not ontology_files:
         warn(f"No ontology files found in {ontology_dir}")
-        files_list = []
+    if not blueprint_files:
+        warn(f"No blueprint TTL files found in {graphdb_dir}")
 
     create = subprocess.run(
         k8s_create_configmap(

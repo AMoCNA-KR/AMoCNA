@@ -78,4 +78,14 @@ data:
           -T "$f"
       fi
     done
+
+    # 4. Upload MoaMont action blueprints
+    for f in /opt/graphdb/init/ontologies/*.ttl; do
+      if [ -f "$f" ]; then
+        echo "Uploading blueprint $f..."
+        curl -sf -X POST http://localhost:7200/repositories/amocna/statements \
+          -H "Content-Type: text/turtle" \
+          -T "$f"
+      fi
+    done
     echo "Init complete."
