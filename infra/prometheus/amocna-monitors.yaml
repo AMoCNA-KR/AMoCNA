@@ -17,15 +17,39 @@ spec:
     - port: http
       path: /metrics
       interval: 15s
+      relabelings:
+        - sourceLabels: [__meta_kubernetes_service_name]
+          targetLabel: name
+      metricRelabelings:
+        - sourceLabels: [service]
+          targetLabel: name
     - port: front-end
       path: /metrics
       interval: 15s
+      relabelings:
+        - sourceLabels: [__meta_kubernetes_service_name]
+          targetLabel: name
+      metricRelabelings:
+        - sourceLabels: [service]
+          targetLabel: name
     - port: exporter
       path: /metrics
       interval: 15s
+      relabelings:
+        - sourceLabels: [__meta_kubernetes_service_name]
+          targetLabel: name
+      metricRelabelings:
+        - sourceLabels: [service]
+          targetLabel: name
     - port: prometheus
       path: /metrics
       interval: 15s
+      relabelings:
+        - sourceLabels: [__meta_kubernetes_service_name]
+          targetLabel: name
+      metricRelabelings:
+        - sourceLabels: [service]
+          targetLabel: name
 ---
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor

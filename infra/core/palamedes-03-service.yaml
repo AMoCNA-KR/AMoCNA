@@ -3,6 +3,8 @@ kind: Service
 metadata:
   name: palamedes
   namespace: palamedes
+  labels:
+    app: palamedes
 spec:
   selector:
     app: palamedes
