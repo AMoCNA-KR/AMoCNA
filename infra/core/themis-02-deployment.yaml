@@ -32,7 +32,7 @@ spec:
       containers:
         - name: themis
           image: ghcr.io/amocna-kr/themis:1.6.5-SNAPSHOT
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Always
           ports:
             - containerPort: 8080
               name: http

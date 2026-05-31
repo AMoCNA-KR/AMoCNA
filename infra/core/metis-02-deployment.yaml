@@ -46,7 +46,7 @@ spec:
       containers:
         - name: metis
           image: ghcr.io/amocna-kr/metis:1.6.5-SNAPSHOT
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Always
           ports:
             - containerPort: 50052
               name: grpc

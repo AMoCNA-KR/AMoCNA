@@ -45,7 +45,7 @@ spec:
       containers:
         - name: palamedes
           image: ghcr.io/amocna-kr/palamedes:1.6.5-SNAPSHOT
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Always
           ports:
             - containerPort: 8081
               name: http

@@ -32,7 +32,7 @@ spec:
       containers:
         - name: metrics-adapter
           image: ghcr.io/amocna-kr/metrics-adapter:1.6.5-SNAPSHOT
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Always
           ports:
             - containerPort: 8080
               name: http
