@@ -25,6 +25,11 @@ from amocna_cli.utils.shell import (
 
 app = typer.Typer(no_args_is_help=True)
 
+# Sock-shop front-end images (explicit docker.io avoids quay.io redirect / auth failures)
+SOCK_SHOP_FRONTEND_IMAGE = "docker.io/weaveworksdemos/front-end"
+SOCK_SHOP_FRONTEND_VULNERABLE_TAG = "0.3.0"
+SOCK_SHOP_FRONTEND_PATCHED_TAG = "0.3.12"
+
 # ─── Benchmark helpers ─────────────────────────────────────────────
 
 def _load_sparql_query(cfg: ProjectConfig, filename: str) -> str:
@@ -274,10 +279,10 @@ def benchmark_run(
             image = run_capture(
                 k8s_get_jsonpath("sock-shop", "deployment", "front-end", "{.spec.template.spec.containers[0].image}")
             )
-            if "0.3.1" in image:
+            if SOCK_SHOP_FRONTEND_PATCHED_TAG in image:
                 duration = time.time() - start_time
                 info(
-                    "[green]✔ SUCCESS: Front-end container image successfully updated to secure patched version (0.3.1) in "
+                    f"[green]✔ SUCCESS: Front-end container image successfully updated to secure patched version ({SOCK_SHOP_FRONTEND_PATCHED_TAG}) in "
                     f"{duration:.1f}s![/green]"
                 )
                 success = True
@@ -373,12 +378,15 @@ def benchmark_run(
 
     elif scenario == "5":
         info("Initializing Scenario 5: End-to-End Vulnerability Remediation...")
-        info("Step 1: Resetting front-end to vulnerable image weaveworksdemos/frontend:0.3.0...")
+        info(
+            f"Step 1: Resetting front-end to vulnerable image "
+            f"{SOCK_SHOP_FRONTEND_IMAGE}:{SOCK_SHOP_FRONTEND_VULNERABLE_TAG}..."
+        )
         run(
             k8s_set_image(
                 "sock-shop",
                 "front-end",
-                "front-end=weaveworksdemos/frontend:0.3.0",
+                f"front-end={SOCK_SHOP_FRONTEND_IMAGE}:{SOCK_SHOP_FRONTEND_VULNERABLE_TAG}",
             ),
             check=False,
         )
@@ -392,7 +400,7 @@ def benchmark_run(
 
         start_time = time.time()
         success = False
-        info("Step 3: Polling front-end image for autonomic security patch to 0.3.1...")
+        info(f"Step 3: Polling front-end image for autonomic security patch to {SOCK_SHOP_FRONTEND_PATCHED_TAG}...")
         for i in range(24):
             time.sleep(5)
             image = run_capture(
@@ -404,10 +412,10 @@ def benchmark_run(
                 ),
                 check=False,
             )
-            if "0.3.1" in image:
+            if SOCK_SHOP_FRONTEND_PATCHED_TAG in image:
                 duration = time.time() - start_time
                 info(
-                    "[green]✔ SUCCESS: Front-end autonomically patched to secure version (0.3.1) in "
+                    f"[green]✔ SUCCESS: Front-end autonomically patched to secure version ({SOCK_SHOP_FRONTEND_PATCHED_TAG}) in "
                     f"{duration:.1f}s![/green]"
                 )
                 success = True

@@ -44,7 +44,7 @@ class ContainerImageSensorTest {
                 .withNewSpec()
                 .addToContainers(new ContainerBuilder()
                         .withName("front-end")
-                        .withImage("weaveworksdemos/frontend:0.3.0")
+                        .withImage("weaveworksdemos/front-end:0.3.0")
                         .build())
                 .endSpec()
                 .build();
@@ -60,7 +60,7 @@ class ContainerImageSensorTest {
         assertThat(events).anyMatch(e -> e.getEventCase() == SensorEvent.EventCase.ENTITY_DISCOVERED
                 && e.getEntityDiscovered().getOntologyType().equals(CNEE + "Image")
                 && "0.3.0".equals(e.getEntityDiscovered().getPropertiesMap().get(CNEE + "version"))
-                && "weaveworksdemos/frontend".equals(e.getEntityDiscovered().getResourceName()));
+                && "weaveworksdemos/front-end".equals(e.getEntityDiscovered().getResourceName()));
         assertThat(events).anyMatch(e -> e.getEventCase() == SensorEvent.EventCase.ENTITY_DISCOVERED
                 && e.getEntityDiscovered().getOntologyType().equals(CNEE + "ImageRegistry"));
         assertThat(events).anyMatch(e -> e.getEventCase() == SensorEvent.EventCase.RELATIONSHIP_ASSERTED

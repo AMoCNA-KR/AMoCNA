@@ -244,7 +244,7 @@ The `benchmark` subcommand provides automated control loops to run evaluation sc
 #### Scenario 5: End-to-End Container Vulnerability Remediation
 
 - **Goal**: Detect a known vulnerable container image version via Metis sensors and a pluggable vulnerability catalog, then autonomically patch all affected deployments.
-- **Process**: Resets `front-end` to vulnerable image `weaveworksdemos/frontend:0.3.0`. Metis `ContainerImageSensor` writes `Container`/`Image`/`ImageRegistry` topology to GraphDB (no vulnerability facts). Palamedes periodically scans sensed images against the CVE catalog, selects a fix under upgrade policy, and fans out `ImageUpdateIntent` workflows; Themis runs `kubectl set image`. The CLI polls until image `0.3.1` is deployed.
+- **Process**: Resets `front-end` to vulnerable image `docker.io/weaveworksdemos/front-end:0.3.0`. Metis `ContainerImageSensor` writes `Container`/`Image`/`ImageRegistry` topology to GraphDB (no vulnerability facts). Palamedes periodically scans sensed images against the CVE catalog, selects a fix under upgrade policy (default `PATCH` → `0.3.12`), and fans out `ImageUpdateIntent` workflows; Themis runs `kubectl set image` with an explicit `docker.io/` prefix. The CLI polls until image `0.3.12` is deployed.
 - **Upgrade policy** (`palamedes.vulnerability.upgrade-policy`): `PATCH` | `MINOR` | `MAJOR` controls which fix version Palamedes selects from the catalog.
 - **Scan interval** (`palamedes.vulnerability.scan-interval-ms`, default 30s): how often Palamedes re-checks GraphDB images against the catalog.
 - **Execution**:
