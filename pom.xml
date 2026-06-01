@@ -24,6 +24,7 @@
     <module>apps/core/themis</module>
     <module>apps/core/common</module>
     <module>apps/core/metrics-adapter</module>
+    <module>apps/core/hephaestus</module>
   </modules>
 
   <properties>

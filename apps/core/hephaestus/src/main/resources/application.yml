@@ -1,0 +1,39 @@
+server:
+  port: 8086
+
+spring:
+  application:
+    name: hephaestus
+  threads:
+    virtual:
+      enabled: true
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USER:guest}
+    password: ${RABBITMQ_PASS:guest}
+
+amocna:
+  metrics-adapter:
+    url: ${METRICS_ADAPTER_URL:http://localhost:8085}
+    # Path to the threshold YAML files in metrics-adapter (relative to project root during local development)
+    thresholds-path: ${THRESHOLDS_PATH:apps/core/metrics-adapter/src/main/resources/thresholds}
+  ontology:
+    actions-namespace: ${ONTOLOGY_ACTIONS:http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#}
+    resources-namespace: ${ONTOLOGY_RESOURCES:http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/}
+    bridge-namespace: ${ONTOLOGY_BRIDGE:http://www.semanticweb.org/patryk/ontologies/2026/4/BridgeOnt#}
+    actions-prefix: "moam"
+    resources-prefix: "cnee"
+    bridge-prefix: "bridge"
+  graphdb:
+    url: ${GRAPHDB_URL:http://localhost:7200}
+    repository-id: ${GRAPHDB_REPO:amocna}
+    timeout-ms: ${GRAPHDB_TIMEOUT:5000}
+  prometheus:
+    url: ${PROMETHEUS_URL:http://localhost:9090}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info

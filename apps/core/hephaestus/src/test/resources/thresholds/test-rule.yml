@@ -1,0 +1,7 @@
+name: test-rule
+query: up == 0
+operator: ==
+value: 0.0
+anomalyState: NetworkPartitionState
+resourceKind: Node
+resourceLabel: instance

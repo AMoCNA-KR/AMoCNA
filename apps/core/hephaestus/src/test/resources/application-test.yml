@@ -1,0 +1,9 @@
+spring:
+  autoconfigure:
+    exclude: org.springframework.boot.autoconfigure.amqp.RabbitAutoConfiguration
+
+amocna:
+  metrics-adapter:
+    url: "http://localhost:8085"
+    # Resolve relative to module root during testing
+    thresholds-path: "src/test/resources/thresholds"
