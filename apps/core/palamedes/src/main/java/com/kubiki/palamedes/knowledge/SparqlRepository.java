@@ -41,6 +41,11 @@ public interface SparqlRepository {
             @Type(TemplateType.IRI) @Bind("IRI::toState") String toState
     );
 
+    @SparqlUpdate(resource = "sparql/clear-resource-state.sparql")
+    void clearResourceState(
+            @Type(TemplateType.IRI) @Bind("IRI::resourceId") String resourceId
+    );
+
     @SparqlQuery(resource = "sparql/find-root-cause.sparql")
     List<BindingSet> findRootCause(@Type(TemplateType.IRI) @Bind("IRI::startResource") String startResource);
 

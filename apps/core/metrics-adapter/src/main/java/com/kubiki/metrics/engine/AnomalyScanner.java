@@ -78,7 +78,7 @@ public class AnomalyScanner {
                                 }
                             } else {
                                 violationCounter.remove(key);
-                                return Mono.empty();
+                                return clearAnomaly(targetResourceIri);
                             }
                         }))
                 .collectList()
@@ -98,6 +98,22 @@ public class AnomalyScanner {
                     targetResourceIri,
                     anomalyStateIri,
                     "STATE_CHANGED",
+                    "metrics-" + UUID.randomUUID()
+            );
+
+            rabbitTemplate.convertAndSend("amocna.direct.exchange", "graph.updates", message);
+        }).subscribeOn(Schedulers.boundedElastic()).then();
+    }
+
+    private Mono<Void> clearAnomaly(String targetResourceIri) {
+        return Mono.fromRunnable(() -> {
+            graphWriter.clearAnomalies(targetResourceIri);
+
+            // Notify via RabbitMQ
+            GraphUpdateMessage message = new GraphUpdateMessage(
+                    targetResourceIri,
+                    null,
+                    "STATE_CLEARED",
                     "metrics-" + UUID.randomUUID()
             );
 

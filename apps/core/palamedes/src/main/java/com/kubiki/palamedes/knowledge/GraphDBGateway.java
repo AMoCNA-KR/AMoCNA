@@ -308,6 +308,11 @@ public class GraphDBGateway {
         log.info("Set resource state: {} → {}", resourceIri, stateIri);
     }
 
+    public void clearResourceState(IRI resourceIri) {
+        sparqlRepository.clearResourceState(resourceIri.stringValue());
+        log.info("Cleared resource state for {}", resourceIri);
+    }
+
     public IRI findParent(IRI childIri) {
         IRI isDecomposedInto = ontologyRegistry.actionsOntology(IS_DECOMPOSED_INTO_IRI);
         return sparqlClient.executeWithConnection(conn -> {

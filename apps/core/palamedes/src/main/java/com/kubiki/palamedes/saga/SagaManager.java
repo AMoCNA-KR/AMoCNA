@@ -49,6 +49,13 @@ public class SagaManager {
             // 1. VERIFICATION: Evaluate Post-conditions
             if (verifyPostConditions(actionIri)) {
                 log.info("Action {} succeeded and verified", update.actionId());
+
+                // 2. DEFENSE IN DEPTH: Clear the anomaly state from the targeted resource
+                ActionData data = gateway.fetchActionStructure(actionIri);
+                if (data != null && data.target() != null) {
+                    gateway.clearResourceState(data.target());
+                }
+
                 boolean transitioned = stateRepository.transition(actionIri, WorkflowState.IN_PROGRESS, WorkflowState.SUCCEEDED);
                 if (transitioned) {
                     processSuccess(actionIri);
