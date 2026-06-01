@@ -189,285 +189,190 @@ def benchmark_run(
     header(f"Running AMoCNA Benchmark: Scenario {scenario}")
 
     if scenario == "1":
-        info("Initializing Scenario 1: Horizontal Scaling (Scale-Out)...")
-        info("Scaling front-end back to 1 replica...")
+        logger = EventLogger("1")
+        logger.log("START_BASELINE", "Locust: 500 users, Cluster-Stress: 1 replica")
+        set_locust_load(500, 10)
+        run(k8s_scale("default", "cluster-stress", 1), check=False)
         run(k8s_scale("sock-shop", "front-end", 1), check=False)
 
-        info("Step 1: Spawning baseline traffic (1000 users)...")
-        set_locust_load(1000, 10)
-        info("Waiting 20 seconds for baseline stabilization...")
-        time.sleep(20)
+        # Phase 1: Baseline (120s)
+        time.sleep(120)
 
-        info("Step 2: Triggering SLA breach by increasing users to 3000...")
+        # Phase 2: Trigger (T+120s)
+        logger.log("TRIGGER_ANOMALY", "Spiking Locust to 3000 users")
         set_locust_load(3000, 20)
 
-        start_time = time.time()
-        success = False
-        info("Step 3: Polling frontend replica count for autonomic scale-out...")
-        for i in range(24):  # 120 seconds max
-            time.sleep(5)
+        # Phase 3: Observation (360s)
+        start_obs = time.time()
+        remediation_detected = False
+        while time.time() - start_obs < 360:
             replicas = run_capture(
                 k8s_get_jsonpath("sock-shop", "deployment", "front-end", "{.status.readyReplicas}"),
                 check=False,
             )
-            if replicas == "3":
-                duration = time.time() - start_time
-                info(
-                    "[green]✔ SUCCESS: Front-end successfully scaled to 3 replicas in "
-                    f"{duration:.1f}s![/green]"
-                )
-                success = True
-                break
-            else:
-                console.print(
-                    f"    Current ready replicas: {replicas or '0'}/3... ({i * 5}s)"
-                )
+            if replicas == "3" and not remediation_detected:
+                logger.log("REMEDIATION_DETECTED", f"Frontend successfully scaled to 3 replicas in {time.time() - start_obs:.1f}s")
+                remediation_detected = True
+            time.sleep(10)
 
-        if not success:
-            error("✖ TIMEOUT: Autonomic loop failed to scale frontend within 120s.")
+        # Phase 4: Stabilization (120s)
+        logger.log("STABILIZATION", "Monitoring post-fix stability for 120s")
+        time.sleep(120)
 
-        info("Cleaning up Scenario 1: Scaling load back to 1000...")
-        set_locust_load(1000, 10)
+        logger.log("END_SCENARIO", "Scenario 1 completed")
+        logger.save()
 
     elif scenario == "2":
-        info("Initializing Scenario 2: Vertical Scaling...")
-        info("Scaling cluster-stress to 0...")
-        run(k8s_scale("default", "cluster-stress", 0), check=False)
-        
-        info("Resetting orders CPU requests to 100m...")
+        logger = EventLogger("2")
+        logger.log("START_BASELINE", "Locust: 500 users, Cluster-Stress: 1 replica")
+        set_locust_load(500, 10)
+        run(k8s_scale("default", "cluster-stress", 1), check=False)
         run(k8s_patch("sock-shop", "orders", ORDERS_CPU_RESET_PATCH), check=False)
 
-        info("Step 1: Spawning baseline traffic (1000 users)...")
-        set_locust_load(1000, 10)
-        time.sleep(10)
+        # Phase 1: Baseline (120s)
+        time.sleep(120)
 
-        info(
-            "Step 2: Scaling cluster-stress to 3 replicas to generate node CPU pressure..."
-        )
-        run(k8s_scale("default", "cluster-stress", 3))
+        # Phase 2: Trigger (T+120s)
+        logger.log("TRIGGER_ANOMALY", "Scaling cluster-stress to 5 replicas to generate node pressure")
+        run(k8s_scale("default", "cluster-stress", 5))
 
-        start_time = time.time()
-        success = False
-        info(
-            "Step 3: Polling orders CPU requests (Persistent check requires 3 ticks / 30s)..."
-        )
-        for i in range(24):
-            time.sleep(5)
+        # Phase 3: Observation (360s)
+        start_obs = time.time()
+        remediation_detected = False
+        while time.time() - start_obs < 360:
             cpu = run_capture(
                 k8s_get_jsonpath("sock-shop", "deployment", "orders", "{.spec.template.spec.containers[0].resources.requests.cpu}"),
                 check=False,
             )
-            if cpu == "1":
-                duration = time.time() - start_time
-                info(
-                    "[green]✔ SUCCESS: Orders container CPU requests autonomically patched to 1 CPU core in "
-                    f"{duration:.1f}s![/green]"
-                )
-                success = True
-                break
-            else:
-                console.print(
-                    f"    Current orders CPU request: {cpu or '100m'} (Target: 1)... ({i * 5}s)"
-                )
+            if cpu == "1" and not remediation_detected:
+                logger.log("REMEDIATION_DETECTED", f"Orders CPU requests autonomically patched to 1 in {time.time() - start_obs:.1f}s")
+                remediation_detected = True
+            time.sleep(10)
 
-        if not success:
-            error(
-                "✖ TIMEOUT: Autonomic loop failed to vertically scale orders within 120s."
-            )
+        # Phase 4: Stabilization (120s)
+        logger.log("STABILIZATION", "Monitoring post-fix stability for 120s")
+        time.sleep(120)
 
-        info("Cleaning up Scenario 2: Scaling down cluster-stress...")
+        logger.log("END_SCENARIO", "Scenario 2 completed")
+        logger.save()
         run(k8s_scale("default", "cluster-stress", 0), check=False)
 
     elif scenario == "3":
-        info("Initializing Scenario 3: Security Patching...")
-        info("Step 1: Auto-discovering active front-end pod name...")
-        pod_name = run_capture(
-            k8s_get_pods_jsonpath("sock-shop", "name=front-end", "{.items[0].metadata.name}")
-        )
+        logger = EventLogger("3")
+        logger.log("START_BASELINE", "Locust: 500 users, Cluster-Stress: 1 replica")
+        set_locust_load(500, 10)
+        run(k8s_scale("default", "cluster-stress", 1), check=False)
+        
+        pod_name = run_capture(k8s_get_pods_jsonpath("sock-shop", "name=front-end", "{.items[0].metadata.name}"))
         if not pod_name:
-            error("✖ ERROR: Active front-end pod not found in sock-shop namespace.")
+            error("✖ ERROR: Active front-end pod not found. Aborting.")
             return
-        info(f"Active pod found: {pod_name}")
 
-        # Capture current image
-        orig_image = run_capture(
-            k8s_get_jsonpath("sock-shop", "deployment", "front-end", "{.spec.template.spec.containers[0].image}")
-        )
-        info(f"Current front-end image: {orig_image}")
+        # Phase 1: Baseline (120s)
+        time.sleep(120)
 
-        info(
-            "Step 2: Injecting SecurityVulnerabilityDetectedState into GraphDB for this pod..."
-        )
-        vulnerability_query = _load_sparql_query(
-            cfg, "inject-vulnerability.sparql"
-        ).replace("{pod_name}", pod_name)
+        # Phase 2: Trigger (T+120s)
+        logger.log("TRIGGER_ANOMALY", f"Injecting Security Vulnerability for pod {pod_name}")
+        vulnerability_query = _load_sparql_query(cfg, "inject-vulnerability.sparql").replace("{pod_name}", pod_name)
         run_sparql(cfg, vulnerability_query)
 
-        start_time = time.time()
-        success = False
-        info(
-            "Step 3: Polling front-end image version for security patching rollout..."
-        )
-        for i in range(24):
-            time.sleep(5)
-            image = run_capture(
-                k8s_get_jsonpath("sock-shop", "deployment", "front-end", "{.spec.template.spec.containers[0].image}")
-            )
-            if SOCK_SHOP_FRONTEND_PATCHED_TAG in image:
-                duration = time.time() - start_time
-                info(
-                    f"[green]✔ SUCCESS: Front-end container image successfully updated to secure patched version ({SOCK_SHOP_FRONTEND_PATCHED_TAG}) in "
-                    f"{duration:.1f}s![/green]"
-                )
-                success = True
-                break
-            else:
-                console.print(f"    Current image: {image}... ({i * 5}s)")
+        # Phase 3: Observation (360s)
+        start_obs = time.time()
+        remediation_detected = False
+        while time.time() - start_obs < 360:
+            image = run_capture(k8s_get_jsonpath("sock-shop", "deployment", "front-end", "{.spec.template.spec.containers[0].image}"), check=False)
+            if SOCK_SHOP_FRONTEND_PATCHED_TAG in image and not remediation_detected:
+                logger.log("REMEDIATION_DETECTED", f"Frontend successfully updated to patched version ({SOCK_SHOP_FRONTEND_PATCHED_TAG}) in {time.time() - start_obs:.1f}s")
+                remediation_detected = True
+            time.sleep(10)
 
-        if not success:
-            error(
-                "✖ TIMEOUT: Autonomic loop failed to roll out the image patch within 120s."
-            )
+        # Phase 4: Stabilization (120s)
+        logger.log("STABILIZATION", "Monitoring post-fix stability for 120s")
+        time.sleep(120)
+
+        logger.log("END_SCENARIO", "Scenario 3 completed")
+        logger.save()
+        run(k8s_scale("default", "cluster-stress", 0), check=False)
 
     elif scenario == "4":
-        info(
-            "Initializing Scenario 4: Multi-step Remediation (Red Path Rollback)..."
-        )
+        logger = EventLogger("4")
+        logger.log("START_BASELINE", "Locust: 500 users, Cluster-Stress: 1 replica")
+        set_locust_load(500, 10)
+        run(k8s_scale("default", "cluster-stress", 1), check=False)
 
-        info(
-            "Step 1: Deploying dummy orders-config ConfigMap in sock-shop namespace..."
-        )
-        create_cm = subprocess.run(
-            [
-                "kubectl",
-                "create",
-                "configmap",
-                "orders-config",
-                "-n",
-                "sock-shop",
-                "--from-literal=updated=false",
-                "--dry-run=client",
-                "-o",
-                "yaml",
-            ],
-            capture_output=True,
-            text=True,
-            check=True,
-        )
-        # Apply the generated ConfigMap manifest.
-        # Original: run(["kubectl", "apply", "-f", "-"], input=create_cm.stdout)
-        subprocess.run(
-            ["kubectl", "apply", "-f", "-"],
-            input=create_cm.stdout,
-            text=True,
-            check=True
-        )
+        # Deploy dummy ConfigMap
+        create_cm = subprocess.run(["kubectl", "create", "configmap", "orders-config", "-n", "sock-shop", "--from-literal=updated=false", "--dry-run=client", "-o", "yaml"], capture_output=True, text=True, check=True)
+        subprocess.run(["kubectl", "apply", "-f", "-"], input=create_cm.stdout, text=True, check=True)
 
-        info(
-            "Step 2: Injecting FAIL_NOW keyword into RestartPodIntent instruction in GraphDB..."
-        )
+        # Phase 1: Baseline (120s)
+        time.sleep(120)
+
+        # Phase 2: Trigger (T+120s)
+        logger.log("TRIGGER_ANOMALY", "Injecting FAIL_NOW and ConfigDriftState for Saga rollback test")
         fail_query = _load_sparql_query(cfg, "fail-restart.sparql")
         run_sparql(cfg, fail_query)
-
-        info(
-            "Step 3: Triggering Saga by injecting ConfigDriftState on orders service..."
-        )
         drift_query = _load_sparql_query(cfg, "inject-drift.sparql")
         run_sparql(cfg, drift_query)
 
-        start_time = time.time()
-        success = False
-        info(
-            "Step 4: Monitoring ConfigMap orders-config for compensation rollback (updated should revert to false)..."
-        )
-        for i in range(24):
-            time.sleep(5)
-            val = run_capture(
-                k8s_get_jsonpath("sock-shop", "configmap", "orders-config", "{.data.updated}"),
-                check=False,
-            )
+        # Phase 3: Observation (360s)
+        start_obs = time.time()
+        remediation_detected = False
+        while time.time() - start_obs < 360:
+            val = run_capture(k8s_get_jsonpath("sock-shop", "configmap", "orders-config", "{.data.updated}"), check=False)
+            # We look for 'false' after it was briefly 'true' (not easily polled here but we check if it's currently 'false')
+            if val == "false" and (time.time() - start_obs > 20) and not remediation_detected:
+                logger.log("REMEDIATION_DETECTED", "Saga successfully rolled back ConfigMap to original state")
+                remediation_detected = True
+            time.sleep(10)
 
-            if val == "false" and i > 2:
-                duration = time.time() - start_time
-                info(
-                    "[green]✔ SUCCESS: Saga execution failed at Step 2 (due to FAIL_NOW) and rolled back Step 1 successfully! ConfigMap reverted to original state in "
-                    f"{duration:.1f}s![/green]"
-                )
-                success = True
-                break
-            else:
-                console.print(
-                    f"    Current ConfigMap state: updated={val or 'unknown'}... ({i * 5}s)"
-                )
+        # Phase 4: Stabilization (120s)
+        logger.log("STABILIZATION", "Monitoring post-fix stability for 120s")
+        time.sleep(120)
 
-        if not success:
-            error("✖ TIMEOUT: Saga failed to execute rollback within 120s.")
-
-        info("Cleaning up Scenario 4...")
+        logger.log("END_SCENARIO", "Scenario 4 completed")
+        logger.save()
+        run(k8s_scale("default", "cluster-stress", 0), check=False)
+        run(k8s_delete_resource("configmap", "orders-config", namespace="sock-shop"))
         restore_query = _load_sparql_query(cfg, "restore-restart.sparql")
         run_sparql(cfg, restore_query)
-        run(
-            k8s_delete_resource("configmap", "orders-config", namespace="sock-shop")
-        )
 
     elif scenario == "5":
-        info("Initializing Scenario 5: End-to-End Vulnerability Remediation...")
-        info(
-            f"Step 1: Resetting front-end to vulnerable image "
-            f"{SOCK_SHOP_FRONTEND_IMAGE}:{SOCK_SHOP_FRONTEND_VULNERABLE_TAG}..."
-        )
-        run(
-            k8s_set_image(
-                "sock-shop",
-                "front-end",
-                f"front-end={SOCK_SHOP_FRONTEND_IMAGE}:{SOCK_SHOP_FRONTEND_VULNERABLE_TAG}",
-            ),
-            check=False,
-        )
-        info("Waiting for rollout to settle...")
-        time.sleep(15)
+        logger = EventLogger("5")
+        logger.log("START_BASELINE", "Locust: 500 users, Cluster-Stress: 1 replica")
+        set_locust_load(500, 10)
+        run(k8s_scale("default", "cluster-stress", 1), check=False)
 
-        info(
-            "Step 2: Waiting for Metis topology sync and Palamedes catalog scan (45s)..."
-        )
-        time.sleep(45)
+        # Phase 1: Baseline (120s)
+        time.sleep(120)
 
-        start_time = time.time()
-        success = False
-        info(f"Step 3: Polling front-end image for autonomic security patch to {SOCK_SHOP_FRONTEND_PATCHED_TAG}...")
-        for i in range(24):
-            time.sleep(5)
-            image = run_capture(
-                k8s_get_jsonpath(
-                    "sock-shop",
-                    "deployment",
-                    "front-end",
-                    "{.spec.template.spec.containers[0].image}",
-                ),
-                check=False,
-            )
-            if SOCK_SHOP_FRONTEND_PATCHED_TAG in image:
-                duration = time.time() - start_time
-                info(
-                    f"[green]✔ SUCCESS: Front-end autonomically patched to secure version ({SOCK_SHOP_FRONTEND_PATCHED_TAG}) in "
-                    f"{duration:.1f}s![/green]"
-                )
-                success = True
-                break
-            else:
-                console.print(f"    Current image: {image or 'unknown'}... ({i * 5}s)")
+        # Phase 2: Trigger (T+120s)
+        logger.log("TRIGGER_ANOMALY", f"Resetting front-end to vulnerable image {SOCK_SHOP_FRONTEND_IMAGE}:{SOCK_SHOP_FRONTEND_VULNERABLE_TAG}")
+        run(k8s_set_image("sock-shop", "front-end", f"front-end={SOCK_SHOP_FRONTEND_IMAGE}:{SOCK_SHOP_FRONTEND_VULNERABLE_TAG}"), check=False)
 
-        if not success:
-            error(
-                "✖ TIMEOUT: Autonomic vulnerability loop failed to patch front-end within 120s."
-            )
+        # Phase 3: Observation (360s)
+        start_obs = time.time()
+        remediation_detected = False
+        while time.time() - start_obs < 360:
+            image = run_capture(k8s_get_jsonpath("sock-shop", "deployment", "front-end", "{.spec.template.spec.containers[0].image}"), check=False)
+            if SOCK_SHOP_FRONTEND_PATCHED_TAG in image and not remediation_detected:
+                logger.log("REMEDIATION_DETECTED", f"Frontend autonomically patched to secure version ({SOCK_SHOP_FRONTEND_PATCHED_TAG}) in {time.time() - start_obs:.1f}s")
+                remediation_detected = True
+            time.sleep(10)
+
+        # Phase 4: Stabilization (120s)
+        logger.log("STABILIZATION", "Monitoring post-fix stability for 120s")
+        time.sleep(120)
+
+        logger.log("END_SCENARIO", "Scenario 5 completed")
+        logger.save()
+        run(k8s_scale("default", "cluster-stress", 0), check=False)
 
     elif scenario == "all":
         info("Starting complete automated benchmark cycle...")
         for sc in ["1", "2", "3", "4", "5"]:
             run(["amocna", "benchmark", "run", "--scenario", sc])
-            info("Waiting 15 seconds between scenarios...")
-            time.sleep(15)
+            info("Waiting 60 seconds between scenarios for cluster cooling...")
+            time.sleep(60)
         info("[green]✔ Complete automated benchmark run successfully completed![/green]")
 
     console.print()
