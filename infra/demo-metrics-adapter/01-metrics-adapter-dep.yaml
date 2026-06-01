@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: metrics-adapter
-          image: ghcr.io/amocna-kr/metrics-adapter:1.7.3-SNAPSHOT
+          image: ghcr.io/amocna-kr/metrics-adapter:1.7.4-SNAPSHOT
           env:
           - name: backend
             value: http://hephaestus-gui.hephaestus:8080

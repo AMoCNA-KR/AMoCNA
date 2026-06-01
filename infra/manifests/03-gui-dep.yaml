@@ -17,7 +17,7 @@ spec:
         - name: ghcr-login
       containers:
         - name: hephaestus-gui
-          image: ghcr.io/amocna-kr/gui:1.7.3-SNAPSHOT
+          image: ghcr.io/amocna-kr/gui:1.7.4-SNAPSHOT
           env:
           - name: prometheus.address
             value: prometheus-kube-prometheus-prometheus.monitoring:9090
