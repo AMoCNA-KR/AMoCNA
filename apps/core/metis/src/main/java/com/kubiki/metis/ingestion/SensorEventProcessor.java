@@ -90,11 +90,9 @@ public class SensorEventProcessor {
             Timer.Sample sample = Timer.start(meterRegistry);
             try {
                 sparqlClient.executeWithConnection(conn -> {
-                    conn.begin();
                     for (String sparql : collectedSparql) {
                         conn.prepareUpdate(sparql).execute();
                     }
-                    conn.commit();
                 });
                 processedCount = successResults.size();
             } catch (Exception e) {
