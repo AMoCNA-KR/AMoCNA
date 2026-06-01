@@ -21,6 +21,8 @@ public sealed interface ActionData
 
     IRI target();
 
+    int idempotencyWindowSeconds();
+
     List<Condition> preConditions();
 
     List<Condition> postConditions();
@@ -46,7 +48,8 @@ public sealed interface ActionData
             String authMechanism,
             int timeoutSeconds,
             boolean isIdempotent,
-            int maxRetries
+            int maxRetries,
+            int idempotencyWindowSeconds
     ) implements ActionData {
     }
 
@@ -57,6 +60,7 @@ public sealed interface ActionData
             IRI layerBoundary,
             float executionCost,
             IRI target,
+            int idempotencyWindowSeconds,
             List<ActionData> steps,
             Map<IRI, ActionData> compensations
     ) implements ActionData {

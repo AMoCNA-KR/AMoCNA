@@ -210,9 +210,13 @@ public class GraphDBGateway {
         for (BindingSet bs : results) {
             IRI action = (IRI) bs.getValue(ACTION_IRI);
             int window = ((Literal) bs.getValue(WINDOW_IRI)).intValue();
-            OffsetDateTime lastTransition = OffsetDateTime.parse(bs.getValue(LAST_TRANSITION_IRI).stringValue());
             
-            states.put(action, now.isAfter(lastTransition.plusSeconds(window)));
+            if (bs.getValue(LAST_TRANSITION_IRI) != null) {
+                OffsetDateTime lastTransition = OffsetDateTime.parse(bs.getValue(LAST_TRANSITION_IRI).stringValue());
+                states.put(action, now.isAfter(lastTransition.plusSeconds(window)));
+            } else {
+                states.put(action, true);
+            }
         }
         
         // Actions not in results are considered to have open window (no previous execution recorded)
@@ -229,7 +233,10 @@ public class GraphDBGateway {
             return true;
 
         BindingSet bs = results.getFirst();
-        if (bs.getValue(WINDOW_IRI) == null || bs.getValue(LAST_TRANSITION_IRI) == null)
+        if (bs.getValue(WINDOW_IRI) == null)
+            return true;
+
+        if (bs.getValue(LAST_TRANSITION_IRI) == null)
             return true;
 
         int window = ((Literal) bs.getValue(WINDOW_IRI)).intValue();

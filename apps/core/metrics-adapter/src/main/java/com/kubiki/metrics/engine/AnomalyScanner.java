@@ -121,6 +121,10 @@ public class AnomalyScanner {
     private record AnomalyBatchItem(String resourceIri, String anomalyState, boolean isTrigger) {}
 
     private Mono<Void> triggerAnomaly(String targetResourceIri, String anomalyState) {
+        if (properties.ontology() == null || properties.ontology().resourcesNamespace() == null || anomalyState == null) {
+            log.error("Cannot trigger anomaly: ontology properties or state is null");
+            return Mono.empty();
+        }
         String anomalyStateIri = properties.ontology().resourcesNamespace() + anomalyState;
         return Mono.fromRunnable(() -> {
             graphWriter.instantiateAnomaly(targetResourceIri, anomalyStateIri);
@@ -138,14 +142,19 @@ public class AnomalyScanner {
     }
 
     private Mono<Void> clearAnomaly(String targetResourceIri) {
+        if (properties.ontology() == null || properties.ontology().resourcesNamespace() == null) {
+            log.error("Cannot clear anomaly: ontology properties are null");
+            return Mono.empty();
+        }
+        String baseStateIri = properties.ontology().resourcesNamespace() + "State";
         return Mono.fromRunnable(() -> {
             graphWriter.clearAnomalies(targetResourceIri);
 
             // Notify via RabbitMQ
             GraphUpdateMessage message = new GraphUpdateMessage(
                     targetResourceIri,
-                    null,
-                    "STATE_CLEARED",
+                    baseStateIri,
+                    "DELETED",
                     "metrics-" + UUID.randomUUID()
             );
 

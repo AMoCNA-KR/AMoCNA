@@ -33,6 +33,7 @@ public class ModelMapper {
     private static final String BINDING_TIMEOUT = "timeoutSeconds";
     private static final String BINDING_IS_IDEMPOTENT = "isIdempotent";
     private static final String BINDING_MAX_RETRIES = "maxRetries";
+    private static final String BINDING_IDEMPOTENCY_WINDOW = "idempotencyWindowSeconds";
 
     private static final String BINDING_FUNCTIONAL_INTENT = "functionalIntent";
     private static final String BINDING_LAYER_BOUNDARY = "layerBoundary";
@@ -101,6 +102,7 @@ public class ModelMapper {
         IRI functionalIntent = getIRI(bindings, BINDING_FUNCTIONAL_INTENT).value();
         IRI layerBoundary = getIRI(bindings, BINDING_LAYER_BOUNDARY).value();
         float cost = getOptionalFloat(bindings, BINDING_COST_VALUE, 1.0f);
+        int window = getOptionalInt(bindings, BINDING_IDEMPOTENCY_WINDOW, 60);
 
         return Result.combine(protocolResult, instructionResult, (protocol, instruction) -> {
             List<ActionData.Condition> pre = extractConditions(bindings, BINDING_PRE_ID, BINDING_PRE_TYPE, BINDING_PRE_POLICY);
@@ -124,6 +126,7 @@ public class ModelMapper {
                     .timeoutSeconds(getOptionalInt(bindings, BINDING_TIMEOUT, 30))
                     .isIdempotent(getOptionalBoolean(bindings, BINDING_IS_IDEMPOTENT, true))
                     .maxRetries(getOptionalInt(bindings, BINDING_MAX_RETRIES, 3))
+                    .idempotencyWindowSeconds(window)
                     .build();
         });
     }
@@ -190,6 +193,7 @@ public class ModelMapper {
         IRI functionalIntent = getIRI(bindings, BINDING_FUNCTIONAL_INTENT).value();
         IRI layerBoundary = getIRI(bindings, BINDING_LAYER_BOUNDARY).value();
         float cost = getOptionalFloat(bindings, BINDING_COST_VALUE, 1.0f);
+        int window = getOptionalInt(bindings, BINDING_IDEMPOTENCY_WINDOW, 60);
 
         for (BindingSet bs : bindings) {
             Result<IRI> stepIdResult = getIRI(bs, BINDING_STEP);
@@ -223,7 +227,7 @@ public class ModelMapper {
         // De-duplicate steps
         List<ActionData> distinctSteps = steps.stream().distinct().toList();
 
-        return Result.success(new ActionData.ComplexWorkflow(actionId, functionalIntent, layerBoundary, cost, target, distinctSteps, compensations));
+        return Result.success(new ActionData.ComplexWorkflow(actionId, functionalIntent, layerBoundary, cost, target, window, distinctSteps, compensations));
     }
 
     private List<ActionData.Condition> extractConditions(

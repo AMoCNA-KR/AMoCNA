@@ -1,6 +1,14 @@
 ${SPARQL_PREFIXES}
-DELETE { ${IRI::actionId} ${PREFIX::ACTIONS_PREFIX}:hasCurrentState ${IRI::fromState} . }
-INSERT { ${IRI::actionId} ${PREFIX::ACTIONS_PREFIX}:hasCurrentState ${IRI::toState} . }
+DELETE { 
+  ${IRI::actionId} ${PREFIX::ACTIONS_PREFIX}:hasCurrentState ${IRI::fromState} . 
+  ${IRI::actionId} ${PREFIX::ACTIONS_PREFIX}:hasLastTransitionTimestamp ?oldTs .
+}
+INSERT { 
+  ${IRI::actionId} ${PREFIX::ACTIONS_PREFIX}:hasCurrentState ${IRI::toState} . 
+  ${IRI::actionId} ${PREFIX::ACTIONS_PREFIX}:hasLastTransitionTimestamp ?now .
+}
 WHERE { 
   ${IRI::actionId} ${PREFIX::ACTIONS_PREFIX}:hasCurrentState ${IRI::fromState} .
+  BIND(NOW() AS ?now)
+  OPTIONAL { ${IRI::actionId} ${PREFIX::ACTIONS_PREFIX}:hasLastTransitionTimestamp ?oldTs . }
 }
