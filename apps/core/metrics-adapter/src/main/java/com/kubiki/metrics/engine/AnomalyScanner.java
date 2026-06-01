@@ -43,7 +43,7 @@ public class AnomalyScanner {
         Timer.Sample sample = Timer.start(meterRegistry);
         log.debug("Starting anomaly scan...");
 
-        List<AnomalyBatchItem> batchItems = new ArrayList<>();
+        List<AnomalyBatchItem> batchItems = java.util.Collections.synchronizedList(new ArrayList<>());
 
         Flux.fromIterable(thresholdsLoader.getThresholds())
                 .flatMap(threshold -> prometheusClient.query(threshold.query())
