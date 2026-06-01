@@ -86,6 +86,11 @@ public class AnomalyAgent {
             String actionId = utils.generateActionId();
 
             gateway.createActionWorkflow(rootCause.resourceIri(), rootCause.intentIri(), actionId);
+
+            // Hydrate namespace for executing shell commands (e.g. Scenario 1 Scale)
+            String ns = ImageRemediationPlanner.parseNamespaceFromDeploymentIri(rootCause.resourceIri());
+            gateway.storeActionHydration(actionId, java.util.Map.of("namespace", ns));
+
             stateChanged = true;
         }
 
