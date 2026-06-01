@@ -131,7 +131,10 @@ class EntityDiscoveredPropertyTest {
                 .build();
 
         // Act
-        writer.insertEntity(event);
+        String sparql = writer.insertEntity(event);
+        try (RepositoryConnection conn = repo.getConnection()) {
+            conn.prepareUpdate(sparql).execute();
+        }
 
         // Assert: verify triples directly in the repository
         ValueFactory vf = SimpleValueFactory.getInstance();

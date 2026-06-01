@@ -11,4 +11,9 @@ public interface SparqlRepository {
             @Type(TemplateType.IRI) @Bind("IRI::anomalyType") String anomalyType,
             @Bind("LITERAL::timestamp") String timestamp
     );
+
+    @Template(resource = "sparql/clear-anomalies.sparql")
+    String clearAnomalies(
+            @Type(TemplateType.IRI) @Bind("IRI::targetResource") String targetResource
+    );
 }

@@ -1,0 +1,9 @@
+${SPARQL_PREFIXES}
+DELETE { 
+  ${IRI::targetResource} ${PREFIX::CNEE_PREFIX}:hasState ?oldState .
+  ?oldState ?p ?o .
+}
+WHERE {
+  ${IRI::targetResource} ${PREFIX::CNEE_PREFIX}:hasState ?oldState .
+  OPTIONAL { ?oldState ?p ?o . }
+}

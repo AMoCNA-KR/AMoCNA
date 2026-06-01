@@ -3,7 +3,7 @@ SELECT DISTINCT ?action ?intent ?target ?protocol ?instruction ?method ?payload 
     ?preId ?preType ?prePolicy
     ?postId ?postType ?postPolicy
     ?step ?compensation
-    ?functionalIntent ?layerBoundary ?costValue WHERE {
+    ?functionalIntent ?layerBoundary ?costValue ?idempotencyWindowSeconds WHERE {
   VALUES ?root { ${IRI::actionId} }
 
   # 1. Discover all action nodes in the hierarchy.
@@ -50,6 +50,11 @@ SELECT DISTINCT ?action ?intent ?target ?protocol ?instruction ?method ?payload 
   OPTIONAL { ?action ${PREFIX::ACTIONS_PREFIX}:hasExpectedStatusCode ?s1 } .
   OPTIONAL { ?intent ${PREFIX::ACTIONS_PREFIX}:hasExpectedStatusCode ?s2 } .
   BIND(COALESCE(?s1, ?s2) AS ?expectedStatusCode) .
+
+  # Idempotency
+  OPTIONAL { ?action ${PREFIX::ACTIONS_PREFIX}:idempotencyWindowSeconds ?w1 } .
+  OPTIONAL { ?intent ${PREFIX::ACTIONS_PREFIX}:idempotencyWindowSeconds ?w2 } .
+  BIND(COALESCE(?w1, ?w2) AS ?idempotencyWindowSeconds) .
 
   # 4. Conditions
   OPTIONAL {

@@ -47,7 +47,6 @@ class SafetyValidatorPipeTest {
         when(mapper.getFragment(WorkflowState.PLANNED)).thenReturn("State_Planned");
         when(mapper.getFragment(WorkflowState.VALIDATED)).thenReturn("State_Validated");
 
-        when(gateway.isIdempotencyWindowOpen(any())).thenReturn(true);
         ConditionStrategy strategy = mock(ConditionStrategy.class);
         when(strategy.evaluate(any())).thenReturn(true);
         when(conditionFactory.getStrategy(any())).thenReturn(Optional.of(strategy));

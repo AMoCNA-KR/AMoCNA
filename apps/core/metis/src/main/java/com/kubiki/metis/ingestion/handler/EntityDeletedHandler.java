@@ -41,8 +41,8 @@ public class EntityDeletedHandler implements SensorEventHandler {
         }
 
         try {
-            writer.deleteEntity(entityDeleted);
-            return HandlerResult.success(resourceIri, ontologyType, HandlerResult.DELETED);
+            String sparql = writer.deleteEntity(entityDeleted);
+            return HandlerResult.success(resourceIri, ontologyType, HandlerResult.DELETED, sparql);
         } catch (KnowledgeBaseException e) {
             return e.getCause() != null
                     ? HandlerResult.graphDbFailure(e.getMessage())

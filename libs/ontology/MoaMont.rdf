@@ -5,7 +5,8 @@
      xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
      xmlns:xml="http://www.w3.org/XML/1998/namespace"
      xmlns:xsd="http://www.w3.org/2001/XMLSchema#"
-     xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">
+     xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
+     xmlns:moam="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#">
     <owl:Ontology rdf:about="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont">
         <rdfs:comment>Ontology about knowledge representation of actions used in Cloud Native Execution Enviroment by autonomic computing components</rdfs:comment>
     </owl:Ontology>

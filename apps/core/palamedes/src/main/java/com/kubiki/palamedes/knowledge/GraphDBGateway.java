@@ -195,13 +195,48 @@ public class GraphDBGateway {
                 bs.getValue(STATE_IRI).stringValue())).collect(Collectors.toList());
     }
 
+    public Map<IRI, Boolean> fetchIdempotencyStates(List<IRI> actionIds) {
+        if (actionIds.isEmpty()) return Map.of();
+
+        String joinedIds = actionIds.stream()
+                .map(iri -> "<" + iri.stringValue() + ">")
+                .collect(Collectors.joining(" "));
+
+        List<BindingSet> results = sparqlRepository.checkIdempotencyBatch(joinedIds);
+        Map<IRI, Boolean> states = new LinkedHashMap<>();
+        
+        OffsetDateTime now = OffsetDateTime.now();
+
+        for (BindingSet bs : results) {
+            IRI action = (IRI) bs.getValue(ACTION_IRI);
+            int window = ((Literal) bs.getValue(WINDOW_IRI)).intValue();
+            
+            if (bs.getValue(LAST_TRANSITION_IRI) != null) {
+                OffsetDateTime lastTransition = OffsetDateTime.parse(bs.getValue(LAST_TRANSITION_IRI).stringValue());
+                states.put(action, now.isAfter(lastTransition.plusSeconds(window)));
+            } else {
+                states.put(action, true);
+            }
+        }
+        
+        // Actions not in results are considered to have open window (no previous execution recorded)
+        for (IRI id : actionIds) {
+            states.putIfAbsent(id, true);
+        }
+        
+        return states;
+    }
+
     public boolean isIdempotencyWindowOpen(IRI actionId) {
         List<BindingSet> results = sparqlRepository.checkIdempotency(actionId.stringValue());
         if (results.isEmpty())
             return true;
 
         BindingSet bs = results.getFirst();
-        if (bs.getValue(WINDOW_IRI) == null || bs.getValue(LAST_TRANSITION_IRI) == null)
+        if (bs.getValue(WINDOW_IRI) == null)
+            return true;
+
+        if (bs.getValue(LAST_TRANSITION_IRI) == null)
             return true;
 
         int window = ((Literal) bs.getValue(WINDOW_IRI)).intValue();
@@ -285,6 +320,23 @@ public class GraphDBGateway {
         });
     }
 
+    public Map<IRI, Map<String, String>> fetchActionHydrations(List<IRI> actionIds) {
+        if (actionIds.isEmpty()) return Map.of();
+        
+        String joinedIds = actionIds.stream()
+                .map(iri -> "<" + iri.stringValue() + ">")
+                .collect(Collectors.joining(" "));
+
+        List<BindingSet> results = sparqlRepository.fetchActionHydrations(joinedIds);
+        Map<IRI, Map<String, String>> hydrations = new LinkedHashMap<>();
+        for (BindingSet bs : results) {
+            IRI action = (IRI) bs.getValue(ACTION_IRI);
+            String payload = bs.getValue("payload").stringValue();
+            hydrations.put(action, ActionHydrationPayload.deserialize(payload));
+        }
+        return hydrations;
+    }
+
     public Map<String, String> findActionHydration(IRI actionIri) {
         IRI hydrationKey = ontologyRegistry.actionsOntology("hydrationPayload");
         return sparqlClient.executeWithConnection(conn -> {
@@ -306,6 +358,15 @@ public class GraphDBGateway {
     public void updateResourceState(String resourceIri, String stateIri) {
         sparqlRepository.updateResourceState(resourceIri, stateIri);
         log.info("Set resource state: {} → {}", resourceIri, stateIri);
+    }
+
+    public void clearResourceState(IRI resourceIri) {
+        try {
+            sparqlRepository.clearResourceState(resourceIri.stringValue());
+            log.info("Cleared resource state for {}", resourceIri);
+        } catch (Exception e) {
+            log.error("Failed to clear resource state for {}: {}", resourceIri, e.getMessage());
+        }
     }
 
     public IRI findParent(IRI childIri) {

@@ -76,7 +76,10 @@ class InversePropertyTest {
                 .build();
 
         // Act
-        writer.assertRelationship(event);
+        String sparql = writer.assertRelationship(event);
+        try (RepositoryConnection conn = repo.getConnection()) {
+            conn.prepareUpdate(sparql).execute();
+        }
 
         // Assert
         ValueFactory vf = SimpleValueFactory.getInstance();

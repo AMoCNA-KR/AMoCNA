@@ -64,9 +64,11 @@ class StateChangedPropertyTest {
     }
 
     @Property(tries = 50)
-    void functionalStateInvariant(@ForAll String resourceIri, @ForAll String stateA, @ForAll String stateB) throws KnowledgeBaseException {
-        if (resourceIri.isBlank() || stateA.isBlank() || stateB.isBlank() || !stateA.startsWith(CNEE) || !stateB.startsWith(CNEE))
-            return;
+    void functionalStateInvariant(
+            @ForAll("resourceIris") String resourceIri,
+            @ForAll("cneeIris") String stateA,
+            @ForAll("cneeIris") String stateB
+    ) throws KnowledgeBaseException {
         Repository repo = new SailRepository(new MemoryStore());
         repo.init();
         KnowledgeBaseWriter writer = writerFor(repo);
@@ -76,8 +78,13 @@ class StateChangedPropertyTest {
         IRI hasState = vf.createIRI(CNEE + "hasState");
 
         // Act: Apply two state changes
-        writer.changeState(StateChangedEvent.newBuilder().setResourceIri(resourceIri).setNewStateIri(stateA).build());
-        writer.changeState(StateChangedEvent.newBuilder().setResourceIri(resourceIri).setNewStateIri(stateB).build());
+        String sparqlA = writer.changeState(StateChangedEvent.newBuilder().setResourceIri(resourceIri).setNewStateIri(stateA).build());
+        String sparqlB = writer.changeState(StateChangedEvent.newBuilder().setResourceIri(resourceIri).setNewStateIri(stateB).build());
+
+        try (RepositoryConnection conn = repo.getConnection()) {
+            conn.prepareUpdate(sparqlA).execute();
+            conn.prepareUpdate(sparqlB).execute();
+        }
 
         try (RepositoryConnection conn = repo.getConnection()) {
             // Verify only one state exists (Requirement 1.2, 1.3)
@@ -86,5 +93,15 @@ class StateChangedPropertyTest {
             assertThat(conn.hasStatement(subject, hasState, vf.createIRI(stateB), false)).isTrue();
         }
         repo.shutDown();
+    }
+
+    @net.jqwik.api.Provide
+    net.jqwik.api.Arbitrary<String> resourceIris() {
+        return net.jqwik.api.Arbitraries.strings().withCharRange('a', 'z').ofMinLength(1).map(s -> "http://ex.org/" + s);
+    }
+
+    @net.jqwik.api.Provide
+    net.jqwik.api.Arbitrary<String> cneeIris() {
+        return net.jqwik.api.Arbitraries.strings().withCharRange('a', 'z').ofMinLength(1).map(s -> CNEE + s);
     }
 }

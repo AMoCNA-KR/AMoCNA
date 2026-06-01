@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: kubernetes-management
-          image: ghcr.io/amocna-kr/kubernetes-management:1.6.5-SNAPSHOT
+          image: ghcr.io/amocna-kr/kubernetes-management:1.7.6-SNAPSHOT
           imagePullPolicy: Always
           ports:
             - containerPort: 8097

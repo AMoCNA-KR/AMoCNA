@@ -65,4 +65,22 @@ public class GraphWriter {
             }
         }
     }
+
+    public void clearAnomalies(String targetResourceIri) {
+        if (repository == null) {
+            log.error("Cannot clear anomalies: repository is not initialized");
+            return;
+        }
+
+        try (RepositoryConnection conn = repository.getConnection()) {
+            String updateQuery = sparqlRepository.clearAnomalies(targetResourceIri);
+            conn.prepareUpdate(updateQuery).execute();
+            log.info("Cleared all states for resource {}", targetResourceIri);
+        } catch (Exception e) {
+            log.error("Failed to clear anomalies in GraphDB for resource {}", targetResourceIri, e);
+            if (e instanceof InterruptedException || (e.getCause() != null && e.getCause() instanceof InterruptedException)) {
+                Thread.currentThread().interrupt();
+            }
+        }
+    }
 }

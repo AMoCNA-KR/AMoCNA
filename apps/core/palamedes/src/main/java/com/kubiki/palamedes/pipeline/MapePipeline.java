@@ -51,7 +51,15 @@ public class MapePipeline {
 
     private void processBatch(List<ActiveActionSummary> batch) {
         List<IRI> iris = batch.stream().map(ActiveActionSummary::actionIri).toList();
+        
+        // 1. Batch fetch all ActionData structures
         Map<IRI, ActionData> structures = graphDBGateway.fetchActionStructures(iris);
+        
+        // 2. Batch fetch all action hydrations
+        Map<IRI, Map<String, String>> hydrations = graphDBGateway.fetchActionHydrations(iris);
+        
+        // 3. Batch fetch all idempotency states
+        Map<IRI, Boolean> idempotencyStates = graphDBGateway.fetchIdempotencyStates(iris);
 
         for (ActiveActionSummary action : batch) {
             try {
@@ -64,7 +72,10 @@ public class MapePipeline {
                 WorkflowContext context = new WorkflowContext(action.actionIri(), data);
                 context.metadata().put("resourceName", action.resourceName());
                 context.metadata().put("currentState", action.stateFragment());
-                context.metadata().putAll(graphDBGateway.findActionHydration(action.actionIri()));
+                context.metadata().put("idempotencyOpen", idempotencyStates.getOrDefault(action.actionIri(), true));
+                
+                Map<String, String> actionHydration = hydrations.getOrDefault(action.actionIri(), Map.of());
+                context.metadata().putAll(actionHydration);
 
                 for (MapePipe pipe : pipes) {
                     if (!pipe.process(context)) {

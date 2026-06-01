@@ -1,3 +1,21 @@
 ${SPARQL_PREFIXES}
-INSERT { ${IRI::subjectIri} cnee:${predicate} ${IRI::objectIri} . }
-WHERE { FILTER NOT EXISTS { ${IRI::subjectIri} cnee:${predicate} ${IRI::objectIri} } }
+DELETE {
+  ${IRI::subjectIri} cnee:${predicate} ?old .
+}
+INSERT {
+  ${IRI::subjectIri} cnee:${predicate} ${IRI::objectIri} .
+}
+WHERE {
+  BIND(cnee:${predicate} AS ?p)
+  FILTER(?p IN (cnee:usesImage, cnee:isHostedOn, cnee:isPartOf))
+  OPTIONAL { ${IRI::subjectIri} ?p ?old . }
+} ;
+
+INSERT {
+  ${IRI::subjectIri} cnee:${predicate} ${IRI::objectIri} .
+}
+WHERE {
+  BIND(cnee:${predicate} AS ?p)
+  FILTER(?p NOT IN (cnee:usesImage, cnee:isHostedOn, cnee:isPartOf))
+  FILTER NOT EXISTS { ${IRI::subjectIri} ?p ${IRI::objectIri} . }
+}
