@@ -9,7 +9,7 @@ WHERE {
   BIND(cnee:${predicate} AS ?p)
   FILTER(?p IN (cnee:usesImage, cnee:isHostedOn, cnee:isPartOf))
   OPTIONAL { ${IRI::subjectIri} ?p ?old . }
-}
+} ;
 
 INSERT {
   ${IRI::subjectIri} cnee:${predicate} ${IRI::objectIri} .
