@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import sys
 import time
+import json
+import datetime
 import subprocess
 from typing_extensions import Annotated
 import typer
@@ -69,6 +71,38 @@ def stop_locust() -> None:
 def get_locust_stats() -> None:
     """Get active load statistics from Locust."""
     run(k8s_exec("sock-shop", "deploy/locust-master", ["python3", "-c", LOCUST_STATS_PYTHON_TEMPLATE]))
+
+
+class EventLogger:
+    def __init__(self, scenario_id: str):
+        self.scenario_id = scenario_id
+        self.start_time = time.time()
+        self.start_iso = datetime.datetime.now().isoformat()
+        self.events = []
+        self.log_file = f"benchmark_log_{scenario_id}_{int(self.start_time)}.json"
+
+    def log(self, event_type: str, description: str):
+        elapsed = time.time() - self.start_time
+        timestamp = datetime.datetime.now().strftime("%H:%M:%S")
+        self.events.append({
+            "timestamp_s": round(elapsed, 2),
+            "wall_clock": timestamp,
+            "type": event_type,
+            "description": description
+        })
+        # Also print to console with elapsed time prefix
+        console.print(f"[[bold cyan]{elapsed:06.1f}s[/bold cyan]] [bold]{event_type}[/bold]: {description}")
+
+    def save(self):
+        data = {
+            "scenario_id": self.scenario_id,
+            "start_iso": self.start_iso,
+            "total_duration": round(time.time() - self.start_time, 2),
+            "events": self.events
+        }
+        with open(self.log_file, "w") as f:
+            json.dump(data, f, indent=2)
+        info(f"Event log saved to {self.log_file}")
 
 # ─── Benchmark Subcommands ─────────────────────────────────────────
 
