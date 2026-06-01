@@ -30,10 +30,12 @@ public final class CneeOntology {
     public static final String KIND_CONTAINER = "Container";
     public static final String KIND_IMAGE = "Image";
     public static final String KIND_IMAGE_REGISTRY = "ImageRegistry";
+    public static final String KIND_SECRET = "Secret";
     public static final String CLASS_EXECUTION_UNIT = "ExecutionUnit";
     public static final String CLASS_CONTAINER = "Container";
     public static final String CLASS_IMAGE = "Image";
     public static final String CLASS_IMAGE_REGISTRY = "ImageRegistry";
+    public static final String CLASS_SECRET = "Secret";
 
     // -------------------------------------------------------------------------
     // CNEEOnt classes — local names.
@@ -72,6 +74,7 @@ public final class CneeOntology {
     // Pod anomaly states — subclasses of both ExecutionUnitState and Anomaly.
     // -------------------------------------------------------------------------
     public static final String STATE_POD_PENDING = "ExecutionUnitPendingState";
+    public static final String STATE_IMAGE_PULL_BACKOFF = "ImagePullBackOffState";
     public static final String STATE_NODE_NOT_READY = "NodeNotReadyState";
 
     // -------------------------------------------------------------------------
@@ -82,7 +85,11 @@ public final class CneeOntology {
     public static final String PROP_CONTAINS = "contains";
     public static final String PROP_USES_IMAGE = "usesImage";
     public static final String PROP_PULLS_IMAGE_FROM = "pullsImageFrom";
+    public static final String PROP_AUTHENTICATES_WITH = "authenticatesWith";
+    public static final String PROP_GRANTS_ACCESS_TO = "grantsAccessTo";
     public static final String PROP_VERSION = "version";
+    public static final String PROP_SECRET_TYPE = "secretType";
+    public static final String PROP_NAMESPACE = "namespace";
 
     // -------------------------------------------------------------------------
     // CNEEOnt object properties — local names.

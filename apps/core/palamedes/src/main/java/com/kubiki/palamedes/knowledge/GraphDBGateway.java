@@ -9,6 +9,7 @@ import com.kubiki.palamedes.model.ActiveActionSummary;
 import com.kubiki.palamedes.model.AnomalyTarget;
 import com.kubiki.palamedes.model.ImageInTopology;
 import com.kubiki.palamedes.model.ImageUpdateTarget;
+import com.kubiki.palamedes.model.RegistryAuthTarget;
 import com.kubiki.palamedes.model.WorkflowState;
 import com.kubiki.palamedes.model.WorkflowStateMapper;
 import com.kubiki.palamedes.knowledge.Result;
@@ -292,6 +293,21 @@ public class GraphDBGateway {
                         bs.hasBinding("serviceName") ? bs.getValue("serviceName").stringValue() : null
                 ))
                 .toList();
+    }
+
+    public List<RegistryAuthTarget> findRegistryAuthFailures() {
+        Timer.Sample sample = Timer.start(meterRegistry);
+        try {
+            return sparqlRepository.findRegistryAuthFailures().stream()
+                    .map(bs -> new RegistryAuthTarget(
+                            (IRI) bs.getValue("deployment"),
+                            bs.getValue("deploymentName").stringValue(),
+                            bs.getValue("namespace").stringValue(),
+                            bs.getValue("pullSecretName").stringValue()))
+                    .toList();
+        } finally {
+            sample.stop(Timer.builder("amocna.semantic.query.anomalies").register(meterRegistry));
+        }
     }
 
     public List<ImageInTopology> findImagesInTopology() {

@@ -7,9 +7,13 @@ import com.kubiki.metis.knowledge.CneeOntology;
 import com.kubiki.metis.sensor.IriFactory;
 import com.kubiki.metis.sensor.SensorEventPublisher;
 import io.fabric8.kubernetes.api.model.Container;
+import io.fabric8.kubernetes.api.model.LocalObjectReference;
+
+import java.util.List;
 
 /**
- * Emits Container, Image, ImageRegistry, and relationship events for Kubernetes container specs.
+ * Emits Container, Image, ImageRegistry, Secret, and relationship events for
+ * Kubernetes container specs.
  */
 public final class ContainerImageEmitter {
 
@@ -61,6 +65,52 @@ public final class ContainerImageEmitter {
 
     private void emitImageOnly(ImageReference ref) {
         publishImageEntity(imageIriFor(ref), ref);
+    }
+
+    /**
+     * Emits a {@code cnee:Secret} entity and a {@code cnee:authenticatesWith}
+     * relationship for each {@code imagePullSecrets} reference declared by an
+     * ExecutionUnit (Pod) or Workload (Deployment).
+     *
+     * @param namespace  Kubernetes namespace the secret lives in
+     * @param subjectIri IRI of the referencing entity (Pod or Workload)
+     * @param pullSecrets {@code spec.imagePullSecrets} (or template equivalent)
+     */
+    public void emitPodPullSecrets(String namespace, String podName, List<LocalObjectReference> pullSecrets) {
+        String podIri = iriFactory.namespacedIri(CneeOntology.KIND_POD, namespace, podName);
+        emitPullSecrets(namespace, podIri, pullSecrets);
+    }
+
+    public void emitWorkloadPullSecrets(String namespace, String workloadKind, String workloadName,
+                                        List<LocalObjectReference> pullSecrets) {
+        String workloadIri = iriFactory.namespacedIri(workloadKind, namespace, workloadName);
+        emitPullSecrets(namespace, workloadIri, pullSecrets);
+    }
+
+    private void emitPullSecrets(String namespace, String subjectIri, List<LocalObjectReference> pullSecrets) {
+        if (pullSecrets == null) {
+            return;
+        }
+        for (LocalObjectReference ref : pullSecrets) {
+            if (ref == null || ref.getName() == null) {
+                continue;
+            }
+            String secretIri = iriFactory.secretIri(namespace, ref.getName());
+            publishSecretEntity(secretIri, ref.getName(), namespace);
+            emitRelationship(subjectIri, CneeOntology.PROP_AUTHENTICATES_WITH, secretIri);
+        }
+    }
+
+    private void publishSecretEntity(String secretIri, String name, String namespace) {
+        EntityDiscoveredEvent discovered = EntityDiscoveredEvent.newBuilder()
+                .setResourceIri(secretIri)
+                .setOntologyType(iriFactory.typeIri(CneeOntology.CLASS_SECRET))
+                .setResourceId(name)
+                .setResourceName(name)
+                .putProperties(cneeNamespace + CneeOntology.PROP_NAMESPACE, namespace)
+                .build();
+        publisher.publish(SensorEventPublisher.withTimestamp(
+                SensorEvent.newBuilder().setEntityDiscovered(discovered)));
     }
 
     private void emitPodPullsImageFrom(String podIri, ImageReference ref) {

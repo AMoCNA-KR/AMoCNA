@@ -816,6 +816,12 @@ before patching).</rdfs:comment>
         <rdfs:subClassOf rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#UpdateAction"/>
     </owl:Class>
 
+    <!-- http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#AddImagePullSecretIntent -->
+    <owl:Class rdf:about="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#AddImagePullSecretIntent">
+        <rdfs:subClassOf rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#PatchAction"/>
+        <rdfs:comment>Patches a workload's spec.template.spec.imagePullSecrets to add an existing registry pull secret, healing an ImagePullBackOff caused by a missing imagePullSecret.</rdfs:comment>
+    </owl:Class>
+
     <!-- http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#PatchConfigIntent -->
     <owl:Class rdf:about="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#PatchConfigIntent">
         <rdfs:subClassOf rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#PatchAction"/>

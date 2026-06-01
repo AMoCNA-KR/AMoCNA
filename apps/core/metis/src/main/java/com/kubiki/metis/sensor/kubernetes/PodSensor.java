@@ -106,6 +106,7 @@ public class PodSensor extends AbstractNamespacedSensor {
                 .setOntologyType(type)
                 .setResourceId(name)
                 .setResourceName(name)
+                .putProperties(cneeNamespace + CneeOntology.PROP_NAMESPACE, ns)
                 .build();
 
         publisher.publish(SensorEventPublisher.withTimestamp(

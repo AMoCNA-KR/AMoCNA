@@ -155,6 +155,26 @@
     
 
 
+    <!-- http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/authenticatesWith -->
+
+    <owl:ObjectProperty rdf:about="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/authenticatesWith">
+        <rdfs:domain rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/ExecutionUnit"/>
+        <rdfs:range rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/Secret"/>
+        <rdfs:comment>Links an ExecutionUnit (or Workload) to a Secret it references in spec.imagePullSecrets.</rdfs:comment>
+    </owl:ObjectProperty>
+    
+
+
+    <!-- http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/grantsAccessTo -->
+
+    <owl:ObjectProperty rdf:about="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/grantsAccessTo">
+        <rdfs:domain rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/Secret"/>
+        <rdfs:range rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/ImageRegistry"/>
+        <rdfs:comment>Links a Secret to the ImageRegistry it authenticates to. A Secret that grantsAccessTo a registry is a registry pull secret.</rdfs:comment>
+    </owl:ObjectProperty>
+    
+
+
     <!-- http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/usesImage -->
 
     <owl:ObjectProperty rdf:about="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/usesImage">
@@ -296,6 +316,26 @@
     <owl:DatatypeProperty rdf:about="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/version">
         <rdfs:domain rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/CloudNativeEntity"/>
         <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </owl:DatatypeProperty>
+    
+
+
+    <!-- http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/namespace -->
+
+    <owl:DatatypeProperty rdf:about="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/namespace">
+        <rdfs:domain rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/CloudNativeEntity"/>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <rdfs:comment>The Kubernetes namespace the entity lives in. Enables same-namespace joins and clean action hydration.</rdfs:comment>
+    </owl:DatatypeProperty>
+    
+
+
+    <!-- http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/secretType -->
+
+    <owl:DatatypeProperty rdf:about="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/secretType">
+        <rdfs:domain rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/Secret"/>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <rdfs:comment>Mirrors the Kubernetes Secret type (e.g. kubernetes.io/dockerconfigjson). Populated only by a full SecretSensor.</rdfs:comment>
     </owl:DatatypeProperty>
     
 
@@ -739,6 +779,15 @@
     <owl:Class rdf:about="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/ImageRegistry">
         <rdfs:subClassOf rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/ManagementElement"/>
         <rdfs:comment>An OCI/Docker registry endpoint (e.g. docker.io, ghcr.io). Use cnee:resourceName for the registry host. Referenced by cnee:pullsImageFrom from ExecutionUnit.</rdfs:comment>
+    </owl:Class>
+    
+
+
+    <!-- http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/Secret -->
+
+    <owl:Class rdf:about="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/Secret">
+        <rdfs:subClassOf rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/ManagementElement"/>
+        <rdfs:comment>A Kubernetes Secret. Referenced by cnee:authenticatesWith from an ExecutionUnit (e.g. a registry pull secret in spec.imagePullSecrets) and may cnee:grantsAccessTo an ImageRegistry.</rdfs:comment>
     </owl:Class>
     
 
@@ -1241,6 +1290,16 @@
     <owl:Class rdf:about="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/ExecutionUnitPendingState">
         <rdfs:subClassOf rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/ExecutionUnitState"/>
             <rdfs:subClassOf rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/Anomaly"/>
+    </owl:Class>
+    
+
+
+    <!-- http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/ImagePullBackOffState -->
+
+    <owl:Class rdf:about="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/ImagePullBackOffState">
+        <rdfs:subClassOf rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/ExecutionUnitPending"/>
+        <rdfs:subClassOf rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/Anomaly"/>
+        <rdfs:comment>A stuck pending state: the ExecutionUnit cannot start because its image cannot be pulled (ImagePullBackOff/ErrImagePull). Subclassed under ExecutionUnitPending (the phase) rather than ExecutionUnitPendingState, so it carries no BridgeOnt scaling restriction; remediation is handled by the dedicated registry-credential planner.</rdfs:comment>
     </owl:Class>
 
     <owl:Class rdf:about="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/NodeNotReadyState">

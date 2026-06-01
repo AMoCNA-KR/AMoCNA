@@ -97,4 +97,11 @@ public class IriFactory {
     public String containerIri(String namespace, String podName, String containerName) {
         return namespacedIri(CneeOntology.KIND_CONTAINER, namespace, podName + "_" + containerName);
     }
+
+    /**
+     * IRI for a Kubernetes Secret (e.g. a registry pull secret).
+     */
+    public String secretIri(String namespace, String name) {
+        return namespacedIri(CneeOntology.KIND_SECRET, namespace, name);
+    }
 }

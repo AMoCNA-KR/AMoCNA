@@ -46,3 +46,11 @@ moam:RollbackConfigIntent moam:hasExecutionProtocol "SHELL" ;
                           moam:hasFunctionalIntent moam:RollbackConfigAction ;
                           moam:hasLayerBoundary moam:ContainerizationLayer ;
                           moam:idempotencyWindowSeconds "300"^^xsd:integer .
+
+# Scenario 6 — Registry Credential Remediation
+moam:AddImagePullSecretIntent moam:hasExecutionProtocol "SHELL" ;
+                              moam:hasExecutionInstruction "kubectl patch deployment ${resourceName} -n ${namespace} --type merge -p '{\"spec\":{\"template\":{\"spec\":{\"imagePullSecrets\":[{\"name\":\"${pullSecretName}\"}]}}}}'" ;
+                              moam:hasExpectedStatusCode "0"^^xsd:integer ;
+                              moam:hasFunctionalIntent moam:AddImagePullSecretIntent ;
+                              moam:hasLayerBoundary moam:ContainerizationLayer ;
+                              moam:idempotencyWindowSeconds "300"^^xsd:integer .
