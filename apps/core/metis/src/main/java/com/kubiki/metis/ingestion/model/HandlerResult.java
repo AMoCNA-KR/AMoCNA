@@ -13,7 +13,8 @@ public record HandlerResult(
         String ontologyType,
         String changeKind,
         String failureReason,
-        boolean graphDbFailed
+        boolean graphDbFailed,
+        String sparqlUpdate
 ) {
 
     /**
@@ -28,21 +29,21 @@ public record HandlerResult(
      * Creates a successful result carrying the IRI, ontology type, and change kind
      * that will be forwarded to Palamedes via RabbitMQ.
      */
-    public static HandlerResult success(String resourceIri, String ontologyType, String changeKind) {
-        return new HandlerResult(true, resourceIri, ontologyType, changeKind, null, false);
+    public static HandlerResult success(String resourceIri, String ontologyType, String changeKind, String sparqlUpdate) {
+        return new HandlerResult(true, resourceIri, ontologyType, changeKind, null, false, sparqlUpdate);
     }
 
     /**
      * Creates a validation failure result. All IRI / type / kind fields are {@code null}.
      */
     public static HandlerResult failure(String reason) {
-        return new HandlerResult(false, null, null, null, reason, false);
+        return new HandlerResult(false, null, null, null, reason, false, null);
     }
 
     /**
      * Creates a GraphDB failure result indicating the knowledge base was unavailable.
      */
     public static HandlerResult graphDbFailure(String reason) {
-        return new HandlerResult(false, null, null, null, reason, true);
+        return new HandlerResult(false, null, null, null, reason, true, null);
     }
 }

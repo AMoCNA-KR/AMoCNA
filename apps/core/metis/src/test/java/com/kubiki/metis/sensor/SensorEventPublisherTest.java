@@ -61,7 +61,7 @@ class SensorEventPublisherTest {
                 0, 1, List.of("Knowledge base unavailable"), null, true);
         ProcessResult success = new ProcessResult(
                 1, 0, List.of(),
-                HandlerResult.success("http://example.org/pod", "Pod", HandlerResult.CREATED),
+                HandlerResult.success("http://example.org/pod", "Pod", HandlerResult.CREATED, "update"),
                 false);
 
         when(processor.processBatch(any(), anyString()))

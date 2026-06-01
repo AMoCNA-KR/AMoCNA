@@ -1,0 +1,6 @@
+${SPARQL_PREFIXES}
+SELECT ?action ?window ?lastTransition WHERE {
+  VALUES ?action { ${IRI::actionIds} }
+  ?action ${PREFIX::ACTIONS_PREFIX}:idempotencyWindowSeconds ?window .
+  ?action ${PREFIX::ACTIONS_PREFIX}:hasLastTransitionTimestamp ?lastTransition .
+}

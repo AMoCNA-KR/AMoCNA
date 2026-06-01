@@ -42,8 +42,8 @@ public class RelationshipAssertedHandler implements SensorEventHandler {
         }
 
         try {
-            writer.assertRelationship(rel);
-            return HandlerResult.success(subjectIri, predicate, HandlerResult.UPDATED);
+            String sparql = writer.assertRelationship(rel);
+            return HandlerResult.success(subjectIri, predicate, HandlerResult.UPDATED, sparql);
         } catch (KnowledgeBaseException e) {
             return e.getCause() != null
                     ? HandlerResult.graphDbFailure(e.getMessage())

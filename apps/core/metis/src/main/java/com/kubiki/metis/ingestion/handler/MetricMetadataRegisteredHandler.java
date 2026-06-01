@@ -44,9 +44,9 @@ public class MetricMetadataRegisteredHandler implements SensorEventHandler {
         }
 
         try {
-            writer.registerMetricMetadata(metricEvent);
+            String sparql = writer.registerMetricMetadata(metricEvent);
             String metricTypeIri = iriFactory.typeIri(CneeOntology.CLASS_METRIC);
-            return HandlerResult.success(resourceIri, metricTypeIri, HandlerResult.UPDATED);
+            return HandlerResult.success(resourceIri, metricTypeIri, HandlerResult.UPDATED, sparql);
         } catch (KnowledgeBaseException e) {
             return e.getCause() != null
                     ? HandlerResult.graphDbFailure(e.getMessage())

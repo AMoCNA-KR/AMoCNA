@@ -41,7 +41,8 @@ public class SafetyValidatorPipe implements MapePipe {
         log.info("Safety Validation for action {}", context.actionId());
 
         // 1. Idempotency Gate (Temporal safety)
-        if (!graphDBGateway.isIdempotencyWindowOpen(context.actionId())) {
+        boolean isOpen = (boolean) context.metadata().getOrDefault("idempotencyOpen", true);
+        if (!isOpen) {
             log.warn("Action {} is blocked by Idempotency Window", context.actionId());
             return false;
         }

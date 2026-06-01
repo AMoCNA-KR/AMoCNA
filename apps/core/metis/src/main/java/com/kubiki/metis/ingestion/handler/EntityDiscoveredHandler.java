@@ -35,8 +35,8 @@ public class EntityDiscoveredHandler implements SensorEventHandler {
         }
 
         try {
-            writer.insertEntity(event.getEntityDiscovered());
-            return HandlerResult.success(resourceIri, ontologyType, HandlerResult.CREATED);
+            String sparql = writer.insertEntity(event.getEntityDiscovered());
+            return HandlerResult.success(resourceIri, ontologyType, HandlerResult.CREATED, sparql);
         } catch (KnowledgeBaseException e) {
             return e.getCause() != null
                     ? HandlerResult.graphDbFailure(e.getMessage())

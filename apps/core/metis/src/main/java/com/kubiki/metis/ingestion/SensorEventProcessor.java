@@ -1,9 +1,12 @@
 package com.kubiki.metis.ingestion;
 
+import com.kubiki.daedalus.knowledge.SparqlClient;
 import com.kubiki.metis.grpc.SensorEvent;
 import com.kubiki.metis.ingestion.handler.SensorEventHandler;
 import com.kubiki.metis.ingestion.model.HandlerResult;
 import com.kubiki.metis.ingestion.model.ProcessResult;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -20,9 +23,13 @@ import java.util.List;
 public class SensorEventProcessor {
 
     private final List<SensorEventHandler> handlers;
+    private final SparqlClient sparqlClient;
+    private final MeterRegistry meterRegistry;
 
-    public SensorEventProcessor(List<SensorEventHandler> handlers) {
+    public SensorEventProcessor(List<SensorEventHandler> handlers, SparqlClient sparqlClient, MeterRegistry meterRegistry) {
         this.handlers = handlers;
+        this.sparqlClient = sparqlClient;
+        this.meterRegistry = meterRegistry;
     }
 
     /**
@@ -46,6 +53,9 @@ public class SensorEventProcessor {
         HandlerResult firstSuccess = null;
         boolean graphDbFailed = false;
 
+        List<String> collectedSparql = new ArrayList<>();
+        List<HandlerResult> successResults = new ArrayList<>();
+
         for (SensorEvent event : events) {
             SensorEventHandler handler = findHandler(event);
 
@@ -58,7 +68,10 @@ public class SensorEventProcessor {
             HandlerResult result = handler.handle(event, correlationId);
 
             if (result.success()) {
-                processedCount++;
+                if (result.sparqlUpdate() != null) {
+                    collectedSparql.add(result.sparqlUpdate());
+                }
+                successResults.add(result);
                 if (firstSuccess == null) {
                     firstSuccess = result;
                 }
@@ -71,6 +84,29 @@ public class SensorEventProcessor {
                     graphDbFailed = true;
                 }
             }
+        }
+
+        if (!collectedSparql.isEmpty() && !graphDbFailed) {
+            Timer.Sample sample = Timer.start(meterRegistry);
+            try {
+                sparqlClient.executeWithConnection(conn -> {
+                    conn.begin();
+                    for (String sparql : collectedSparql) {
+                        conn.prepareUpdate(sparql).execute();
+                    }
+                    conn.commit();
+                });
+                processedCount = successResults.size();
+            } catch (Exception e) {
+                graphDbFailed = true;
+                failedCount += successResults.size();
+                failureMessages.add("Batch SPARQL execution failed: " + e.getMessage());
+                firstSuccess = null;
+            } finally {
+                sample.stop(Timer.builder("metis.knowledge.batch.update").register(meterRegistry));
+            }
+        } else {
+            processedCount = successResults.size();
         }
 
         return new ProcessResult(processedCount, failedCount, failureMessages, firstSuccess, graphDbFailed);

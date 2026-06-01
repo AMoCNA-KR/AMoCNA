@@ -25,8 +25,14 @@ public interface SparqlRepository {
     @SparqlQuery(resource = "sparql/fetch-action-structures.sparql")
     List<BindingSet> fetchActionStructures(@Type(TemplateType.PLAIN) @Bind("IRI::actionIds") String actionIds);
 
+    @SparqlQuery(resource = "sparql/fetch-action-hydrations.sparql")
+    List<BindingSet> fetchActionHydrations(@Type(TemplateType.PLAIN) @Bind("IRI::actionIds") String actionIds);
+
     @SparqlQuery(resource = "sparql/check-idempotency.sparql")
     List<BindingSet> checkIdempotency(@Type(TemplateType.IRI) @Bind("IRI::actionId") String actionId);
+
+    @SparqlQuery(resource = "sparql/check-idempotency-batch.sparql")
+    List<BindingSet> checkIdempotencyBatch(@Type(TemplateType.PLAIN) @Bind("IRI::actionIds") String actionIds);
 
     @SparqlUpdate(resource = "sparql/atomic-transition.sparql")
     void atomicTransition(

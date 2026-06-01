@@ -1,0 +1,5 @@
+${SPARQL_PREFIXES}
+SELECT ?action ?payload WHERE {
+  VALUES ?action { ${IRI::actionIds} }
+  ?action ${PREFIX::ACTIONS_PREFIX}:hydrationPayload ?payload .
+}

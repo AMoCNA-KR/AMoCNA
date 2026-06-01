@@ -25,7 +25,7 @@ public class KnowledgeBaseWriter {
         this.meterRegistry = meterRegistry;
     }
 
-    public void insertEntity(EntityDiscoveredEvent event) throws KnowledgeBaseException {
+    public String insertEntity(EntityDiscoveredEvent event) throws KnowledgeBaseException {
         String resourceIri = event.getResourceIri();
         String ontologyType = event.getOntologyType();
         String resourceId = event.getResourceId();
@@ -52,7 +52,7 @@ public class KnowledgeBaseWriter {
         String triplesSuffix = extraProperties.isEmpty() ? " ." : extraProperties + " .";
 
         try {
-            repository.insertEntity(
+            return repository.insertEntity(
                     resourceIri,
                     ontologyType,
                     escapeLiteral(resourceId),
@@ -63,7 +63,7 @@ public class KnowledgeBaseWriter {
         }
     }
 
-    public void assertRelationship(RelationshipAssertedEvent event) throws KnowledgeBaseException {
+    public String assertRelationship(RelationshipAssertedEvent event) throws KnowledgeBaseException {
         String subjectIri = event.getSubjectIri();
         String predicate = event.getPredicate();
         String objectIri = event.getObjectIri();
@@ -79,17 +79,16 @@ public class KnowledgeBaseWriter {
 
         try {
             if (inverseLocalName != null) {
-                repository.assertRelationshipPair(subjectIri, predicateLocalName, objectIri, inverseLocalName);
+                return repository.assertRelationshipPair(subjectIri, predicateLocalName, objectIri, inverseLocalName);
             } else {
-                repository.assertRelationship(subjectIri, predicateLocalName, objectIri);
+                return repository.assertRelationship(subjectIri, predicateLocalName, objectIri);
             }
         } catch (Exception e) {
             throw new KnowledgeBaseException("assertRelationship failed: " + e.getMessage(), e);
         }
     }
 
-    public void changeState(StateChangedEvent event) throws KnowledgeBaseException {
-        Timer.Sample sample = Timer.start(meterRegistry);
+    public String changeState(StateChangedEvent event) throws KnowledgeBaseException {
         try {
             String resourceIri = event.getResourceIri();
             String newStateIri = event.getNewStateIri();
@@ -106,33 +105,29 @@ public class KnowledgeBaseWriter {
             }
 
             try {
-                repository.changeState(resourceIri, newStateIri);
+                return repository.changeState(resourceIri, newStateIri);
             } catch (Exception e) {
-                meterRegistry.counter("amocna.semantic.state_change.failure").increment();
                 throw new KnowledgeBaseException("changeState failed: " + e.getMessage(), e);
-            } finally {
-                sample.stop(Timer.builder("amocna.semantic.state_change.duration").register(meterRegistry));
             }
         } catch (KnowledgeBaseException e) {
-            meterRegistry.counter("amocna.semantic.state_change.failure").increment();
             throw e;
         }
     }
 
-    public void deleteEntity(EntityDeletedEvent event) throws KnowledgeBaseException {
+    public String deleteEntity(EntityDeletedEvent event) throws KnowledgeBaseException {
         String resourceIri = event.getResourceIri();
         if (resourceIri == null || resourceIri.isBlank()) {
             throw new KnowledgeBaseException("deleteEntity: resource_iri must not be blank");
         }
 
         try {
-            repository.deleteEntity(resourceIri);
+            return repository.deleteEntity(resourceIri);
         } catch (Exception e) {
             throw new KnowledgeBaseException("deleteEntity failed: " + e.getMessage(), e);
         }
     }
 
-    public void registerMetricMetadata(MetricMetadataRegisteredEvent event) throws KnowledgeBaseException {
+    public String registerMetricMetadata(MetricMetadataRegisteredEvent event) throws KnowledgeBaseException {
         String resourceIri = event.getResourceIri();
         String endpointUrl = event.getEndpointUrl();
         String metricName = event.getMetricName();
@@ -160,7 +155,7 @@ public class KnowledgeBaseWriter {
         String metricIri = cneeNamespace + encodeFragment(resourceLocalName) + "_" + encodeFragment(metricName);
 
         try {
-            repository.registerMetricMetadata(resourceIri, endpointUrl, metricIri, escapeLiteral(metricName));
+            return repository.registerMetricMetadata(resourceIri, endpointUrl, metricIri, escapeLiteral(metricName));
         } catch (Exception e) {
             throw new KnowledgeBaseException("registerMetricMetadata failed: " + e.getMessage(), e);
         }

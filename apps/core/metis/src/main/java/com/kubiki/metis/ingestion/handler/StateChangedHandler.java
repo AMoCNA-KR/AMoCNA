@@ -43,8 +43,8 @@ public class StateChangedHandler implements SensorEventHandler {
         }
 
         try {
-            writer.changeState(stateChanged);
-            return HandlerResult.success(resourceIri, newStateIri, HandlerResult.STATE_CHANGED);
+            String sparql = writer.changeState(stateChanged);
+            return HandlerResult.success(resourceIri, newStateIri, HandlerResult.STATE_CHANGED, sparql);
         } catch (KnowledgeBaseException e) {
             return e.getCause() != null
                     ? HandlerResult.graphDbFailure(e.getMessage())
