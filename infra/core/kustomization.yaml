@@ -14,3 +14,6 @@ resources:
   - themis-00-namespace.yaml
   - themis-02-deployment.yaml
   - themis-03-service.yaml
+  - hephaestus-00-namespace.yaml
+  - hephaestus-02-deployment.yaml
+  - hephaestus-03-service.yaml
