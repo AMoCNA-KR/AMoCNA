@@ -361,8 +361,12 @@ public class GraphDBGateway {
     }
 
     public void clearResourceState(IRI resourceIri) {
-        sparqlRepository.clearResourceState(resourceIri.stringValue());
-        log.info("Cleared resource state for {}", resourceIri);
+        try {
+            sparqlRepository.clearResourceState(resourceIri.stringValue());
+            log.info("Cleared resource state for {}", resourceIri);
+        } catch (Exception e) {
+            log.error("Failed to clear resource state for {}: {}", resourceIri, e.getMessage());
+        }
     }
 
     public IRI findParent(IRI childIri) {

@@ -43,9 +43,7 @@ public class AnomalyScanner {
         Timer.Sample sample = Timer.start(meterRegistry);
         log.debug("Starting anomaly scan...");
 
-        List<AnomalyBatchItem> batchItems = java.util.Collections.synchronizedList(new ArrayList<>());
-
-        Flux.fromIterable(thresholdsLoader.getThresholds())
+        List<AnomalyBatchItem> batchItems = Flux.fromIterable(thresholdsLoader.getThresholds())
                 .flatMap(threshold -> prometheusClient.query(threshold.query())
                         .onErrorResume(e -> {
                             log.error("Failed to query Prometheus for threshold: {}", threshold.name(), e);
@@ -72,7 +70,7 @@ public class AnomalyScanner {
 
                                 if (count >= threshold.persistenceWindow()) {
                                     violationCounter.remove(key);
-                                    batchItems.add(new AnomalyBatchItem(targetResourceIri, threshold.anomalyState(), true));
+                                    return Mono.just(new AnomalyBatchItem(targetResourceIri, threshold.anomalyState(), true));
                                 } else {
                                     violationCounter.put(key, count);
                                 }
@@ -80,16 +78,16 @@ public class AnomalyScanner {
                                 if (violationCounter.containsKey(key)) {
                                     violationCounter.remove(key);
                                 }
-                                batchItems.add(new AnomalyBatchItem(targetResourceIri, null, false));
+                                return Mono.just(new AnomalyBatchItem(targetResourceIri, null, false));
                             }
                             return Mono.empty();
                         }))
                 .collectList()
                 .doOnError(e -> log.error("Unexpected error during anomaly scan", e))
-                .onErrorResume(e -> Mono.empty())
+                .onErrorResume(e -> Mono.just(List.of()))
                 .block();
 
-        if (!batchItems.isEmpty()) {
+        if (batchItems != null && !batchItems.isEmpty()) {
             executeBatch(batchItems);
         }
 
@@ -98,11 +96,16 @@ public class AnomalyScanner {
 
     private void executeBatch(List<AnomalyBatchItem> items) {
         log.debug("Executing anomaly batch with {} items", items.size());
-        
+
         // Group by resource to avoid redundant operations in the same batch
         Map<String, AnomalyBatchItem> lastActionPerResource = new HashMap<>();
         for (var item : items) {
-            lastActionPerResource.put(item.resourceIri(), item);
+            AnomalyBatchItem existing = lastActionPerResource.get(item.resourceIri());
+            // If there's no existing action, or if we are upgrading a "clear" to a "trigger", put it.
+            // A "clear" should not overwrite a "trigger" for the same resource in the same batch.
+            if (existing == null || (!existing.isTrigger() && item.isTrigger())) {
+                lastActionPerResource.put(item.resourceIri(), item);
+            }
         }
 
         for (var item : lastActionPerResource.values()) {
