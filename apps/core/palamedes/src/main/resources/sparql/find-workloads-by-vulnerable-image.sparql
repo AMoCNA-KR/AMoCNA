@@ -8,6 +8,7 @@ WHERE {
   ?container cnee:resourceName ?containerName .
   ?deployment cnee:contains ?container .
   ?deployment cnee:resourceName ?deploymentName .
+  ?deployment a cnee:StatelessWorkloadController .
   OPTIONAL {
     ?service cnee:contains ?deployment .
     ?service cnee:resourceName ?serviceName .

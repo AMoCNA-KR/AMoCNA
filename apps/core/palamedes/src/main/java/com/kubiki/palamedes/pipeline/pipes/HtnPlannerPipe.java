@@ -32,22 +32,27 @@ public class HtnPlannerPipe implements MapePipe {
     @Override
     public boolean process(WorkflowContext context) {
         if (!mapper.getFragment(WorkflowState.INITIAL).equals(context.metadata().get("currentState"))) {
+            log.info("HtnPlannerPipe: Action is not in State_Initial, skipping");
             return true;
         }
 
-        log.info("HTN Planning for action {}", context.actionId());
+        log.info("HtnPlannerPipe: Starting HTN Planning");
 
         ActionData data = context.actionData();
         if (data instanceof ActionData.ComplexWorkflow cw) {
-            log.info("Decomposing ComplexWorkflow {}", context.actionId());
+            log.info("HtnPlannerPipe: Decomposing ComplexWorkflow");
             workflowPlanner.planWorkflow(cw, context.actionId());
         } else if (data instanceof ActionData.SimpleAction sa) {
-            log.debug("No decomposition needed for SimpleAction {}", context.actionId());
+            log.info("HtnPlannerPipe: No decomposition needed for SimpleAction");
         }
 
+        log.info("HtnPlannerPipe: Transitioning action from State_Initial to State_Planned");
         boolean success = stateRepository.transition(context.actionId(), WorkflowState.INITIAL, WorkflowState.PLANNED);
         if (success) {
             context.metadata().put("currentState", mapper.getFragment(WorkflowState.PLANNED));
+            log.info("HtnPlannerPipe: Successfully transitioned action to State_Planned");
+        } else {
+            log.error("HtnPlannerPipe: Failed to transition action to State_Planned");
         }
         return success;
     }

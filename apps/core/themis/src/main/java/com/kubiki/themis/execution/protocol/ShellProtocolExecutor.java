@@ -5,11 +5,12 @@ import com.kubiki.common.model.ExecutionStatus;
 import com.kubiki.common.model.Protocol;
 import com.kubiki.themis.execution.ProtocolExecutor;
 import com.kubiki.themis.model.ExecutionResult;
+import io.micrometer.core.annotation.Timed;
 import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.Timer;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 import org.springframework.stereotype.Component;
 
 import java.io.BufferedReader;
@@ -31,6 +32,7 @@ public class ShellProtocolExecutor implements ProtocolExecutor {
     }
 
     @Override
+    @Timed(value = "themis.execution.action", extraTags = {"protocol", "shell"}, description = "Time taken to execute shell action")
     public ExecutionResult executeStateless(ActionMessage action) {
         return executeCommand(action);
     }
@@ -45,7 +47,6 @@ public class ShellProtocolExecutor implements ProtocolExecutor {
             return ExecutionResult.failure(1, "Blank instruction", ExecutionStatus.FAILED_INTERNAL);
         }
 
-        Timer.Sample sample = Timer.start(meterRegistry);
         try {
             if (command.contains("FAIL_NOW")) {
                 log.warn("Simulating failure for action {} due to FAIL_NOW keyword", actionId);
@@ -75,12 +76,12 @@ public class ShellProtocolExecutor implements ProtocolExecutor {
         } catch (Exception e) {
             log.error("Failed to execute shell action {}: {}", actionId, e.getMessage());
             return ExecutionResult.failure(1, e.getMessage(), ExecutionStatus.FAILED_INTERNAL);
-        } finally {
-            sample.stop(Timer.builder("amocna.execute.shell.duration").register(meterRegistry));
         }
     }
 
     private void readStream(BufferedReader br, String type, String actionId) {
+        MDC.put("actionId", actionId);
+        MDC.put("protocol", "SHELL");
         try {
             String line;
             while ((line = br.readLine()) != null) {
@@ -88,6 +89,8 @@ public class ShellProtocolExecutor implements ProtocolExecutor {
             }
         } catch (Exception e) {
             log.error("Error reading {} for action {}: {}", type, actionId, e.getMessage());
+        } finally {
+            MDC.clear();
         }
     }
 }

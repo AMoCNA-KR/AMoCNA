@@ -5,6 +5,8 @@ import com.kubiki.palamedes.config.RabbitMQConfig;
 import com.kubiki.palamedes.saga.SagaManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import com.kubiki.common.logging.MdcContext;
+import com.kubiki.common.logging.MdcParam;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
 
@@ -18,8 +20,11 @@ public class ActionStatusListener {
     }
 
     @RabbitListener(queues = RabbitMQConfig.STATUS_QUEUE)
-    public void receiveStatus(ActionStatusUpdate message) {
+    @MdcContext
+    public void receiveStatus(
+            @MdcParam(value = "actionId", property = "actionId")
+            @MdcParam(value = "status", property = "status") ActionStatusUpdate message) {
         log.info("Received status update for action {}: {}", message.actionId(), message.status());
-        sagaManager.handleFeedback(message);
+            sagaManager.handleFeedback(message);
     }
 }

@@ -8,9 +8,6 @@ The project has been restructured into the following top-level directories:
 
 - **`apps/`**: Contains all the applications and services.
   - **`core/`**: The core AMoCNA framework (Daedalus, Metis, Palamedes, Themis). Managed by the root `pom.xml`.
-  - **`gui/`**: The Hephaestus GUI frontend (Angular) and backend (Spring Boot).
-  - **`adapters/`**: The Metrics Adapter.
-  - **`demos/`**: Example applications (Kubernetes Management, Metric Exporter).
 - **`infra/`**: Contains Kubernetes manifests and infrastructure definitions.
 - **`libs/`**: Shared libraries and schemas (e.g., ontology files).
 
@@ -73,7 +70,6 @@ If this is your first time dealing with Kubernetes, Prometheus, and Hephaestus, 
 
    ```bash
    kubectl apply -f microservices-demo/deploy/kubernetes/manifests
-   kubectl apply -f microservices-demo/deploy/kubernetes/manifests-monitoring
    ```
 
 5. Deploy Hephaestus using the orchestration CLI:
@@ -81,23 +77,3 @@ If this is your first time dealing with Kubernetes, Prometheus, and Hephaestus, 
    ```bash
    ./amocna.py deploy --all
    ```
-
-6. Expose the GUI service using port forwarding:
-
-   ```bash
-   ./amocna.py forward gui-backend
-   ```
-
-   This will expose the service on `http://localhost:8080/app/index.html`.
-
-7. The result of the rule engine can be seen on the Hephaestus Demo - Metrics Adapter console. Use `./amocna.py forward metrics-adapter` to access it locally on port 8081.
-
-## Deployment with KIE
-
-The `kie` namespace can be deployed independently from Hephaestus with:
-
-```bash
-kubectl apply -f infra/manifests-kie/
-```
-
-Use `minikube service -n kie kie-workbench` to expose the service and navigate to `/business-central` to access the workbench. Usually, it takes up to 5min after the pod is created for the workbench to start and the website to start responding. The default credentials are `admin` for both username and password.

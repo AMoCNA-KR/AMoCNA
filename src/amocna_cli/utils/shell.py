@@ -74,7 +74,7 @@ except Exception as e:
     print("    Locust is currently idle or stopped.")
 """
 
-ORDERS_CPU_RESET_PATCH = '{"spec": {"template": {"spec": {"containers": [{"name": "orders", "resources": {"requests": {"cpu": "100m"}}}]}}}}'
+ORDERS_CPU_RESET_PATCH = '{"spec": {"template": {"spec": {"containers": [{"name": "orders", "resources": {"requests": {"cpu": "100m"}, "limits": {"cpu": "500m"}}}]}}}}'
 
 
 # ─── Docker Command Builders ──────────────────────────────────────────

@@ -18,6 +18,11 @@ management:
       exposure:
         include: health,info,prometheus
 
+logging:
+  structured:
+    format:
+      console: "ecs"
+
 grpc:
   server:
     port: 50052

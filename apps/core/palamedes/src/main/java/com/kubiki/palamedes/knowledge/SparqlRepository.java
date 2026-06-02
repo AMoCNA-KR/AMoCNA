@@ -31,6 +31,12 @@ public interface SparqlRepository {
     @SparqlQuery(resource = "sparql/check-idempotency.sparql")
     List<BindingSet> checkIdempotency(@Type(TemplateType.IRI) @Bind("IRI::actionId") String actionId);
 
+    @SparqlQuery(resource = "sparql/find-recent-action.sparql")
+    List<BindingSet> findRecentAction(
+            @Type(TemplateType.IRI) @Bind("IRI::target") String target,
+            @Type(TemplateType.IRI) @Bind("IRI::intent") String intent
+    );
+
     @SparqlQuery(resource = "sparql/check-idempotency-batch.sparql")
     List<BindingSet> checkIdempotencyBatch(@Type(TemplateType.PLAIN) @Bind("IRI::actionIds") String actionIds);
 
@@ -57,6 +63,9 @@ public interface SparqlRepository {
 
     @SparqlQuery(resource = "sparql/find-workloads-by-vulnerable-image.sparql")
     List<BindingSet> findWorkloadsByVulnerableImage(@Type(TemplateType.IRI) @Bind("IRI::imageIri") String imageIri);
+
+    @SparqlQuery(resource = "sparql/fetch-workload-details.sparql")
+    List<BindingSet> fetchWorkloadDetails(@Type(TemplateType.IRI) @Bind("IRI::workloadIri") String workloadIri);
 
     @SparqlQuery(resource = "sparql/find-images-in-topology.sparql")
     List<BindingSet> findImagesInTopology();

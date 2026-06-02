@@ -37,22 +37,32 @@ public class ActionDispatcherPipe implements MapePipe {
     @Override
     public boolean process(WorkflowContext context) {
         if (!mapper.getFragment(WorkflowState.VALIDATED).equals(context.metadata().get("currentState"))) {
+            log.info("ActionDispatcherPipe: Action is not in State_Validated, skipping dispatch");
             return true;
         }
 
-        log.info("Evaluating dispatch strategies for action {}", context.actionId());
+        log.info("ActionDispatcherPipe: Evaluating dispatch strategies");
 
         return switch (context.actionData()) {
             case ActionData.SimpleAction simpleAction -> {
                 Map<String, String> hydrationData = hydrationFromContext(context);
+                log.info("ActionDispatcherPipe: Building ActionMessage for SimpleAction with hydrationData={}", hydrationData);
                 ActionMessage message = plannerService.buildActionMessage(simpleAction, hydrationData);
 
+                log.info("ActionDispatcherPipe: Dispatching ActionMessage via DispatcherService");
                 dispatcherService.dispatch(message);
 
-                yield stateRepository.transition(context.actionId(), WorkflowState.VALIDATED, WorkflowState.IN_PROGRESS);
+                log.info("ActionDispatcherPipe: Transitioning action from State_Validated to State_InProgress");
+                boolean success = stateRepository.transition(context.actionId(), WorkflowState.VALIDATED, WorkflowState.IN_PROGRESS);
+                if (success) {
+                    log.info("ActionDispatcherPipe: Successfully transitioned action to State_InProgress");
+                } else {
+                    log.error("ActionDispatcherPipe: Failed to transition action to State_InProgress");
+                }
+                yield success;
             }
             case ActionData.ComplexWorkflow _ -> {
-                log.debug("ComplexWorkflow node {} bypasses direct broker routing (HTN pipeline handles children)", context.actionId());
+                log.info("ActionDispatcherPipe: ComplexWorkflow node bypasses direct broker routing (HTN pipeline handles children)");
                 yield true;
             }
         };

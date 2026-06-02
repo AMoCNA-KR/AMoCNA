@@ -39,25 +39,39 @@ public class ImageRemediationPlanner {
      * {@code ImageUpdateIntent} workflows for affected deployments. No anomaly state is written to GraphDB.
      */
     public boolean scanCatalogAndPlan() {
+        log.info("ImageRemediationPlanner: Starting image vulnerability scan against CVE catalog...");
         UpgradePolicy upgradePolicy = UpgradePolicy.valueOf(
                 properties.vulnerability().upgradePolicy().toUpperCase());
         IRI intentIri = ontologyRegistry.actionsOntology(IMAGE_UPDATE_INTENT);
 
+        List<ImageInTopology> images = gateway.findImagesInTopology();
+        log.info("ImageRemediationPlanner: Found {} images in current topology to evaluate", images.size());
+
         boolean plannedAny = false;
-        for (ImageInTopology image : gateway.findImagesInTopology()) {
-            if (vulnerabilityCatalog.lookup(image.imageRepository(), image.version()).isEmpty()) {
+        int plannedCount = 0;
+        for (ImageInTopology image : images) {
+            var cves = vulnerabilityCatalog.lookup(image.imageRepository(), image.version());
+            if (cves.isEmpty()) {
+                log.debug("ImageRemediationPlanner: Image {}:{} is clean (no matching CVEs)", image.imageRepository(), image.version());
                 continue;
             }
+
+            log.warn("ImageRemediationPlanner: Detected vulnerable image {}:{} with {} active CVEs in catalog!", 
+                    image.imageRepository(), image.version(), cves.size());
+
             if (planForImage(image.imageIri(), intentIri, upgradePolicy)) {
                 plannedAny = true;
+                plannedCount++;
             }
         }
+        log.info("ImageRemediationPlanner: Completed vulnerability scan. Remediated {} vulnerable images.", plannedCount);
         return plannedAny;
     }
 
     private boolean planForImage(IRI imageIri, IRI intentIri, UpgradePolicy upgradePolicy) {
         List<ImageUpdateTarget> targets = gateway.findWorkloadsByVulnerableImage(imageIri);
         if (targets.isEmpty()) {
+            log.info("ImageRemediationPlanner: No active workloads running vulnerable image {}", imageIri);
             return false;
         }
 
@@ -84,11 +98,15 @@ public class ImageRemediationPlanner {
         }
 
         if (uniqueByDeployment.isEmpty()) {
+            log.info("ImageRemediationPlanner: No valid upgrade path found for workloads using image {}", imageIri);
             return false;
         }
 
         for (ImageUpdateTarget target : uniqueByDeployment.values()) {
             String actionId = utils.generateActionId();
+            log.info("ImageRemediationPlanner: Planning image update action {} for deployment {}/{} (current: {}:{}, target: {})",
+                    actionId, target.namespace(), target.deploymentName(),
+                    target.imageRepository(), target.currentVersion(), target.targetVersion());
             gateway.createActionWorkflow(target.deploymentIri(), intentIri, actionId);
             gateway.storeActionHydration(actionId, Map.of(
                     "containerName", target.containerName(),
