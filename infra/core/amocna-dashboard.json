@@ -220,7 +220,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "rate(amocna_monitor_scan_duration_seconds_sum[1m]) / rate(amocna_monitor_scan_duration_seconds_count[1m])",
+          "expr": "rate(amocna_monitor_scan_seconds_sum[1m]) / rate(amocna_monitor_scan_seconds_count[1m])",
           "legendFormat": "Monitoring (Adapter)",
           "refId": "A"
         },
@@ -229,7 +229,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "rate(amocna_semantic_query_anomalies_seconds_sum[1m]) / rate(amocna_semantic_query_anomalies_seconds_count[1m])",
+          "expr": "rate(palamedes_graphdb_query_seconds_sum{type='anomalies'}[1m]) / rate(palamedes_graphdb_query_seconds_count{type='anomalies'}[1m])",
           "legendFormat": "Reasoning (Palamedes)",
           "refId": "B"
         },
@@ -238,7 +238,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "rate(metis_knowledge_batch_update_seconds_sum[1m]) / rate(metis_knowledge_batch_update_seconds_count[1m])",
+          "expr": "rate(metis_knowledge_update_seconds_sum[1m]) / rate(metis_knowledge_update_seconds_count[1m])",
           "legendFormat": "Knowledge Update (Metis)",
           "refId": "C"
         },
@@ -247,7 +247,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "rate(amocna_execute_shell_duration_seconds_sum[1m]) / rate(amocna_execute_shell_duration_seconds_count[1m])",
+          "expr": "rate(themis_execution_action_seconds_sum{protocol='shell'}[1m]) / rate(themis_execution_action_seconds_count{protocol='shell'}[1m])",
           "legendFormat": "Execution (Themis)",
           "refId": "D"
         }
