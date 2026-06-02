@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import sys
 import time
 import subprocess
@@ -7,6 +8,7 @@ from typing_extensions import Annotated
 import typer
 
 from amocna_cli.config import ProjectConfig
+from amocna_cli.commands.version import read_pom_version
 from amocna_cli.utils.ui import console, header, info, error, run, run_capture
 from amocna_cli.utils.shell import (
     LOCUST_SWARM_PYTHON_TEMPLATE,
@@ -29,6 +31,13 @@ app = typer.Typer(no_args_is_help=True)
 SOCK_SHOP_FRONTEND_IMAGE = "docker.io/weaveworksdemos/front-end"
 SOCK_SHOP_FRONTEND_VULNERABLE_TAG = "0.3.0"
 SOCK_SHOP_FRONTEND_PATCHED_TAG = "0.3.12"
+
+S6_NAMESPACE = "sock-shop"
+S6_SECRET_NAME = "regcred"
+S6_SIBLING_DEPLOY = "s6-sibling"
+S6_FAILING_DEPLOY = "s6-failing"
+S6_PRIVATE_IMAGE_APP = "metis"
+S6_WORKLOADS_MANIFEST = "s6-registry-credential-workloads.yaml"
 
 # ─── Benchmark helpers ─────────────────────────────────────────────
 
@@ -69,6 +78,217 @@ def stop_locust() -> None:
 def get_locust_stats() -> None:
     """Get active load statistics from Locust."""
     run(k8s_exec("sock-shop", "deploy/locust-master", ["python3", "-c", LOCUST_STATS_PYTHON_TEMPLATE]))
+
+
+def _load_k8s_manifest(cfg: ProjectConfig, filename: str, **replacements: str) -> str:
+    """Load a K8s manifest template from cli/resources/k8s and substitute placeholders."""
+    path = cfg.project_root / "cli" / "resources" / "k8s" / filename
+    if not path.is_file():
+        error(f"K8s manifest template not found: {path}")
+        sys.exit(1)
+    text = path.read_text()
+    for key, value in replacements.items():
+        text = text.replace("{" + key + "}", value)
+    return text
+
+
+def _require_registry_credentials() -> tuple[str, str]:
+    """Return (username, PAT) from the environment or exit."""
+    user = os.environ.get("AMOCNA_USER")
+    pat = os.environ.get("AMOCNA_PAT")
+    if not user:
+        error("AMOCNA_USER is not set. Export your GitHub username: export AMOCNA_USER=...")
+        sys.exit(1)
+    if not pat:
+        error("AMOCNA_PAT is not set. Export your GitHub PAT: export AMOCNA_PAT=...")
+        sys.exit(1)
+    return user, pat
+
+
+def _s6_private_image(cfg: ProjectConfig) -> str:
+    version = read_pom_version(cfg.project_root / cfg.parent_pom)
+    return f"{cfg.registry}/{S6_PRIVATE_IMAGE_APP}:{version}"
+
+
+def _s6_expected_version(cfg: ProjectConfig) -> str:
+    return read_pom_version(cfg.project_root / cfg.parent_pom)
+
+
+def _s6_deployment_image(namespace: str, deployment: str) -> str:
+    return run_capture(
+        k8s_get_jsonpath(
+            namespace,
+            "deployment",
+            deployment,
+            "{.spec.template.spec.containers[0].image}",
+        ),
+        check=False,
+    )
+
+
+def _s6_check_runtime_prerequisites(cfg: ProjectConfig) -> bool:
+    """Verify control-loop services run the expected version before Scenario 6."""
+    expected = _s6_expected_version(cfg)
+    services = [
+        ("metis", "metis"),
+        ("palamedes", "palamedes"),
+        ("themis", "themis"),
+    ]
+    mismatches: list[str] = []
+    for namespace, deployment in services:
+        image = _s6_deployment_image(namespace, deployment)
+        if not image:
+            mismatches.append(f"{deployment}: deployment/image not found")
+            continue
+        if f":{expected}" not in image:
+            mismatches.append(
+                f"{deployment}: running {image} (expected tag :{expected})"
+            )
+    if mismatches:
+        error("Scenario 6 preflight failed: control-loop images are out of sync.")
+        for mismatch in mismatches:
+            console.print(f"    - {mismatch}")
+        console.print(
+            "    Hint: rebuild/push and redeploy metis, palamedes, themis to the same project version."
+        )
+        return False
+    return True
+
+
+def _s6_print_timeout_diagnostics() -> None:
+    """Print concise diagnostics to explain why Scenario 6 may be stuck."""
+    info("Collecting Scenario 6 diagnostics...")
+    pod = run_capture(
+        k8s_get_pods_jsonpath(S6_NAMESPACE, "app=s6-failing", "{.items[0].metadata.name}"),
+        check=False,
+    )
+    if pod:
+        reason = run_capture(
+            [
+                "kubectl",
+                "get",
+                "pod",
+                pod,
+                "-n",
+                S6_NAMESPACE,
+                "-o=jsonpath={.status.containerStatuses[0].state.waiting.reason}",
+            ],
+            check=False,
+        )
+        msg = run_capture(
+            [
+                "kubectl",
+                "get",
+                "pod",
+                pod,
+                "-n",
+                S6_NAMESPACE,
+                "-o=jsonpath={.status.containerStatuses[0].state.waiting.message}",
+            ],
+            check=False,
+        )
+        console.print(f"    failing pod: {pod}")
+        console.print(f"    pull reason: {reason or '(unknown)'}")
+        if msg:
+            console.print(f"    pull message: {msg}")
+
+    dep_secret = run_capture(
+        k8s_get_jsonpath(
+            S6_NAMESPACE,
+            "deployment",
+            S6_FAILING_DEPLOY,
+            "{.spec.template.spec.imagePullSecrets[0].name}",
+        ),
+        check=False,
+    )
+    console.print(f"    deployment imagePullSecret: {dep_secret or '(none)'}")
+
+    pal_logs = run_capture(
+        ["kubectl", "logs", "-n", "palamedes", "deployment/palamedes", "--since=5m"],
+        check=False,
+    )
+    markers = [
+        "Planned imagePullSecret patch",
+        "AddImagePullSecretIntent",
+        "RegistryCredentialPlanner",
+    ]
+    found = [m for m in markers if m in pal_logs]
+    if found:
+        console.print(f"    palamedes markers found: {', '.join(found)}")
+    else:
+        console.print("    palamedes markers found: none")
+
+
+def _create_docker_registry_secret(namespace: str, name: str, username: str, password: str) -> None:
+    """Create or update a docker-registry pull secret (ghcr.io)."""
+    create = subprocess.run(
+        [
+            "kubectl",
+            "create",
+            "secret",
+            "docker-registry",
+            name,
+            "-n",
+            namespace,
+            "--docker-server=ghcr.io",
+            f"--docker-username={username}",
+            f"--docker-password={password}",
+            "--dry-run=client",
+            "-o",
+            "yaml",
+        ],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    subprocess.run(
+        ["kubectl", "apply", "-f", "-"],
+        input=create.stdout,
+        text=True,
+        check=True,
+    )
+
+
+def _apply_manifest_stdin(manifest: str) -> None:
+    subprocess.run(
+        ["kubectl", "apply", "-f", "-"],
+        input=manifest,
+        text=True,
+        check=True,
+    )
+
+
+def _cleanup_s6_benchmark(cfg: ProjectConfig) -> None:
+    """Remove Scenario 6 workloads, pull secret, and related GraphDB triples."""
+    for deploy in (S6_FAILING_DEPLOY, S6_SIBLING_DEPLOY):
+        run(k8s_delete_resource("deployment", deploy, namespace=S6_NAMESPACE), check=False)
+    run(k8s_delete_resource("secret", S6_SECRET_NAME, namespace=S6_NAMESPACE), check=False)
+    clean_s6 = _load_sparql_query(cfg, "clean-s6.sparql")
+    run_sparql(cfg, clean_s6)
+
+
+def _poke_s6_failing_pod() -> None:
+    """Trigger a pod update so Metis re-asserts ImagePullBackOffState after phase sensing."""
+    pod_name = run_capture(
+        k8s_get_pods_jsonpath(S6_NAMESPACE, "app=s6-failing", "{.items[0].metadata.name}"),
+        check=False,
+    )
+    if not pod_name:
+        return
+    run(
+        [
+            "kubectl",
+            "annotate",
+            "pod",
+            pod_name,
+            "-n",
+            S6_NAMESPACE,
+            f"amocna.benchmark/s6-poke={int(time.time())}",
+            "--overwrite",
+        ],
+        check=False,
+    )
+
 
 # ─── Benchmark Subcommands ─────────────────────────────────────────
 
@@ -131,6 +351,9 @@ def benchmark_stop(ctx: typer.Context):
     restore_query = _load_sparql_query(cfg, "restore-restart.sparql")
     run_sparql(cfg, restore_query)
 
+    info("Removing Scenario 6 benchmark workloads and graph triples...")
+    _cleanup_s6_benchmark(cfg)
+
     info("System successfully returned to baseline.")
     console.print()
 
@@ -148,7 +371,7 @@ def benchmark_load(
 @app.command("run")
 def benchmark_run(
     ctx: typer.Context,
-    scenario: Annotated[str, typer.Option(help="Scenario to run (1, 2, 3, 4, 5, all)")],
+    scenario: Annotated[str, typer.Option(help="Scenario to run (1, 2, 3, 4, 5, 6, all)")],
 ):
     """Run a specific scenario or all benchmarks."""
     cfg: ProjectConfig = ctx.obj
@@ -428,9 +651,113 @@ def benchmark_run(
                 "✖ TIMEOUT: Autonomic vulnerability loop failed to patch front-end within 120s."
             )
 
+    elif scenario == "6":
+        info("Initializing Scenario 6: Registry Credential Remediation...")
+        private_image = _s6_private_image(cfg)
+        info(f"Using private image: {private_image}")
+
+        info("Preflight: checking AMoCNA service image versions...")
+        if not _s6_check_runtime_prerequisites(cfg):
+            return
+
+        info("Step 1: Cleaning up any previous Scenario 6 resources...")
+        _cleanup_s6_benchmark(cfg)
+
+        user, pat = _require_registry_credentials()
+        info(f"Step 2: Creating docker-registry secret '{S6_SECRET_NAME}' in {S6_NAMESPACE}...")
+        _create_docker_registry_secret(S6_NAMESPACE, S6_SECRET_NAME, user, pat)
+
+        info("Step 3: Deploying sibling (with regcred) and failing (without) workloads...")
+        manifest = _load_k8s_manifest(
+            cfg, S6_WORKLOADS_MANIFEST, private_image=private_image
+        )
+        _apply_manifest_stdin(manifest)
+
+        info("Step 4: Waiting for failing pod ImagePullBackOff...")
+        pull_backoff = False
+        for i in range(18):
+            time.sleep(5)
+            reason = run_capture(
+                k8s_get_pods_jsonpath(
+                    S6_NAMESPACE,
+                    "app=s6-failing",
+                    "{.items[0].status.containerStatuses[0].state.waiting.reason}",
+                ),
+                check=False,
+            )
+            if reason in ("ImagePullBackOff", "ErrImagePull"):
+                info(f"    Failing pod pull error detected: {reason}")
+                pull_backoff = True
+                break
+            console.print(
+                f"    Waiting for pull failure (current: {reason or 'pending'})... ({i * 5}s)"
+            )
+
+        if not pull_backoff:
+            error("✖ TIMEOUT: Failing workload did not reach ImagePullBackOff within 90s.")
+            _cleanup_s6_benchmark(cfg)
+            return
+
+        info("Step 5: Nudging failing pod so Metis asserts ImagePullBackOffState...")
+        _poke_s6_failing_pod()
+        time.sleep(8)
+
+        start_time = time.time()
+        patched = False
+        healed = False
+        info(
+            "Step 6: Polling for autonomic imagePullSecrets patch and pod recovery..."
+        )
+        for i in range(24):
+            time.sleep(5)
+            secret = run_capture(
+                k8s_get_jsonpath(
+                    S6_NAMESPACE,
+                    "deployment",
+                    S6_FAILING_DEPLOY,
+                    "{.spec.template.spec.imagePullSecrets[0].name}",
+                ),
+                check=False,
+            )
+            phase = run_capture(
+                k8s_get_pods_jsonpath(
+                    S6_NAMESPACE, "app=s6-failing", "{.items[0].status.phase}"
+                ),
+                check=False,
+            )
+            if secret == S6_SECRET_NAME:
+                patched = True
+            if phase == "Running":
+                healed = True
+            if patched and healed:
+                duration = time.time() - start_time
+                info(
+                    f"[green]✔ SUCCESS: Deployment patched with '{S6_SECRET_NAME}' and "
+                    f"failing pod is Running in {duration:.1f}s![/green]"
+                )
+                break
+            console.print(
+                f"    imagePullSecrets={secret or '(none)'}, pod phase={phase or 'unknown'}... "
+                f"({i * 5}s)"
+            )
+
+        if not patched:
+            error(
+                "✖ TIMEOUT: Autonomic loop did not patch imagePullSecrets within 120s."
+            )
+            _s6_print_timeout_diagnostics()
+        elif not healed:
+            error(
+                "✖ TIMEOUT: Deployment was patched but failing pod did not reach Running within 120s."
+            )
+            _s6_print_timeout_diagnostics()
+
+        info("Cleaning up Scenario 6...")
+        _cleanup_s6_benchmark(cfg)
+
     elif scenario == "all":
         info("Starting complete automated benchmark cycle...")
-        for sc in ["1", "2", "3", "4", "5"]:
+        for sc in ["1", "2", "3", "4", "5", "6"]:
             run(["amocna", "benchmark", "run", "--scenario", sc])
             info("Waiting 15 seconds between scenarios...")
             time.sleep(15)

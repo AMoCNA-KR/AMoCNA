@@ -1,8 +1,8 @@
 ${SPARQL_PREFIXES}
 SELECT DISTINCT ?deployment ?deploymentName ?namespace ?pullSecretName WHERE {
-  # Failing pod: stuck ImagePullBackOff, pulls from a registry, but has no pull secret of its own
-  ?failPod cnee:hasState ?st .
-  ?st a cnee:ImagePullBackOffState .
+  # Failing pod: stuck ImagePullBackOff, pulls from a registry, but has no pull secret of its own.
+  # Metis writes the state class directly as the hasState value (cnee:hasState cnee:ImagePullBackOffState).
+  ?failPod cnee:hasState cnee:ImagePullBackOffState .
   ?failPod cnee:pullsImageFrom ?registry .
   ?failPod cnee:namespace ?namespace .
   FILTER NOT EXISTS { ?failPod cnee:authenticatesWith ?own . }
