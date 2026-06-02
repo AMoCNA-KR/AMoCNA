@@ -278,6 +278,24 @@ public class GraphDBGateway {
         }
     }
 
+    public Optional<ImageUpdateTarget> findWorkloadDetails(IRI workloadIri) {
+        List<BindingSet> results = sparqlRepository.fetchWorkloadDetails(workloadIri.stringValue());
+        if (results.isEmpty()) return Optional.empty();
+        
+        BindingSet bs = results.getFirst();
+        return Optional.of(new ImageUpdateTarget(
+                workloadIri,
+                workloadIri.getLocalName(),
+                ImageRemediationPlanner.parseNamespaceFromDeploymentIri(workloadIri),
+                bs.getValue("containerName").stringValue(),
+                bs.getValue("imageRepository").stringValue(),
+                bs.getValue("currentVersion").stringValue(),
+                null,
+                null,
+                null
+        ));
+    }
+
     public List<ImageUpdateTarget> findWorkloadsByVulnerableImage(IRI imageIri) {
         return sparqlRepository.findWorkloadsByVulnerableImage(imageIri.stringValue()).stream()
                 .map(bs -> new ImageUpdateTarget(
