@@ -20,12 +20,18 @@ import org.springframework.context.annotation.Configuration;
 public class RabbitMQConfig {
 
     public static final String GRAPH_UPDATES_QUEUE = "amocna.graph.updates";
+    public static final String VULNERABILITY_UPDATES_QUEUE = "amocna.vulnerability.updates";
     public static final String EXCHANGE = "amocna.topic.exchange";
     public static final String ROUTING_KEY = "graph.updates.metis";
 
     @Bean
     public Queue graphUpdatesQueue() {
         return new Queue(GRAPH_UPDATES_QUEUE, true);
+    }
+
+    @Bean
+    public Queue vulnerabilityUpdatesQueue() {
+        return new Queue(VULNERABILITY_UPDATES_QUEUE, true);
     }
 
     @Bean
@@ -36,6 +42,11 @@ public class RabbitMQConfig {
     @Bean
     public Binding graphUpdatesBinding(Queue graphUpdatesQueue, TopicExchange amocnaExchange) {
         return BindingBuilder.bind(graphUpdatesQueue).to(amocnaExchange).with("graph.updates.*");
+    }
+
+    @Bean
+    public Binding vulnerabilityUpdatesBinding(Queue vulnerabilityUpdatesQueue, TopicExchange amocnaExchange) {
+        return BindingBuilder.bind(vulnerabilityUpdatesQueue).to(amocnaExchange).with(ROUTING_KEY);
     }
 
     @Bean

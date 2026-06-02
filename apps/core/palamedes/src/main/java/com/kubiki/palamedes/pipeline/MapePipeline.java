@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import com.kubiki.common.logging.MdcPropagatingExecutor;
 import java.util.concurrent.Executors;
 
 @Service
@@ -43,7 +44,7 @@ public class MapePipeline {
         List<List<ActiveActionSummary>> batches = partition(activeActions, batchSize);
         log.info("MapePipeline: Partitioned active actions into {} batches", batches.size());
 
-        try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {
+        try (var executor = MdcPropagatingExecutor.newVirtualThreadPerTaskExecutor()) {
             for (List<ActiveActionSummary> batch : batches) {
                 executor.submit(() -> processBatch(batch));
             }
