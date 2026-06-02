@@ -38,7 +38,7 @@ S6_NAMESPACE = "sock-shop"
 S6_SECRET_NAME = "regcred"
 S6_SIBLING_DEPLOY = "s6-sibling"
 S6_FAILING_DEPLOY = "s6-failing"
-S6_PRIVATE_IMAGE_APP = "metis"
+S6_PRIVATE_IMAGE_APP = "s7-private-demo"
 S6_WORKLOADS_MANIFEST = "s6-registry-credential-workloads.yaml"
 
 # ─── Benchmark helpers ─────────────────────────────────────────────
@@ -356,10 +356,33 @@ def _cleanup_s7_benchmark(cfg: ProjectConfig) -> None:
 
 def _poke_s7_failing_pod() -> None:
     """Trigger a pod update so Metis re-asserts ImagePullBackOffState after phase sensing."""
-    pod_name = run_capture(
-        k8s_get_pods_jsonpath(S6_NAMESPACE, "app=s6-failing", "{.items[0].metadata.name}"),
+    pods_raw = run_capture(
+        k8s_get_pods_jsonpath(
+            S6_NAMESPACE,
+            "app=s6-failing",
+            "{range .items[*]}{.metadata.name}|{.metadata.deletionTimestamp}{'\\n'}{end}",
+        ),
         check=False,
     )
+    pod_name = None
+    for line in (pods_raw or "").splitlines():
+        if not line.strip():
+            continue
+        parts = line.split("|")
+        name = parts[0] if len(parts) > 0 else ""
+        deletion_ts = parts[1] if len(parts) > 1 else ""
+        deletion_ts = deletion_ts.strip()
+        if not deletion_ts:
+            pod_name = name
+            break
+    if pod_name is None:
+        # Fallback to first available pod if all are terminating.
+        pod_name = run_capture(
+            k8s_get_pods_jsonpath(
+                S6_NAMESPACE, "app=s6-failing", "{.items[0].metadata.name}"
+            ),
+            check=False,
+        )
     if not pod_name:
         return
     run(
@@ -375,6 +398,30 @@ def _poke_s7_failing_pod() -> None:
         ],
         check=False,
     )
+
+def _s7_failing_pod_snapshots() -> list[tuple[str, str, str, bool]]:
+    """
+    Return [(podName, phase, waitingReason, terminating), ...] for app=s6-failing.
+    """
+    raw = run_capture(
+        k8s_get_pods_jsonpath(
+            S6_NAMESPACE,
+            "app=s6-failing",
+            "{range .items[*]}{.metadata.name}|{.status.phase}|{.status.containerStatuses[0].state.waiting.reason}|{.metadata.deletionTimestamp}{'\\n'}{end}",
+        ),
+        check=False,
+    )
+    snapshots: list[tuple[str, str, str, bool]] = []
+    for line in (raw or "").splitlines():
+        if not line.strip():
+            continue
+        parts = line.split("|")
+        name = parts[0] if len(parts) > 0 else ""
+        phase = parts[1] if len(parts) > 1 else ""
+        reason = parts[2] if len(parts) > 2 else ""
+        deletion_ts = parts[3].strip() if len(parts) > 3 else ""
+        snapshots.append((name, phase or "", reason or "", bool(deletion_ts)))
+    return snapshots
 
 
 # ─── Benchmark Subcommands ─────────────────────────────────────────
@@ -478,6 +525,13 @@ def benchmark_run(
     scenario: Annotated[
         str, typer.Option(help="Scenario to run (1, 2, 3, 4, 5, 6, 7, all)")
     ],
+    keep_on_failure: Annotated[
+        bool,
+        typer.Option(
+            "--keep-on-failure",
+            help="Keep scenario resources for debugging when a scenario fails.",
+        ),
+    ] = False,
 ):
     """Run a specific scenario or all benchmarks."""
     cfg: ProjectConfig = ctx.obj
@@ -886,6 +940,10 @@ def benchmark_run(
                 "STEP_2_FAILED",
                 f"Secret verification failed (type={secret_type or 'missing'})",
             )
+            if keep_on_failure:
+                logger.log("KEEP_ON_FAILURE", "Keeping resources for post-failure debugging")
+            else:
+                _cleanup_s7_benchmark(cfg)
             logger.save()
             error(
                 f"✖ ERROR: Secret '{S6_SECRET_NAME}' missing or invalid in namespace '{S6_NAMESPACE}'."
@@ -895,67 +953,51 @@ def benchmark_run(
 
         logger.log(
             "STEP_3",
-            "Deploying sibling (with regcred) and failing (without) workloads...",
+            "Deploying workloads (failing starts immediately; sibling starts later)...",
         )
         manifest = _load_k8s_manifest(
             cfg, S6_WORKLOADS_MANIFEST, private_image=private_image
         )
         _apply_manifest_stdin(manifest)
 
-        if not _s7_wait_for_sibling_running(logger):
-            logger.log(
-                "TIMEOUT_SIBLING",
-                "Sibling workload did not become Running before remediation observation",
-            )
-            _s7_print_timeout_diagnostics()
-            _cleanup_s7_benchmark(cfg)
-            logger.save()
-            error(
-                "✖ TIMEOUT: Sibling workload did not reach Running within 240s."
-            )
-            return
-
-        logger.log("STEP_4", "Waiting for failing pod ImagePullBackOff...")
+        logger.log("STEP_4", "Waiting for failing pod ImagePullBackOff before enabling sibling...")
         pull_backoff = False
         failing_ran_without_pull_failure = False
         for i in range(18):
             time.sleep(5)
-            reason = run_capture(
-                k8s_get_pods_jsonpath(
-                    S6_NAMESPACE,
-                    "app=s6-failing",
-                    "{.items[0].status.containerStatuses[0].state.waiting.reason}",
-                ),
-                check=False,
+            snapshots = _s7_failing_pod_snapshots()
+            active = [s for s in snapshots if not s[3]]
+            pull_failure = next(
+                (s for s in active if s[2] in ("ImagePullBackOff", "ErrImagePull")),
+                None,
             )
-            phase = run_capture(
-                k8s_get_pods_jsonpath(
-                    S6_NAMESPACE,
-                    "app=s6-failing",
-                    "{.items[0].status.phase}",
-                ),
-                check=False,
-            )
-            if reason in ("ImagePullBackOff", "ErrImagePull"):
+            if pull_failure:
                 logger.log(
                     "PULL_FAILURE_DETECTED",
-                    f"Failing pod pull error detected: {reason}",
+                    f"Failing pod pull error detected on {pull_failure[0]}: {pull_failure[2]}",
                 )
                 pull_backoff = True
                 break
-            if phase == "Running":
+            if active and all(s[1] == "Running" for s in active):
                 logger.log(
                     "NO_PULL_FAILURE",
-                    "Failing pod reached Running before any pull failure (likely image cache hit)",
+                    "All active failing pods reached Running before any pull failure (likely image cache hit)",
                 )
                 failing_ran_without_pull_failure = True
                 break
+            states = ", ".join(
+                f"{name}:{phase or 'unknown'}/{reason or 'none'}{'(term)' if term else ''}"
+                for name, phase, reason, term in snapshots
+            ) or "none"
             console.print(
-                f"    Waiting for pull failure (phase={phase or 'unknown'}, reason={reason or 'none'})... ({i * 5}s)"
+                f"    Waiting for pull failure (pods={states})... ({i * 5}s)"
             )
 
         if failing_ran_without_pull_failure:
-            _cleanup_s7_benchmark(cfg)
+            if keep_on_failure:
+                logger.log("KEEP_ON_FAILURE", "Keeping resources for post-failure debugging")
+            else:
+                _cleanup_s7_benchmark(cfg)
             logger.save()
             error(
                 "✖ Scenario precondition failed: s6-failing became Running (no ImagePullBackOff). "
@@ -968,14 +1010,29 @@ def benchmark_run(
                 "TIMEOUT",
                 "Failing workload did not reach ImagePullBackOff within 90s",
             )
-            _cleanup_s7_benchmark(cfg)
+            if keep_on_failure:
+                logger.log("KEEP_ON_FAILURE", "Keeping resources for post-failure debugging")
+            else:
+                _cleanup_s7_benchmark(cfg)
             logger.save()
             error("✖ TIMEOUT: Failing workload did not reach ImagePullBackOff within 90s.")
             return
 
-        logger.log("STEP_5", "Nudging failing pod so Metis asserts ImagePullBackOffState...")
-        _poke_s7_failing_pod()
-        time.sleep(8)
+        logger.log("STEP_5", "Scaling sibling to 1 replica to provide valid pull secret source...")
+        run(k8s_scale(S6_NAMESPACE, S6_SIBLING_DEPLOY, 1), check=False)
+        if not _s7_wait_for_sibling_running(logger):
+            logger.log(
+                "TIMEOUT_SIBLING",
+                "Sibling workload did not become Running after scale-up",
+            )
+            _s7_print_timeout_diagnostics()
+            if keep_on_failure:
+                logger.log("KEEP_ON_FAILURE", "Keeping resources for post-failure debugging")
+            else:
+                _cleanup_s7_benchmark(cfg)
+            logger.save()
+            error("✖ TIMEOUT: Sibling workload did not reach Running within 240s after scale-up.")
+            return
 
         start_time = time.time()
         patched = False
@@ -1027,6 +1084,11 @@ def benchmark_run(
                 "✖ TIMEOUT: Autonomic loop did not patch imagePullSecrets within 120s."
             )
             _s7_print_timeout_diagnostics()
+            if keep_on_failure:
+                logger.log("KEEP_ON_FAILURE", "Keeping resources for post-failure debugging")
+            else:
+                _cleanup_s7_benchmark(cfg)
+                logger.log("CLEANUP", "Cleaned up Scenario 7 resources after failure")
         elif not healed:
             logger.log(
                 "TIMEOUT_NOT_HEALED",
@@ -1036,9 +1098,14 @@ def benchmark_run(
                 "✖ TIMEOUT: Deployment was patched but failing pod did not reach Running within 120s."
             )
             _s7_print_timeout_diagnostics()
-
-        logger.log("CLEANUP", "Cleaning up Scenario 7 resources...")
-        _cleanup_s7_benchmark(cfg)
+            if keep_on_failure:
+                logger.log("KEEP_ON_FAILURE", "Keeping resources for post-failure debugging")
+            else:
+                _cleanup_s7_benchmark(cfg)
+                logger.log("CLEANUP", "Cleaned up Scenario 7 resources after failure")
+        else:
+            logger.log("CLEANUP", "Cleaning up Scenario 7 resources...")
+            _cleanup_s7_benchmark(cfg)
         logger.log("END_SCENARIO", "Scenario 7 completed")
         logger.save()
 

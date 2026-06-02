@@ -5,6 +5,8 @@ import com.kubiki.metis.grpc.*;
 import com.kubiki.metis.knowledge.CneeOntology;
 import com.kubiki.metis.sensor.IriFactory;
 import com.kubiki.metis.sensor.SensorEventPublisher;
+import io.fabric8.kubernetes.api.model.ContainerStateWaiting;
+import io.fabric8.kubernetes.api.model.ContainerStatus;
 import io.fabric8.kubernetes.api.model.OwnerReference;
 import io.fabric8.kubernetes.api.model.Pod;
 import io.fabric8.kubernetes.client.KubernetesClient;
@@ -58,6 +60,31 @@ public class PodSensor extends AbstractNamespacedSensor {
     private static String podPhase(Pod pod) {
         if (pod.getStatus() == null) return null;
         return pod.getStatus().getPhase();
+    }
+
+    /**
+     * Resolve the state to emit for the pod.
+     *
+     * <p>For phase=Pending, prefer explicit pull anomaly over generic pending.
+     * This prevents PodSensor from overwriting container anomaly state on add/update races.
+     */
+    private static String resolveStateLocalName(Pod pod, String phase) {
+        if (!"Pending".equals(phase) || pod.getStatus() == null) {
+            return PHASE_TO_STATE.getOrDefault(phase, CneeOntology.STATE_UNKNOWN);
+        }
+        var statuses = pod.getStatus().getContainerStatuses();
+        if (statuses != null) {
+            for (ContainerStatus cs : statuses) {
+                ContainerStateWaiting waiting =
+                        cs.getState() != null ? cs.getState().getWaiting() : null;
+                if (waiting == null) continue;
+                String reason = waiting.getReason();
+                if ("ImagePullBackOff".equals(reason) || "ErrImagePull".equals(reason)) {
+                    return CneeOntology.STATE_IMAGE_PULL_BACKOFF;
+                }
+            }
+        }
+        return CneeOntology.STATE_PENDING;
     }
 
     @Override
@@ -129,7 +156,7 @@ public class PodSensor extends AbstractNamespacedSensor {
         // Also emit initial state if phase is known
         String phase = podPhase(pod);
         if (phase != null) {
-            emitStateChange(iri, phase, null);
+            emitStateChange(iri, pod, phase, null);
         }
 
         log.debug("PodSensor: added pod {}/{}", ns, name);
@@ -144,7 +171,7 @@ public class PodSensor extends AbstractNamespacedSensor {
         String iri = iriFactory.namespacedIri(CneeOntology.KIND_POD, ns, name);
 
         if (newPhase != null && !newPhase.equals(oldPhase)) {
-            emitStateChange(iri, newPhase, oldPhase);
+            emitStateChange(iri, newPod, newPhase, oldPhase);
             log.debug("PodSensor: state change {}/{} {} → {}", ns, name, oldPhase, newPhase);
         }
 
@@ -181,8 +208,8 @@ public class PodSensor extends AbstractNamespacedSensor {
         log.debug("PodSensor: deleted pod {}/{}", ns, name);
     }
 
-    private void emitStateChange(String resourceIri, String phase, String previousPhase) {
-        String stateLocalName = PHASE_TO_STATE.getOrDefault(phase, CneeOntology.STATE_UNKNOWN);
+    private void emitStateChange(String resourceIri, Pod pod, String phase, String previousPhase) {
+        String stateLocalName = resolveStateLocalName(pod, phase);
         String newStateIri = iriFactory.typeIri(stateLocalName);
 
         StateChangedEvent.Builder builder = StateChangedEvent.newBuilder()
