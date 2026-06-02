@@ -9,7 +9,8 @@ import io.grpc.stub.StreamObserver;
 import net.devh.boot.grpc.server.service.GrpcService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.slf4j.MDC;
+import com.kubiki.common.logging.MdcContext;
+import com.kubiki.common.logging.MdcParam;
 
 import java.util.stream.Collectors;
 
@@ -44,10 +45,11 @@ public class SensorIngestionGrpcService
     }
 
     @Override
-    public void ingestBatch(SensorBatch request,
-                            StreamObserver<IngestResponse> responseObserver) {
+    @MdcContext
+    public void ingestBatch(
+            @MdcParam(value = "correlationId", property = "correlationId") SensorBatch request,
+            StreamObserver<IngestResponse> responseObserver) {
         String correlationId = request.getCorrelationId();
-        MDC.put("correlationId", correlationId);
         try {
             if (correlationId.length() > MAX_CORRELATION_ID_LENGTH) {
                 log.warn("Rejected batch: correlation_id exceeds {} characters [length={}]",
@@ -90,7 +92,7 @@ public class SensorIngestionGrpcService
 
             String message = processResult.failureMessages().isEmpty()
                     ? ""
-                    : processResult.failureMessages().stream().collect(Collectors.joining("; "));
+                    : String.join("; ", processResult.failureMessages());
 
             IngestResponse response = IngestResponse.newBuilder()
                     .setAccepted(accepted)
@@ -112,8 +114,6 @@ public class SensorIngestionGrpcService
                             .withDescription("Internal error: " + e.getMessage())
                             .withCause(e)
                             .asRuntimeException());
-        } finally {
-            MDC.clear();
         }
     }
 }

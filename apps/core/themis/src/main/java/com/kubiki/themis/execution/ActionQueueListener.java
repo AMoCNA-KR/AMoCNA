@@ -10,7 +10,8 @@ import com.kubiki.themis.policy.ConditionEvaluator;
 import io.micrometer.core.annotation.Timed;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.slf4j.MDC;
+import com.kubiki.common.logging.MdcContext;
+import com.kubiki.common.logging.MdcParam;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.stereotype.Component;
@@ -34,13 +35,11 @@ public class ActionQueueListener {
 
     @RabbitListener(queues = RabbitMQConfig.ACTION_QUEUE)
     @Timed(value = "themis.queue.receive", description = "Time taken to process action from queue")
-    public void receiveAction(ActionMessage message) {
-        MDC.put("actionId", message.actionId());
-        if (message.protocol() != null) {
-            MDC.put("protocol", message.protocol().name());
-        }
-        try {
-            log.info("Received action from queue: {}", message.actionId());
+    @MdcContext
+    public void receiveAction(
+            @MdcParam(value = "actionId", property = "actionId")
+            @MdcParam(value = "protocol", property = "protocol") ActionMessage message) {
+        log.info("Received action from queue: {}", message.actionId());
 
             if (!conditionEvaluator.evaluatePreConditions(message.actionId())) {
                 log.warn("Pre-conditions failed for action: {}", message.actionId());
@@ -88,9 +87,6 @@ public class ActionQueueListener {
 
             statusProducer.sendUpdate(status);
             log.info("Sent status update for action {}: {}", message.actionId(), result.status());
-        } finally {
-            MDC.clear();
-        }
     }
 
     private ExecutionResult executeWithRetry(ProtocolExecutor executor, ActionMessage message) {
