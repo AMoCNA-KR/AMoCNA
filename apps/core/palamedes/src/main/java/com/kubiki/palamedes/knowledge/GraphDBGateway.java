@@ -15,7 +15,6 @@ import com.kubiki.palamedes.model.WorkflowStateMapper;
 import com.kubiki.palamedes.knowledge.Result;
 import io.micrometer.core.annotation.Timed;
 import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.Timer;
 import lombok.RequiredArgsConstructor;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
@@ -304,19 +303,15 @@ public class GraphDBGateway {
                 .toList();
     }
 
+    @Timed(value = "palamedes.graphdb.query", extraTags = {"type", "registry-auth"}, description = "Time taken to find registry auth failures")
     public List<RegistryAuthTarget> findRegistryAuthFailures() {
-        Timer.Sample sample = Timer.start(meterRegistry);
-        try {
-            return sparqlRepository.findRegistryAuthFailures().stream()
-                    .map(bs -> new RegistryAuthTarget(
-                            (IRI) bs.getValue("deployment"),
-                            bs.getValue("deploymentName").stringValue(),
-                            bs.getValue("namespace").stringValue(),
-                            bs.getValue("pullSecretName").stringValue()))
-                    .toList();
-        } finally {
-            sample.stop(Timer.builder("amocna.semantic.query.anomalies").register(meterRegistry));
-        }
+        return sparqlRepository.findRegistryAuthFailures().stream()
+                .map(bs -> new RegistryAuthTarget(
+                        (IRI) bs.getValue("deployment"),
+                        bs.getValue("deploymentName").stringValue(),
+                        bs.getValue("namespace").stringValue(),
+                        bs.getValue("pullSecretName").stringValue()))
+                .toList();
     }
 
     public List<ImageInTopology> findImagesInTopology() {
