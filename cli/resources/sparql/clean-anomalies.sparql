@@ -5,5 +5,5 @@ DELETE {
 WHERE {
   ?s cnee:hasState ?state .
   ?state a ?stateType .
-  FILTER(?stateType IN (cnee:ResponseTimeSlaViolatedState, cnee:SecurityVulnerabilityDetectedState, cnee:ConfigDriftState))
+  FILTER(?stateType IN (cnee:ResponseTimeSlaViolatedState, cnee:ResponseTimeNormalState, cnee:SecurityVulnerabilityDetectedState, cnee:ConfigDriftState))
 }

@@ -2,10 +2,10 @@ package com.kubiki.metis.knowledge;
 
 import com.kubiki.metis.grpc.*;
 import com.kubiki.metis.sensor.IriFactory;
+import io.micrometer.core.annotation.Timed;
+import io.micrometer.core.instrument.MeterRegistry;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.Timer;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -25,6 +25,7 @@ public class KnowledgeBaseWriter {
         this.meterRegistry = meterRegistry;
     }
 
+    @Timed(value = "metis.writer.op", extraTags = {"operation", "insertEntity"}, description = "Time taken to insert entity")
     public String insertEntity(EntityDiscoveredEvent event) throws KnowledgeBaseException {
         String resourceIri = event.getResourceIri();
         String ontologyType = event.getOntologyType();
@@ -63,6 +64,7 @@ public class KnowledgeBaseWriter {
         }
     }
 
+    @Timed(value = "metis.writer.op", extraTags = {"operation", "assertRelationship"}, description = "Time taken to assert relationship")
     public String assertRelationship(RelationshipAssertedEvent event) throws KnowledgeBaseException {
         String subjectIri = event.getSubjectIri();
         String predicate = event.getPredicate();
@@ -88,6 +90,7 @@ public class KnowledgeBaseWriter {
         }
     }
 
+    @Timed(value = "metis.writer.op", extraTags = {"operation", "changeState"}, description = "Time taken to change state")
     public String changeState(StateChangedEvent event) throws KnowledgeBaseException {
         try {
             String resourceIri = event.getResourceIri();
@@ -114,6 +117,7 @@ public class KnowledgeBaseWriter {
         }
     }
 
+    @Timed(value = "metis.writer.op", extraTags = {"operation", "deleteEntity"}, description = "Time taken to delete entity")
     public String deleteEntity(EntityDeletedEvent event) throws KnowledgeBaseException {
         String resourceIri = event.getResourceIri();
         if (resourceIri == null || resourceIri.isBlank()) {
@@ -127,6 +131,7 @@ public class KnowledgeBaseWriter {
         }
     }
 
+    @Timed(value = "metis.writer.op", extraTags = {"operation", "registerMetricMetadata"}, description = "Time taken to register metric metadata")
     public String registerMetricMetadata(MetricMetadataRegisteredEvent event) throws KnowledgeBaseException {
         String resourceIri = event.getResourceIri();
         String endpointUrl = event.getEndpointUrl();
@@ -204,4 +209,3 @@ public class KnowledgeBaseWriter {
         return URLEncoder.encode(raw, StandardCharsets.UTF_8).replace("+", "%20");
     }
 }
-

@@ -4,6 +4,7 @@ import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.client.WireMock;
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
 import com.kubiki.metis.grpc.*;
+import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.grpc.inprocess.InProcessChannelBuilder;
 import org.eclipse.rdf4j.model.ValueFactory;
@@ -153,7 +154,7 @@ class SensorIngestionGrpcServiceIT {
         assertThatThrownBy(() -> stub.ingestBatch(batch))
                 .isInstanceOf(StatusRuntimeException.class)
                 .satisfies(ex -> assertThat(((StatusRuntimeException) ex).getStatus().getCode())
-                        .isEqualTo(io.grpc.Status.Code.UNAVAILABLE));
+                        .isEqualTo(Status.Code.INTERNAL));
     }
 
     @Test

@@ -8,13 +8,19 @@ WHERE {
                owl:someValuesFrom ?intent .
 
   # 2. Find topology-linked resource that HAS this anomaly type
-  ${IRI::startResource} (${PREFIX::RESOURCES_PREFIX}:dependsOn|${PREFIX::RESOURCES_PREFIX}:usesStorage|${PREFIX::RESOURCES_PREFIX}:isHostedOn|${PREFIX::RESOURCES_PREFIX}:isRealizedBy)* ?rootResource .
+  ${IRI::startResource} (${PREFIX::RESOURCES_PREFIX}:dependsOn|${PREFIX::RESOURCES_PREFIX}:usesStorage|${PREFIX::RESOURCES_PREFIX}:isHostedOn|${PREFIX::RESOURCES_PREFIX}:isRealizedBy)* ?anomalyResource .
 
-  ?rootResource ${PREFIX::RESOURCES_PREFIX}:hasState ?state .
+  ?anomalyResource ${PREFIX::RESOURCES_PREFIX}:hasState ?state .
   ?state a ?anomalyType .
+
+  # 3. Escalate to the remediation target (e.g. from Pod to its parent Deployment)
+  # If the resource is part of something else, follow the chain UP to find the highest parent.
+  ?anomalyResource (${PREFIX::RESOURCES_PREFIX}:isPartOf)* ?rootResource .
+  FILTER NOT EXISTS { ?rootResource ${PREFIX::RESOURCES_PREFIX}:isPartOf ?higher . }
+
   ?rootResource ${PREFIX::RESOURCES_PREFIX}:resourceName ?rootResourceName .
 
-  # 3. Filter out resources that already have an active action
+  # 4. Filter out resources that already have an active action
   FILTER NOT EXISTS {
     ?action ${PREFIX::ACTIONS_PREFIX}:targetsEntity ?rootResource .
     ?action ${PREFIX::ACTIONS_PREFIX}:hasCurrentState ?currentState .

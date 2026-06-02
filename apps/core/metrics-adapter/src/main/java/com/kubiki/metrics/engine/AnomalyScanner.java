@@ -5,14 +5,15 @@ import com.kubiki.common.model.GraphUpdateMessage;
 import com.kubiki.metrics.graph.GraphWriter;
 import com.kubiki.metrics.prometheus.PrometheusClient;
 import com.kubiki.metrics.prometheus.ThresholdsLoader;
+import io.micrometer.core.annotation.Timed;
 import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.Timer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
+import org.slf4j.MDC;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
@@ -39,8 +40,8 @@ public class AnomalyScanner {
     private final Map<String, Integer> violationCounter = new ConcurrentHashMap<>();
 
     @Scheduled(fixedDelayString = "${scanner.interval:10000}")
+    @Timed(value = "amocna.monitor.scan", description = "Time taken to perform anomaly scan")
     public void scan() {
-        Timer.Sample sample = Timer.start(meterRegistry);
         log.debug("Starting anomaly scan...");
 
         List<AnomalyBatchItem> batchItems = Flux.fromIterable(thresholdsLoader.getThresholds())
@@ -90,8 +91,6 @@ public class AnomalyScanner {
         if (batchItems != null && !batchItems.isEmpty()) {
             executeBatch(batchItems);
         }
-
-        sample.stop(Timer.builder("amocna.monitor.scan.duration").register(meterRegistry));
     }
 
     private void executeBatch(List<AnomalyBatchItem> items) {
@@ -101,8 +100,6 @@ public class AnomalyScanner {
         Map<String, AnomalyBatchItem> lastActionPerResource = new HashMap<>();
         for (var item : items) {
             AnomalyBatchItem existing = lastActionPerResource.get(item.resourceIri());
-            // If there's no existing action, or if we are upgrading a "clear" to a "trigger", put it.
-            // A "clear" should not overwrite a "trigger" for the same resource in the same batch.
             if (existing == null || (!existing.isTrigger() && item.isTrigger())) {
                 lastActionPerResource.put(item.resourceIri(), item);
             }
@@ -123,45 +120,67 @@ public class AnomalyScanner {
 
     private record AnomalyBatchItem(String resourceIri, String anomalyState, boolean isTrigger) {}
 
+    @Timed(value = "amocna.monitor.trigger", description = "Time taken to trigger anomaly in GraphDB")
     private Mono<Void> triggerAnomaly(String targetResourceIri, String anomalyState) {
         if (properties.ontology() == null || properties.ontology().resourcesNamespace() == null || anomalyState == null) {
             log.error("Cannot trigger anomaly: ontology properties or state is null");
             return Mono.empty();
         }
         String anomalyStateIri = properties.ontology().resourcesNamespace() + anomalyState;
+        String correlationId = "metrics-" + UUID.randomUUID();
         return Mono.fromRunnable(() -> {
-            graphWriter.instantiateAnomaly(targetResourceIri, anomalyStateIri);
+            MDC.put("correlationId", correlationId);
+            MDC.put("resourceIri", targetResourceIri);
+            MDC.put("changeKind", "STATE_CHANGED");
+            try {
+                log.info("Triggering anomaly {} for resource {}", anomalyStateIri, targetResourceIri);
+                graphWriter.instantiateAnomaly(targetResourceIri, anomalyStateIri);
 
-            // Notify via RabbitMQ
-            GraphUpdateMessage message = new GraphUpdateMessage(
-                    targetResourceIri,
-                    anomalyStateIri,
-                    "STATE_CHANGED",
-                    "metrics-" + UUID.randomUUID()
-            );
+                // Notify via RabbitMQ
+                GraphUpdateMessage message = new GraphUpdateMessage(
+                        targetResourceIri,
+                        anomalyStateIri,
+                        "STATE_CHANGED",
+                        correlationId
+                );
 
-            rabbitTemplate.convertAndSend("amocna.direct.exchange", "graph.updates", message);
+                rabbitTemplate.convertAndSend("amocna.topic.exchange", "graph.updates.metrics-adapter", message);
+                log.info("Successfully sent anomaly trigger notification for resource {}", targetResourceIri);
+            } finally {
+                MDC.clear();
+            }
         }).subscribeOn(Schedulers.boundedElastic()).then();
     }
 
+    @Timed(value = "amocna.monitor.clear", description = "Time taken to clear anomaly in GraphDB")
     private Mono<Void> clearAnomaly(String targetResourceIri) {
         if (properties.ontology() == null || properties.ontology().resourcesNamespace() == null) {
             log.error("Cannot clear anomaly: ontology properties are null");
             return Mono.empty();
         }
         String baseStateIri = properties.ontology().resourcesNamespace() + "State";
+        String correlationId = "metrics-" + UUID.randomUUID();
         return Mono.fromRunnable(() -> {
-            graphWriter.clearAnomalies(targetResourceIri);
+            MDC.put("correlationId", correlationId);
+            MDC.put("resourceIri", targetResourceIri);
+            MDC.put("changeKind", "DELETED");
+            try {
+                log.info("Clearing anomalies for resource {}", targetResourceIri);
+                graphWriter.clearAnomalies(targetResourceIri);
 
-            // Notify via RabbitMQ
-            GraphUpdateMessage message = new GraphUpdateMessage(
-                    targetResourceIri,
-                    baseStateIri,
-                    "DELETED",
-                    "metrics-" + UUID.randomUUID()
-            );
+                // Notify via RabbitMQ
+                GraphUpdateMessage message = new GraphUpdateMessage(
+                        targetResourceIri,
+                        baseStateIri,
+                        "DELETED",
+                        correlationId
+                );
 
-            rabbitTemplate.convertAndSend("amocna.direct.exchange", "graph.updates", message);
+                rabbitTemplate.convertAndSend("amocna.topic.exchange", "graph.updates.metrics-adapter", message);
+                log.info("Successfully sent anomaly clear notification for resource {}", targetResourceIri);
+            } finally {
+                MDC.clear();
+            }
         }).subscribeOn(Schedulers.boundedElastic()).then();
     }
 

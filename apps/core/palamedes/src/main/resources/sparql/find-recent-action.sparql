@@ -1,0 +1,18 @@
+${SPARQL_PREFIXES}
+SELECT ?lastTransition ?window
+WHERE {
+  # Get the window for the intent
+  ${IRI::intent} ${PREFIX::ACTIONS_PREFIX}:idempotencyWindowSeconds ?window .
+
+  # Find the most recent terminal action for this target and intent
+  OPTIONAL {
+    ?prevAction a ${IRI::intent} ;
+                ${PREFIX::ACTIONS_PREFIX}:targetsEntity ${IRI::target} ;
+                ${PREFIX::ACTIONS_PREFIX}:hasLastTransitionTimestamp ?lastTransition .
+    
+    ?prevAction ${PREFIX::ACTIONS_PREFIX}:hasCurrentState ?state .
+    FILTER(?state IN (${PREFIX::ACTIONS_PREFIX}:${INDIVIDUAL::STATE_SUCCEEDED}, ${PREFIX::ACTIONS_PREFIX}:${INDIVIDUAL::STATE_FAILED}))
+  }
+}
+ORDER BY DESC(?lastTransition)
+LIMIT 1

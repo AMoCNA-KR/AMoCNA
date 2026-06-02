@@ -6,6 +6,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Component;
 
+import com.kubiki.common.logging.MdcContext;
+import com.kubiki.common.logging.MdcParam;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -19,8 +21,8 @@ import java.util.concurrent.TimeUnit;
 @Component
 public class PalamedesNotifier {
 
-    public static final String EXCHANGE = "amocna.direct.exchange";
-    public static final String ROUTING_KEY = "graph.updates";
+    public static final String EXCHANGE = "amocna.topic.exchange";
+    public static final String ROUTING_KEY = "graph.updates.metis";
     private static final Logger log = LoggerFactory.getLogger(PalamedesNotifier.class);
     private static final int MAX_PUBLISH_ATTEMPTS = 5;
     private static final long INITIAL_RETRY_DELAY_MS = 1_000;
@@ -47,8 +49,12 @@ public class PalamedesNotifier {
      * @param changeKind    the kind of change (CREATED, UPDATED, STATE_CHANGED, DELETED)
      * @param correlationId correlation identifier from the originating batch
      */
-    public void notify(String resourceIri, String ontologyType,
-                       String changeKind, String correlationId) {
+    @MdcContext
+    public void notify(
+            @MdcParam("resourceIri") String resourceIri,
+            @MdcParam("ontologyType") String ontologyType,
+            @MdcParam("changeKind") String changeKind,
+            @MdcParam("correlationId") String correlationId) {
         GraphUpdateMessage message = new GraphUpdateMessage(
                 resourceIri, ontologyType, changeKind, correlationId);
 
@@ -56,8 +62,8 @@ public class PalamedesNotifier {
         for (int attempt = 1; attempt <= MAX_PUBLISH_ATTEMPTS; attempt++) {
             try {
                 rabbitTemplate.convertAndSend(EXCHANGE, ROUTING_KEY, message);
-                log.debug("Published graph update to RabbitMQ [correlationId={}, resourceIri={}, changeKind={}]",
-                        correlationId, resourceIri, changeKind);
+                log.info("Published graph update to exchange '{}' with routing key '{}' [correlationId={}, resourceIri={}, changeKind={}]",
+                        EXCHANGE, ROUTING_KEY, correlationId, resourceIri, changeKind);
                 return;
             } catch (Exception e) {
                 if (attempt >= MAX_PUBLISH_ATTEMPTS) {

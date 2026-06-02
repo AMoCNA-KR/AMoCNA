@@ -53,58 +53,8 @@ core_apps:
       grpc: 50051
     description: Themis Autonomic Action Executor
 
-# ─── Standalone / legacy apps ──────────────────────────────────────────
-# NOT in the parent POM. Independent versioning. Directory names unchanged.
-standalone_apps:
-  gui-backend:
-    path: apps/gui/Hphaestus-GUI-Backend/hephaestus-backend
-    type: maven-app
-    dockerfile: apps/gui/Hphaestus-GUI-Backend/hephaestus-backend/gui-backend.dockerfile
-    image_name: gui
-    ports:
-      http: 8080
-    description: Hephaestus GUI Backend (Spring Boot)
-
-  hephaestus-gui:
-    path: apps/gui/Hphaestus-GUI
-    type: angular
-    description: Hephaestus GUI Frontend (Angular)
-
-  kubernetes-management:
-    path: apps/demos/KubernetesManagment
-    type: maven-app
-    dockerfile: apps/demos/KubernetesManagment/kubernetes-management.dockerfile
-    image_name: kubernetes-management
-    ports:
-      http: 8097
-    description: Kubernetes Management Demo
-
-  metric-exporter:
-    path: apps/demos/MetricExporter
-    type: maven-app
-    dockerfile: apps/demos/MetricExporter/metric-exporter.dockerfile
-    image_name: business-demo
-    ports:
-      http: 8099
-    description: Business Demo / Metric Exporter
-
-  controller:
-    path: apps/core/Controller
-    type: maven-app
-    dockerfile: apps/core/Controller/controller.dockerfile
-    image_name: controller
-    ports:
-      http: 8080
-    description: Execution Controller
-
 # ─── Kubernetes port-forwarding shortcuts ──────────────────────────────
 forward:
-  gui-backend:
-    namespace: hephaestus
-    service: hephaestus-gui
-    local_port: 8080
-    remote_port: 8080
-
   graphdb:
     namespace: graphdb
     service: graphdb
@@ -122,7 +72,6 @@ k8s:
   deploy_order:
     - infra/graphdb
     - infra/rabbitmq
-    - infra/business-demo
     - infra/core
   undeploy_namespaces:
     - graphdb
@@ -131,12 +80,7 @@ k8s:
     - palamedes
     - metrics-adapter
     - themis
-    - hephaestus-business
-    # - kubernetes-management
-    # - kie
   cluster_resources:
-    - { kind: storageclass, name: hephaestus-manual }
-    - { kind: persistentvolume, name: hephaestus-gui-pv }
     - { kind: clusterrole, name: pod-reader }
     - { kind: clusterrolebinding, name: read-secrets-global }
   # GraphDB hostPath PV (infra/graphdb/01-storage.yaml) — wiped on undeploy unless --keep-graphdb-data

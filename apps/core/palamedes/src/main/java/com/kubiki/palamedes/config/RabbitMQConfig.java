@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.BindingBuilder;
 import org.springframework.amqp.core.DirectExchange;
+import org.springframework.amqp.core.TopicExchange;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
 import org.springframework.amqp.support.converter.MessageConverter;
@@ -16,10 +17,13 @@ public class RabbitMQConfig {
     public static final String ACTION_QUEUE = "amocna.action.queue";
     public static final String STATUS_QUEUE = "amocna.status.queue";
     public static final String GRAPH_UPDATES_QUEUE = "amocna.graph.updates";
+    public static final String VULNERABILITY_UPDATES_QUEUE = "amocna.vulnerability.updates";
     public static final String EXCHANGE = "amocna.direct.exchange";
+    public static final String TOPIC_EXCHANGE = "amocna.topic.exchange";
     public static final String ACTION_ROUTING_KEY = "action";
     public static final String STATUS_ROUTING_KEY = "status";
-    public static final String GRAPH_UPDATES_ROUTING_KEY = "graph.updates";
+    public static final String GRAPH_UPDATES_ROUTING_KEY_PATTERN = "graph.updates.*";
+    public static final String VULNERABILITY_ROUTING_KEY = "graph.updates.metis";
 
     @Bean
     public Queue actionQueue() {
@@ -37,8 +41,18 @@ public class RabbitMQConfig {
     }
 
     @Bean
+    public Queue vulnerabilityUpdatesQueue() {
+        return new Queue(VULNERABILITY_UPDATES_QUEUE, true);
+    }
+
+    @Bean
     public DirectExchange exchange() {
         return new DirectExchange(EXCHANGE);
+    }
+
+    @Bean
+    public TopicExchange topicExchange() {
+        return new TopicExchange(TOPIC_EXCHANGE);
     }
 
     @Bean
@@ -52,8 +66,13 @@ public class RabbitMQConfig {
     }
 
     @Bean
-    public Binding graphUpdatesBinding(Queue graphUpdatesQueue, DirectExchange exchange) {
-        return BindingBuilder.bind(graphUpdatesQueue).to(exchange).with(GRAPH_UPDATES_ROUTING_KEY);
+    public Binding graphUpdatesBinding(Queue graphUpdatesQueue, TopicExchange topicExchange) {
+        return BindingBuilder.bind(graphUpdatesQueue).to(topicExchange).with(GRAPH_UPDATES_ROUTING_KEY_PATTERN);
+    }
+
+    @Bean
+    public Binding vulnerabilityUpdatesBinding(Queue vulnerabilityUpdatesQueue, TopicExchange topicExchange) {
+        return BindingBuilder.bind(vulnerabilityUpdatesQueue).to(topicExchange).with(VULNERABILITY_ROUTING_KEY);
     }
 
     @Bean

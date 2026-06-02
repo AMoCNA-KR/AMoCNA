@@ -12,8 +12,8 @@ import com.kubiki.palamedes.model.ImageUpdateTarget;
 import com.kubiki.palamedes.model.WorkflowState;
 import com.kubiki.palamedes.model.WorkflowStateMapper;
 import com.kubiki.palamedes.knowledge.Result;
+import io.micrometer.core.annotation.Timed;
 import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.Timer;
 import lombok.RequiredArgsConstructor;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
@@ -29,6 +29,7 @@ import java.time.OffsetDateTime;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -67,6 +68,7 @@ public class GraphDBGateway {
     private final PalamedesProperties properties;
     private final MeterRegistry meterRegistry;
 
+    @Timed(value = "palamedes.graphdb.transition", description = "Time taken to transition action state")
     public void transitionState(IRI actionId, String stateFragment) {
         IRI hasCurrentState = ontologyRegistry.actionsOntology(HAS_CURRENT_STATE_IRI);
         IRI newState = ontologyRegistry.actionsOntology(stateFragment);
@@ -227,17 +229,13 @@ public class GraphDBGateway {
         return states;
     }
 
-    public boolean isIdempotencyWindowOpen(IRI actionId) {
-        List<BindingSet> results = sparqlRepository.checkIdempotency(actionId.stringValue());
-        if (results.isEmpty())
-            return true;
+    public boolean isIdempotencyWindowOpen(IRI target, IRI intent) {
+        List<BindingSet> results = sparqlRepository.findRecentAction(target.stringValue(), intent.stringValue());
+        if (results.isEmpty()) return true;
 
         BindingSet bs = results.getFirst();
-        if (bs.getValue(WINDOW_IRI) == null)
-            return true;
-
-        if (bs.getValue(LAST_TRANSITION_IRI) == null)
-            return true;
+        if (bs.getValue(WINDOW_IRI) == null) return true;
+        if (bs.getValue(LAST_TRANSITION_IRI) == null) return true;
 
         int window = ((Literal) bs.getValue(WINDOW_IRI)).intValue();
         OffsetDateTime lastTransition = OffsetDateTime.parse(bs.getValue(LAST_TRANSITION_IRI).stringValue());
@@ -254,28 +252,38 @@ public class GraphDBGateway {
         return null;
     }
 
+    @Timed(value = "palamedes.graphdb.query", extraTags = {"type", "anomalies"}, description = "Time taken to find anomalies")
     public List<AnomalyTarget> findAnomalies() {
-        Timer.Sample sample = Timer.start(meterRegistry);
-        try {
-            return sparqlRepository.findAnomalies().stream().map(bs -> new AnomalyTarget(
-                    (IRI) bs.getValue(RESOURCE_IRI),
-                    bs.getValue(RESOURCE_NAME_VAR).stringValue(),
-                    (IRI) bs.getValue(INTENT_IRI))).collect(Collectors.toList());
-        } finally {
-            sample.stop(Timer.builder("amocna.semantic.query.anomalies").register(meterRegistry));
-        }
+        return sparqlRepository.findAnomalies().stream().map(bs -> new AnomalyTarget(
+                (IRI) bs.getValue(RESOURCE_IRI),
+                bs.getValue(RESOURCE_NAME_VAR).stringValue(),
+                (IRI) bs.getValue(INTENT_IRI))).collect(Collectors.toList());
     }
 
+    @Timed(value = "palamedes.graphdb.query", extraTags = {"type", "root-cause"}, description = "Time taken to find root cause")
     public List<AnomalyTarget> findRootCause(IRI startResource) {
-        Timer.Sample sample = Timer.start(meterRegistry);
-        try {
-            return sparqlRepository.findRootCause(startResource.stringValue()).stream().map(bs -> new AnomalyTarget(
-                    (IRI) bs.getValue(ROOT_RESOURCE_IRI),
-                    bs.getValue(ROOT_RESOURCE_NAME_IRI).stringValue(),
-                    (IRI) bs.getValue(INTENT_IRI))).collect(Collectors.toList());
-        } finally {
-            sample.stop(Timer.builder("amocna.semantic.query.anomalies").register(meterRegistry));
-        }
+        return sparqlRepository.findRootCause(startResource.stringValue()).stream().map(bs -> new AnomalyTarget(
+                (IRI) bs.getValue(ROOT_RESOURCE_IRI),
+                bs.getValue(ROOT_RESOURCE_NAME_IRI).stringValue(),
+                (IRI) bs.getValue(INTENT_IRI))).collect(Collectors.toList());
+    }
+
+    public Optional<ImageUpdateTarget> findWorkloadDetails(IRI workloadIri) {
+        List<BindingSet> results = sparqlRepository.fetchWorkloadDetails(workloadIri.stringValue());
+        if (results.isEmpty()) return Optional.empty();
+        
+        BindingSet bs = results.getFirst();
+        return Optional.of(new ImageUpdateTarget(
+                workloadIri,
+                workloadIri.getLocalName(),
+                ImageRemediationPlanner.parseNamespaceFromDeploymentIri(workloadIri),
+                bs.getValue("containerName").stringValue(),
+                bs.getValue("imageRepository").stringValue(),
+                bs.getValue("currentVersion").stringValue(),
+                null,
+                null,
+                null
+        ));
     }
 
     public List<ImageUpdateTarget> findWorkloadsByVulnerableImage(IRI imageIri) {
@@ -337,27 +345,11 @@ public class GraphDBGateway {
         return hydrations;
     }
 
-    public Map<String, String> findActionHydration(IRI actionIri) {
-        IRI hydrationKey = ontologyRegistry.actionsOntology("hydrationPayload");
-        return sparqlClient.executeWithConnection(conn -> {
-            var statements = conn.getStatements(actionIri, hydrationKey, null);
-            if (!statements.hasNext()) {
-                return Map.of();
-            }
-            String payload = statements.next().getObject().stringValue();
-            return ActionHydrationPayload.deserialize(payload);
-        });
-    }
 
     public List<IRI> findDependents(IRI actionId) {
         return sparqlRepository.findDependents(actionId.stringValue()).stream()
                 .map(bs -> (IRI) bs.getValue(DEPENDENT_IRI))
                 .collect(Collectors.toList());
-    }
-
-    public void updateResourceState(String resourceIri, String stateIri) {
-        sparqlRepository.updateResourceState(resourceIri, stateIri);
-        log.info("Set resource state: {} → {}", resourceIri, stateIri);
     }
 
     public void clearResourceState(IRI resourceIri) {

@@ -17,6 +17,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.aop.aspectj.annotation.AspectJProxyFactory;
 import org.springframework.context.ApplicationEventPublisher;
 
 import java.util.List;
@@ -47,7 +48,16 @@ class SagaManagerTest {
 
     @BeforeEach
     void setUp() {
-        sagaManager = new SagaManager(actionUtils, gateway, stateRepository, registry, conditionFactory, mapper, publisher);
+        SagaTransitionHandler targetHandler = new SagaTransitionHandler(actionUtils, gateway, stateRepository, mapper);
+        
+        AspectJProxyFactory factory = new AspectJProxyFactory(targetHandler);
+        com.kubiki.palamedes.aspect.PalamedesAspects aspects = new com.kubiki.palamedes.aspect.PalamedesAspects(gateway, stateRepository);
+        factory.addAspect(aspects);
+        
+        SagaTransitionHandler transitionHandlerProxy = factory.getProxy();
+        
+        sagaManager = new SagaManager(gateway, registry, conditionFactory, publisher, transitionHandlerProxy);
+
         when(registry.actionsOntology(anyString())).thenReturn(actionIri);
     }
 

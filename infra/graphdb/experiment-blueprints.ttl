@@ -9,6 +9,14 @@ moam:HorizontalScalingAction moam:hasExecutionProtocol "SHELL" ;
                              moam:hasLayerBoundary moam:ContainerizationLayer ;
                              moam:idempotencyWindowSeconds "300"^^xsd:integer .
 
+# Scenario 1 (Scale Down)
+moam:HorizontalScaleDownAction moam:hasExecutionProtocol "SHELL" ;
+                               moam:hasExecutionInstruction "kubectl scale deployment ${resourceName} --replicas=1 -n ${namespace}" ;
+                               moam:hasExpectedStatusCode "0"^^xsd:integer ;
+                               moam:hasFunctionalIntent moam:HorizontalScaleDownAction ;
+                               moam:hasLayerBoundary moam:ContainerizationLayer ;
+                               moam:idempotencyWindowSeconds "300"^^xsd:integer .
+
 # Scenario 2
 moam:VerticalScalingAction moam:hasExecutionProtocol "SHELL" ;
                            moam:hasExecutionInstruction "kubectl patch deployment ${resourceName} -n ${namespace} --patch '{\"spec\": {\"template\": {\"spec\": {\"containers\": [{\"name\": \"${resourceName}\", \"resources\": {\"requests\": {\"cpu\": \"1\"}}}]}}}}'" ;

@@ -5,3 +5,4 @@ value: 0
 anomalyState: "NetworkPartitionState"
 resourceKind: "Node"
 resourceLabel: "instance"
+persistenceWindow: 1
