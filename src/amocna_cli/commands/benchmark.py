@@ -820,8 +820,9 @@ def benchmark_run(
 
         logger.log("END_SCENARIO", "Scenario 6 completed")
         logger.save()
+        stop_locust()
         run(k8s_scale("default", "cluster-stress", 0), check=False)
-        run(k8s_delete_resource("configmap", "orders-config", namespace="sock-shop"))
+        run(k8s_delete_resource("configmap", "orders-config", namespace="sock-shop"), check=False,)
     elif scenario == "7":
         logger = EventLogger("7")
         logger.log(
