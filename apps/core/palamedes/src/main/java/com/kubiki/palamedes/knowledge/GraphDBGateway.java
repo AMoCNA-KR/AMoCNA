@@ -12,8 +12,8 @@ import com.kubiki.palamedes.model.ImageUpdateTarget;
 import com.kubiki.palamedes.model.WorkflowState;
 import com.kubiki.palamedes.model.WorkflowStateMapper;
 import com.kubiki.palamedes.knowledge.Result;
+import io.micrometer.core.annotation.Timed;
 import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.Timer;
 import lombok.RequiredArgsConstructor;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
@@ -68,6 +68,7 @@ public class GraphDBGateway {
     private final PalamedesProperties properties;
     private final MeterRegistry meterRegistry;
 
+    @Timed(value = "palamedes.graphdb.transition", description = "Time taken to transition action state")
     public void transitionState(IRI actionId, String stateFragment) {
         IRI hasCurrentState = ontologyRegistry.actionsOntology(HAS_CURRENT_STATE_IRI);
         IRI newState = ontologyRegistry.actionsOntology(stateFragment);
@@ -251,28 +252,20 @@ public class GraphDBGateway {
         return null;
     }
 
+    @Timed(value = "palamedes.graphdb.query", extraTags = {"type", "anomalies"}, description = "Time taken to find anomalies")
     public List<AnomalyTarget> findAnomalies() {
-        Timer.Sample sample = Timer.start(meterRegistry);
-        try {
-            return sparqlRepository.findAnomalies().stream().map(bs -> new AnomalyTarget(
-                    (IRI) bs.getValue(RESOURCE_IRI),
-                    bs.getValue(RESOURCE_NAME_VAR).stringValue(),
-                    (IRI) bs.getValue(INTENT_IRI))).collect(Collectors.toList());
-        } finally {
-            sample.stop(Timer.builder("amocna.semantic.query.anomalies").register(meterRegistry));
-        }
+        return sparqlRepository.findAnomalies().stream().map(bs -> new AnomalyTarget(
+                (IRI) bs.getValue(RESOURCE_IRI),
+                bs.getValue(RESOURCE_NAME_VAR).stringValue(),
+                (IRI) bs.getValue(INTENT_IRI))).collect(Collectors.toList());
     }
 
+    @Timed(value = "palamedes.graphdb.query", extraTags = {"type", "root-cause"}, description = "Time taken to find root cause")
     public List<AnomalyTarget> findRootCause(IRI startResource) {
-        Timer.Sample sample = Timer.start(meterRegistry);
-        try {
-            return sparqlRepository.findRootCause(startResource.stringValue()).stream().map(bs -> new AnomalyTarget(
-                    (IRI) bs.getValue(ROOT_RESOURCE_IRI),
-                    bs.getValue(ROOT_RESOURCE_NAME_IRI).stringValue(),
-                    (IRI) bs.getValue(INTENT_IRI))).collect(Collectors.toList());
-        } finally {
-            sample.stop(Timer.builder("amocna.semantic.query.anomalies").register(meterRegistry));
-        }
+        return sparqlRepository.findRootCause(startResource.stringValue()).stream().map(bs -> new AnomalyTarget(
+                (IRI) bs.getValue(ROOT_RESOURCE_IRI),
+                bs.getValue(ROOT_RESOURCE_NAME_IRI).stringValue(),
+                (IRI) bs.getValue(INTENT_IRI))).collect(Collectors.toList());
     }
 
     public Optional<ImageUpdateTarget> findWorkloadDetails(IRI workloadIri) {

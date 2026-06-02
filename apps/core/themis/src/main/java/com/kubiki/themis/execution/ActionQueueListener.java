@@ -7,6 +7,7 @@ import com.kubiki.themis.config.RabbitMQConfig;
 import com.kubiki.themis.config.ThemisProperties;
 import com.kubiki.themis.model.ExecutionResult;
 import com.kubiki.themis.policy.ConditionEvaluator;
+import io.micrometer.core.annotation.Timed;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
@@ -31,6 +32,7 @@ public class ActionQueueListener {
     }
 
     @RabbitListener(queues = RabbitMQConfig.ACTION_QUEUE)
+    @Timed(value = "themis.queue.receive", description = "Time taken to process action from queue")
     public void receiveAction(ActionMessage message) {
         log.info("Received action from queue: {}", message.actionId());
 

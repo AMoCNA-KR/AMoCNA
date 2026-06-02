@@ -5,8 +5,8 @@ import com.kubiki.common.model.GraphUpdateMessage;
 import com.kubiki.metrics.graph.GraphWriter;
 import com.kubiki.metrics.prometheus.PrometheusClient;
 import com.kubiki.metrics.prometheus.ThresholdsLoader;
+import io.micrometer.core.annotation.Timed;
 import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.Timer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -39,8 +39,8 @@ public class AnomalyScanner {
     private final Map<String, Integer> violationCounter = new ConcurrentHashMap<>();
 
     @Scheduled(fixedDelayString = "${scanner.interval:10000}")
+    @Timed(value = "amocna.monitor.scan", description = "Time taken to perform anomaly scan")
     public void scan() {
-        Timer.Sample sample = Timer.start(meterRegistry);
         log.debug("Starting anomaly scan...");
 
         List<AnomalyBatchItem> batchItems = Flux.fromIterable(thresholdsLoader.getThresholds())
@@ -90,8 +90,6 @@ public class AnomalyScanner {
         if (batchItems != null && !batchItems.isEmpty()) {
             executeBatch(batchItems);
         }
-
-        sample.stop(Timer.builder("amocna.monitor.scan.duration").register(meterRegistry));
     }
 
     private void executeBatch(List<AnomalyBatchItem> items) {
@@ -101,8 +99,6 @@ public class AnomalyScanner {
         Map<String, AnomalyBatchItem> lastActionPerResource = new HashMap<>();
         for (var item : items) {
             AnomalyBatchItem existing = lastActionPerResource.get(item.resourceIri());
-            // If there's no existing action, or if we are upgrading a "clear" to a "trigger", put it.
-            // A "clear" should not overwrite a "trigger" for the same resource in the same batch.
             if (existing == null || (!existing.isTrigger() && item.isTrigger())) {
                 lastActionPerResource.put(item.resourceIri(), item);
             }
@@ -123,6 +119,7 @@ public class AnomalyScanner {
 
     private record AnomalyBatchItem(String resourceIri, String anomalyState, boolean isTrigger) {}
 
+    @Timed(value = "amocna.monitor.trigger", description = "Time taken to trigger anomaly in GraphDB")
     private Mono<Void> triggerAnomaly(String targetResourceIri, String anomalyState) {
         if (properties.ontology() == null || properties.ontology().resourcesNamespace() == null || anomalyState == null) {
             log.error("Cannot trigger anomaly: ontology properties or state is null");
@@ -144,6 +141,7 @@ public class AnomalyScanner {
         }).subscribeOn(Schedulers.boundedElastic()).then();
     }
 
+    @Timed(value = "amocna.monitor.clear", description = "Time taken to clear anomaly in GraphDB")
     private Mono<Void> clearAnomaly(String targetResourceIri) {
         if (properties.ontology() == null || properties.ontology().resourcesNamespace() == null) {
             log.error("Cannot clear anomaly: ontology properties are null");

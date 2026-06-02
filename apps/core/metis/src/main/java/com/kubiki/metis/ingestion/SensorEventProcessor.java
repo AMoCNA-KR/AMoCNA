@@ -5,8 +5,8 @@ import com.kubiki.metis.grpc.SensorEvent;
 import com.kubiki.metis.ingestion.handler.SensorEventHandler;
 import com.kubiki.metis.ingestion.model.HandlerResult;
 import com.kubiki.metis.ingestion.model.ProcessResult;
+import io.micrometer.core.annotation.Timed;
 import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.Timer;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -34,18 +34,8 @@ public class SensorEventProcessor {
 
     /**
      * Processes each event in the batch in order.
-     *
-     * <p>For each event:
-     * <ol>
-     *   <li>Finds the first handler whose {@code supports(eventCase)} returns {@code true}.</li>
-     *   <li>If no handler is found, records a failure message and increments {@code failedCount}.</li>
-     *   <li>Otherwise, delegates to the handler and accumulates the result.</li>
-     * </ol>
-     *
-     * @param events        the ordered list of sensor events to process
-     * @param correlationId the correlation ID from the enclosing {@code SensorBatch}
-     * @return a {@link ProcessResult} summarising counts, failure messages, and the first success
      */
+    @Timed(value = "metis.ingestion.batch", description = "Time taken to process a batch of sensor events")
     public ProcessResult processBatch(List<SensorEvent> events, String correlationId) {
         int processedCount = 0;
         int failedCount = 0;
@@ -87,27 +77,22 @@ public class SensorEventProcessor {
         }
 
         if (!collectedSparql.isEmpty() && !graphDbFailed) {
-            Timer.Sample sample = Timer.start(meterRegistry);
-            try {
-                sparqlClient.executeWithConnection(conn -> {
-                    for (String sparql : collectedSparql) {
-                        conn.prepareUpdate(sparql).execute();
-                    }
-                });
-                processedCount = successResults.size();
-            } catch (Exception e) {
-                graphDbFailed = true;
-                failedCount += successResults.size();
-                failureMessages.add("Batch SPARQL execution failed: " + e.getMessage());
-                firstSuccess = null;
-            } finally {
-                sample.stop(Timer.builder("metis.knowledge.batch.update").register(meterRegistry));
-            }
+            executeSparqlBatch(collectedSparql);
+            processedCount = successResults.size();
         } else {
             processedCount = successResults.size();
         }
 
         return new ProcessResult(processedCount, failedCount, failureMessages, firstSuccess, graphDbFailed);
+    }
+
+    @Timed(value = "metis.knowledge.update", description = "Time taken to execute SPARQL batch update")
+    private void executeSparqlBatch(List<String> collectedSparql) {
+        sparqlClient.executeWithConnection(conn -> {
+            for (String sparql : collectedSparql) {
+                conn.prepareUpdate(sparql).execute();
+            }
+        });
     }
 
     /**
