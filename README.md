@@ -8,9 +8,6 @@ The project has been restructured into the following top-level directories:
 
 - **`apps/`**: Contains all the applications and services.
   - **`core/`**: The core AMoCNA framework (Daedalus, Metis, Palamedes, Themis). Managed by the root `pom.xml`.
-  - **`gui/`**: The Hephaestus GUI frontend (Angular) and backend (Spring Boot).
-  - **`adapters/`**: The Metrics Adapter.
-  - **`demos/`**: Example applications (Kubernetes Management, Metric Exporter).
 - **`infra/`**: Contains Kubernetes manifests and infrastructure definitions.
 - **`libs/`**: Shared libraries and schemas (e.g., ontology files).
 
