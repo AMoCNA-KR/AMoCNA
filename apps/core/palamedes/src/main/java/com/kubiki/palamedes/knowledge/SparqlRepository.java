@@ -31,6 +31,12 @@ public interface SparqlRepository {
     @SparqlQuery(resource = "sparql/check-idempotency.sparql")
     List<BindingSet> checkIdempotency(@Type(TemplateType.IRI) @Bind("IRI::actionId") String actionId);
 
+    @SparqlQuery(resource = "sparql/find-recent-action.sparql")
+    List<BindingSet> findRecentAction(
+            @Type(TemplateType.IRI) @Bind("IRI::target") String target,
+            @Type(TemplateType.IRI) @Bind("IRI::intent") String intent
+    );
+
     @SparqlQuery(resource = "sparql/check-idempotency-batch.sparql")
     List<BindingSet> checkIdempotencyBatch(@Type(TemplateType.PLAIN) @Bind("IRI::actionIds") String actionIds);
 

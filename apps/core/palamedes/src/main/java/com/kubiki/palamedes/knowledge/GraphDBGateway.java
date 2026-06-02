@@ -29,6 +29,7 @@ import java.time.OffsetDateTime;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -227,17 +228,13 @@ public class GraphDBGateway {
         return states;
     }
 
-    public boolean isIdempotencyWindowOpen(IRI actionId) {
-        List<BindingSet> results = sparqlRepository.checkIdempotency(actionId.stringValue());
-        if (results.isEmpty())
-            return true;
+    public boolean isIdempotencyWindowOpen(IRI target, IRI intent) {
+        List<BindingSet> results = sparqlRepository.findRecentAction(target.stringValue(), intent.stringValue());
+        if (results.isEmpty()) return true;
 
         BindingSet bs = results.getFirst();
-        if (bs.getValue(WINDOW_IRI) == null)
-            return true;
-
-        if (bs.getValue(LAST_TRANSITION_IRI) == null)
-            return true;
+        if (bs.getValue(WINDOW_IRI) == null) return true;
+        if (bs.getValue(LAST_TRANSITION_IRI) == null) return true;
 
         int window = ((Literal) bs.getValue(WINDOW_IRI)).intValue();
         OffsetDateTime lastTransition = OffsetDateTime.parse(bs.getValue(LAST_TRANSITION_IRI).stringValue());
@@ -355,27 +352,11 @@ public class GraphDBGateway {
         return hydrations;
     }
 
-    public Map<String, String> findActionHydration(IRI actionIri) {
-        IRI hydrationKey = ontologyRegistry.actionsOntology("hydrationPayload");
-        return sparqlClient.executeWithConnection(conn -> {
-            var statements = conn.getStatements(actionIri, hydrationKey, null);
-            if (!statements.hasNext()) {
-                return Map.of();
-            }
-            String payload = statements.next().getObject().stringValue();
-            return ActionHydrationPayload.deserialize(payload);
-        });
-    }
 
     public List<IRI> findDependents(IRI actionId) {
         return sparqlRepository.findDependents(actionId.stringValue()).stream()
                 .map(bs -> (IRI) bs.getValue(DEPENDENT_IRI))
                 .collect(Collectors.toList());
-    }
-
-    public void updateResourceState(String resourceIri, String stateIri) {
-        sparqlRepository.updateResourceState(resourceIri, stateIri);
-        log.info("Set resource state: {} → {}", resourceIri, stateIri);
     }
 
     public void clearResourceState(IRI resourceIri) {

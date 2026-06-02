@@ -8,6 +8,7 @@ import com.kubiki.palamedes.knowledge.GraphDBGateway;
 import com.kubiki.palamedes.model.AnomalyTarget;
 import com.kubiki.palamedes.model.ImageUpdateTarget;
 import com.kubiki.palamedes.pipeline.EngineWakeupEvent;
+import com.kubiki.palamedes.reasoner.RcaEngine;
 import com.kubiki.palamedes.utils.ActionUtils;
 import lombok.RequiredArgsConstructor;
 import org.eclipse.rdf4j.model.IRI;
@@ -18,9 +19,11 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -44,7 +47,7 @@ public class AnomalyAgent {
     private static final String IMAGE_UPDATE_INTENT = "ImageUpdateIntent";
 
     private final GraphDBGateway gateway;
-    private final com.kubiki.palamedes.reasoner.RcaEngine rcaEngine;
+    private final RcaEngine rcaEngine;
     private final ActionUtils utils;
     private final ApplicationEventPublisher publisher;
     private final PalamedesProperties palamedesProperties;
@@ -90,6 +93,8 @@ public class AnomalyAgent {
         UpgradePolicy upgradePolicy = UpgradePolicy.valueOf(
                 palamedesProperties.vulnerability().upgradePolicy().toUpperCase());
 
+        Set<IRI> processedRootCauses = new HashSet<>();
+
         for (var anomaly : anomalies) {
             log.info("Anomaly detected: resource {} needs {}", anomaly.resourceName(), anomaly.intentIri());
 
@@ -99,8 +104,21 @@ public class AnomalyAgent {
                         anomaly.resourceName(), rootCause.resourceName(), rootCause.intentIri());
             }
 
-            String actionId = utils.generateActionId();
+            if (processedRootCauses.contains(rootCause.resourceIri())) {
+                log.debug("Target {} already has an action planned in this batch, skipping redundant anomaly report from {}", 
+                        rootCause.resourceName(), anomaly.resourceName());
+                continue;
+            }
+            processedRootCauses.add(rootCause.resourceIri());
 
+            // Check if idempotency window is open for this (target, intent) pair
+            if (!gateway.isIdempotencyWindowOpen(rootCause.resourceIri(), rootCause.intentIri())) {
+                log.info("Action for target {} and intent {} is blocked by idempotency cooldown, skipping creation",
+                        rootCause.resourceName(), rootCause.intentIri());
+                continue;
+            }
+
+            String actionId = utils.generateActionId();
             gateway.createActionWorkflow(rootCause.resourceIri(), rootCause.intentIri(), actionId);
 
             // Hydrate parameters for execution

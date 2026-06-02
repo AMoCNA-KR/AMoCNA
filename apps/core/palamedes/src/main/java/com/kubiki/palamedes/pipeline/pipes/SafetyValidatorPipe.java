@@ -44,10 +44,10 @@ public class SafetyValidatorPipe implements MapePipe {
         Object val = context.metadata().get("idempotencyOpen");
         boolean isOpen = val instanceof Boolean ? (Boolean) val : true;
         if (!isOpen) {
-            log.info("Action {} is blocked by Idempotency Window - transitioning to SUCCEEDED", context.actionId());
-            boolean transitioned = stateRepository.transition(context.actionId(), WorkflowState.PLANNED, WorkflowState.SUCCEEDED);
+            log.info("Action {} is blocked by Idempotency Window - transitioning to FAILED", context.actionId());
+            boolean transitioned = stateRepository.transition(context.actionId(), WorkflowState.PLANNED, WorkflowState.FAILED);
             if (!transitioned) {
-                log.error("Failed to transition action {} to SUCCEEDED after idempotency block", context.actionId());
+                log.error("Failed to transition action {} to FAILED after idempotency block", context.actionId());
             }
             return false;
         }
