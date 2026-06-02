@@ -184,8 +184,8 @@ def _s7_deployment_image(namespace: str, deployment: str) -> str:
 
 
 def _s7_check_runtime_prerequisites(cfg: ProjectConfig) -> bool:
-    """Verify control-loop services run the expected version before Scenario 6."""
-    expected = _s6_expected_version(cfg)
+    """Verify control-loop services run the expected version before Scenario 7."""
+    expected = _s7_expected_version(cfg)
     services = [
         ("metis", "metis"),
         ("palamedes", "palamedes"),
@@ -193,7 +193,7 @@ def _s7_check_runtime_prerequisites(cfg: ProjectConfig) -> bool:
     ]
     mismatches: list[str] = []
     for namespace, deployment in services:
-        image = _s6_deployment_image(namespace, deployment)
+        image = _s7_deployment_image(namespace, deployment)
         if not image:
             mismatches.append(f"{deployment}: deployment/image not found")
             continue
@@ -276,6 +276,28 @@ def _s7_print_timeout_diagnostics() -> None:
         console.print("    palamedes markers found: none")
 
 
+def _s7_wait_for_sibling_running(logger: EventLogger, timeout_seconds: int = 240) -> bool:
+    """Wait until sibling pod is Running so Palamedes can infer a working pull secret."""
+    logger.log(
+        "WAIT_SIBLING",
+        f"Waiting for sibling workload to become Running (timeout {timeout_seconds}s)",
+    )
+    checks = max(1, timeout_seconds // 5)
+    for i in range(checks):
+        phase = run_capture(
+            k8s_get_pods_jsonpath(S6_NAMESPACE, "app=s6-sibling", "{.items[0].status.phase}"),
+            check=False,
+        )
+        if phase == "Running":
+            logger.log("SIBLING_READY", f"Sibling pod is Running after {i * 5}s")
+            return True
+        console.print(
+            f"    Waiting for sibling to run (phase={phase or 'unknown'})... ({i * 5}s)"
+        )
+        time.sleep(5)
+    return False
+
+
 def _create_docker_registry_secret(namespace: str, name: str, username: str, password: str) -> None:
     """Create or update a docker-registry pull secret (ghcr.io)."""
     create = subprocess.run(
@@ -320,8 +342,16 @@ def _cleanup_s7_benchmark(cfg: ProjectConfig) -> None:
     for deploy in (S6_FAILING_DEPLOY, S6_SIBLING_DEPLOY):
         run(k8s_delete_resource("deployment", deploy, namespace=S6_NAMESPACE), check=False)
     run(k8s_delete_resource("secret", S6_SECRET_NAME, namespace=S6_NAMESPACE), check=False)
-    clean_s6 = _load_sparql_query(cfg, "clean-s6.sparql")
-    run_sparql(cfg, clean_s6)
+    run(
+        k8s_delete_resource("serviceaccount", "s6-sibling-sa", namespace=S6_NAMESPACE),
+        check=False,
+    )
+    run(
+        k8s_delete_resource("serviceaccount", "s6-failing-sa", namespace=S6_NAMESPACE),
+        check=False,
+    )
+    clean_s7 = _load_sparql_query(cfg, "clean-s6.sparql")
+    run_sparql(cfg, clean_s7)
 
 
 def _poke_s7_failing_pod() -> None:
@@ -423,8 +453,8 @@ def benchmark_stop(ctx: typer.Context):
         check=False,
     )
 
-    info("Removing Scenario 6 benchmark workloads and graph triples...")
-    _cleanup_s6_benchmark(cfg)
+    info("Removing Scenario 7 benchmark workloads and graph triples...")
+    _cleanup_s7_benchmark(cfg)
 
     info("System successfully returned to baseline.")
     console.print()
@@ -847,7 +877,21 @@ def benchmark_run(
             f"Creating docker-registry secret '{S6_SECRET_NAME}' in {S6_NAMESPACE}...",
         )
         _create_docker_registry_secret(S6_NAMESPACE, S6_SECRET_NAME, user, pat)
-        logger.log("STEP_2_DONE", "docker-registry secret created")
+        secret_type = run_capture(
+            ["kubectl", "get", "secret", S6_SECRET_NAME, "-n", S6_NAMESPACE, "-o", "jsonpath={.type}"],
+            check=False,
+        )
+        if secret_type != "kubernetes.io/dockerconfigjson":
+            logger.log(
+                "STEP_2_FAILED",
+                f"Secret verification failed (type={secret_type or 'missing'})",
+            )
+            logger.save()
+            error(
+                f"✖ ERROR: Secret '{S6_SECRET_NAME}' missing or invalid in namespace '{S6_NAMESPACE}'."
+            )
+            return
+        logger.log("STEP_2_DONE", "docker-registry secret created and verified")
 
         logger.log(
             "STEP_3",
@@ -858,8 +902,22 @@ def benchmark_run(
         )
         _apply_manifest_stdin(manifest)
 
+        if not _s7_wait_for_sibling_running(logger):
+            logger.log(
+                "TIMEOUT_SIBLING",
+                "Sibling workload did not become Running before remediation observation",
+            )
+            _s7_print_timeout_diagnostics()
+            _cleanup_s7_benchmark(cfg)
+            logger.save()
+            error(
+                "✖ TIMEOUT: Sibling workload did not reach Running within 240s."
+            )
+            return
+
         logger.log("STEP_4", "Waiting for failing pod ImagePullBackOff...")
         pull_backoff = False
+        failing_ran_without_pull_failure = False
         for i in range(18):
             time.sleep(5)
             reason = run_capture(
@@ -870,6 +928,14 @@ def benchmark_run(
                 ),
                 check=False,
             )
+            phase = run_capture(
+                k8s_get_pods_jsonpath(
+                    S6_NAMESPACE,
+                    "app=s6-failing",
+                    "{.items[0].status.phase}",
+                ),
+                check=False,
+            )
             if reason in ("ImagePullBackOff", "ErrImagePull"):
                 logger.log(
                     "PULL_FAILURE_DETECTED",
@@ -877,9 +943,25 @@ def benchmark_run(
                 )
                 pull_backoff = True
                 break
+            if phase == "Running":
+                logger.log(
+                    "NO_PULL_FAILURE",
+                    "Failing pod reached Running before any pull failure (likely image cache hit)",
+                )
+                failing_ran_without_pull_failure = True
+                break
             console.print(
-                f"    Waiting for pull failure (current: {reason or 'pending'})... ({i * 5}s)"
+                f"    Waiting for pull failure (phase={phase or 'unknown'}, reason={reason or 'none'})... ({i * 5}s)"
             )
+
+        if failing_ran_without_pull_failure:
+            _cleanup_s7_benchmark(cfg)
+            logger.save()
+            error(
+                "✖ Scenario precondition failed: s6-failing became Running (no ImagePullBackOff). "
+                "This usually means the image was already cached on the node."
+            )
+            return
 
         if not pull_backoff:
             logger.log(
