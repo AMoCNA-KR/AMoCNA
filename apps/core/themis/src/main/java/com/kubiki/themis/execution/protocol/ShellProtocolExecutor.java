@@ -10,6 +10,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 import org.springframework.stereotype.Component;
 
 import java.io.BufferedReader;
@@ -79,6 +80,8 @@ public class ShellProtocolExecutor implements ProtocolExecutor {
     }
 
     private void readStream(BufferedReader br, String type, String actionId) {
+        MDC.put("actionId", actionId);
+        MDC.put("protocol", "SHELL");
         try {
             String line;
             while ((line = br.readLine()) != null) {
@@ -86,6 +89,8 @@ public class ShellProtocolExecutor implements ProtocolExecutor {
             }
         } catch (Exception e) {
             log.error("Error reading {} for action {}: {}", type, actionId, e.getMessage());
+        } finally {
+            MDC.clear();
         }
     }
 }

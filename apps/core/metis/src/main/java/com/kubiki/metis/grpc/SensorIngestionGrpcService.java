@@ -9,6 +9,7 @@ import io.grpc.stub.StreamObserver;
 import net.devh.boot.grpc.server.service.GrpcService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 
 import java.util.stream.Collectors;
 
@@ -45,9 +46,9 @@ public class SensorIngestionGrpcService
     @Override
     public void ingestBatch(SensorBatch request,
                             StreamObserver<IngestResponse> responseObserver) {
+        String correlationId = request.getCorrelationId();
+        MDC.put("correlationId", correlationId);
         try {
-            String correlationId = request.getCorrelationId();
-
             if (correlationId.length() > MAX_CORRELATION_ID_LENGTH) {
                 log.warn("Rejected batch: correlation_id exceeds {} characters [length={}]",
                         MAX_CORRELATION_ID_LENGTH, correlationId.length());
@@ -98,6 +99,9 @@ public class SensorIngestionGrpcService
                     .setMessage(message)
                     .build();
 
+            log.info("Successfully ingested sensor batch [correlationId={}, processedCount={}, accepted={}]",
+                    correlationId, processResult.processedCount(), accepted);
+
             responseObserver.onNext(response);
             responseObserver.onCompleted();
 
@@ -108,6 +112,8 @@ public class SensorIngestionGrpcService
                             .withDescription("Internal error: " + e.getMessage())
                             .withCause(e)
                             .asRuntimeException());
+        } finally {
+            MDC.clear();
         }
     }
 }

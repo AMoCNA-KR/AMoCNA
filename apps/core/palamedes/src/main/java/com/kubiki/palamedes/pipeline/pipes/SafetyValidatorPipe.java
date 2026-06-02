@@ -35,50 +35,61 @@ public class SafetyValidatorPipe implements MapePipe {
     @Override
     public boolean process(WorkflowContext context) {
         if (!mapper.getFragment(WorkflowState.PLANNED).equals(context.metadata().get("currentState"))) {
+            log.info("SafetyValidatorPipe: Action is not in State_Planned, skipping safety validation");
             return true;
         }
 
-        log.info("Safety Validation for action {}", context.actionId());
+        log.info("SafetyValidatorPipe: Starting Safety Validation");
 
         // 1. Idempotency Gate (Temporal safety)
         Object val = context.metadata().get("idempotencyOpen");
         boolean isOpen = val instanceof Boolean ? (Boolean) val : true;
         if (!isOpen) {
-            log.info("Action {} is blocked by Idempotency Window - transitioning to FAILED", context.actionId());
+            log.info("SafetyValidatorPipe: Action is blocked by Idempotency Window - transitioning to FAILED");
             boolean transitioned = stateRepository.transition(context.actionId(), WorkflowState.PLANNED, WorkflowState.FAILED);
             if (!transitioned) {
-                log.error("Failed to transition action {} to FAILED after idempotency block", context.actionId());
+                log.error("SafetyValidatorPipe: Failed to transition action to FAILED after idempotency block");
             }
             return false;
         }
+        log.info("SafetyValidatorPipe: Idempotency gate check passed");
 
         // 2. Pre-condition Gate (Semantic safety)
         if (!evaluatePreConditions(context)) {
+            log.warn("SafetyValidatorPipe: Pre-condition gate FAILED");
             return false;
         }
+        log.info("SafetyValidatorPipe: Pre-condition gate check passed");
 
+        log.info("SafetyValidatorPipe: Transitioning action from State_Planned to State_Validated");
         boolean success = stateRepository.transition(context.actionId(), WorkflowState.PLANNED, WorkflowState.VALIDATED);
         if (success) {
             context.metadata().put("currentState", mapper.getFragment(WorkflowState.VALIDATED));
+            log.info("SafetyValidatorPipe: Successfully transitioned action to State_Validated");
+        } else {
+            log.error("SafetyValidatorPipe: Failed to transition action to State_Validated");
         }
         return success;
     }
 
     private boolean evaluatePreConditions(WorkflowContext context) {
+        log.info("SafetyValidatorPipe: Evaluating {} pre-conditions", 
+                context.actionData().preConditions().size());
         for (ActionData.Condition cond : context.actionData().preConditions()) {
             Optional<ConditionStrategy> strategy = conditionFactory.getStrategy(cond.type());
             if (strategy.isPresent()) {
                 try {
+                    log.info("SafetyValidatorPipe: Evaluating pre-condition {} of type {}", cond.id(), cond.type());
                     if (!strategy.get().evaluate(cond)) {
-                        log.warn("Pre-condition {} NOT MET for action {}", cond.id(), context.actionId());
+                        log.warn("SafetyValidatorPipe: Pre-condition {} NOT MET", cond.id());
                         return false;
                     }
                 } catch (Exception e) {
-                    log.error("Error evaluating pre-condition {}: {}", cond.id(), e.getMessage());
+                    log.error("SafetyValidatorPipe: Error evaluating pre-condition {}: {}", cond.id(), e.getMessage());
                     return false;
                 }
             } else {
-                log.error("Unknown condition type: {}", cond.type());
+                log.error("SafetyValidatorPipe: Unknown condition type: {}", cond.type());
                 return false;
             }
         }

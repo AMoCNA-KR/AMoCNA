@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.eclipse.rdf4j.model.IRI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -29,16 +30,18 @@ public class MapePipeline {
     @EventListener(EngineWakeupEvent.class)
     @Scheduled(fixedRateString = "${palamedes.engine.fallback-pipeline-rate-ms}")
     public void run() {
-        log.debug("Starting MAPE Pipeline run...");
+        log.info("MapePipeline.run() triggered");
 
         List<ActiveActionSummary> activeActions = graphDBGateway.findActiveActions();
         if (activeActions.isEmpty()) {
+            log.info("MapePipeline: No active actions found in the Petri Net. Pipeline run finished.");
             return;
         }
-        log.debug("Found {} active actions in the Petri Net", activeActions.size());
+        log.info("MapePipeline: Found {} active actions in the Petri Net", activeActions.size());
 
         int batchSize = palamedesProperties.engine().batchSize();
         List<List<ActiveActionSummary>> batches = partition(activeActions, batchSize);
+        log.info("MapePipeline: Partitioned active actions into {} batches", batches.size());
 
         try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {
             for (List<ActiveActionSummary> batch : batches) {
@@ -50,6 +53,7 @@ public class MapePipeline {
     }
 
     private void processBatch(List<ActiveActionSummary> batch) {
+        log.info("MapePipeline: Processing batch of size {}", batch.size());
         List<IRI> iris = batch.stream().map(ActiveActionSummary::actionIri).toList();
         
         // 1. Batch fetch all ActionData structures
@@ -62,13 +66,17 @@ public class MapePipeline {
         Map<IRI, Boolean> idempotencyStates = graphDBGateway.fetchIdempotencyStates(iris);
 
         for (ActiveActionSummary action : batch) {
+            MDC.put("actionId", action.actionIri().stringValue());
+            MDC.put("resourceName", action.resourceName());
+            MDC.put("currentState", action.stateFragment());
             try {
                 ActionData data = structures.get(action.actionIri());
                 if (data == null) {
-                    log.warn("Could not load structure for action {}, skipping", action.actionIri());
+                    log.warn("MapePipeline: Could not load structure for action, skipping");
                     continue;
                 }
 
+                log.info("MapePipeline: Creating WorkflowContext for action on resource");
                 WorkflowContext context = new WorkflowContext(action.actionIri(), data);
                 context.metadata().put("resourceName", action.resourceName());
                 context.metadata().put("currentState", action.stateFragment());
@@ -78,13 +86,16 @@ public class MapePipeline {
                 context.metadata().putAll(actionHydration);
 
                 for (MapePipe pipe : pipes) {
+                    log.info("MapePipeline: Invoking pipe {}", pipe.getClass().getSimpleName());
                     if (!pipe.process(context)) {
-                        log.debug("Pipeline stopped at {} for action {}", pipe.getClass().getSimpleName(), action.actionIri());
+                        log.info("MapePipeline: Pipeline stopped at {}", pipe.getClass().getSimpleName());
                         break;
                     }
                 }
             } catch (Exception e) {
-                log.error("Error processing action {} in pipeline: {}", action.actionIri(), e.getMessage(), e);
+                log.error("Error processing action in pipeline: {}", e.getMessage(), e);
+            } finally {
+                MDC.clear();
             }
         }
     }

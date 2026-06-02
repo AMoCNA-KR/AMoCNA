@@ -31,4 +31,9 @@ management:
       exposure:
         include: health,info,prometheus
 
+logging:
+  structured:
+    format:
+      console: "ecs"
+
 

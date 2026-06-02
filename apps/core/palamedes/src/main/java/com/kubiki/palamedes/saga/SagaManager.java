@@ -41,34 +41,41 @@ public class SagaManager {
 
 
     public void handleFeedback(ActionStatusUpdate update) {
-        log.info("Handling feedback for action {}: {}", update.actionId(), update.status());
+        log.info("SagaManager: Handling feedback");
 
         IRI actionIri = ontologyRegistry.actionsOntology(update.actionId());
 
         if (update.status() == ExecutionStatus.COMPLETED) {
             // 1. VERIFICATION: Evaluate Post-conditions
+            log.info("SagaManager: Action completed. Evaluating post-conditions...");
             if (verifyPostConditions(actionIri)) {
-                log.info("Action {} succeeded and verified", update.actionId());
+                log.info("SagaManager: Action succeeded and verified");
 
                 // 2. DEFENSE IN DEPTH: Clear the anomaly state from the targeted resource
                 ActionData data = gateway.fetchActionStructure(actionIri);
                 if (data != null && data.target() != null) {
+                    log.info("SagaManager: Clearing anomaly state from resource target: {}", data.target());
                     gateway.clearResourceState(data.target());
                 }
 
+                log.info("SagaManager: Transitioning action from State_InProgress to State_Succeeded");
                 boolean transitioned = stateRepository.transition(actionIri, WorkflowState.IN_PROGRESS, WorkflowState.SUCCEEDED);
                 if (transitioned) {
+                    log.info("SagaManager: Successfully transitioned action to State_Succeeded. Processing success cascades.");
                     processSuccess(actionIri);
+                } else {
+                    log.error("SagaManager: Failed to transition action to State_Succeeded");
                 }
             } else {
-                log.error("Action {} completed but POST-CONDITIONS FAILED", update.actionId());
+                log.error("SagaManager: Action completed but POST-CONDITIONS FAILED");
                 processFailure(actionIri);
             }
         } else {
-            log.error("Action {} failed with status {}", update.actionId(), update.status());
+            log.error("SagaManager: Action failed");
             processFailure(actionIri);
         }
 
+        log.info("SagaManager: Publishing EngineWakeupEvent after feedback update");
         publisher.publishEvent(new EngineWakeupEvent("Saga state updated from Themis feedback"));
     }
 

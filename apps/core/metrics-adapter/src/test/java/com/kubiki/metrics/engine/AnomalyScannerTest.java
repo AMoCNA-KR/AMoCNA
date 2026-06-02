@@ -68,8 +68,8 @@ class AnomalyScannerTest {
         anomalyScanner.scan();
 
         // Then
-        verify(graphWriter, times(2)).instantiateAnomaly(anyString(), anyString());
-        verify(rabbitTemplate, times(2)).convertAndSend(anyString(), anyString(), any(Object.class));
+        verify(graphWriter, timeout(2000).times(2)).instantiateAnomaly(anyString(), anyString());
+        verify(rabbitTemplate, timeout(2000).times(2)).convertAndSend(anyString(), anyString(), any(Object.class));
     }
 
     @Test
@@ -86,7 +86,7 @@ class AnomalyScannerTest {
         anomalyScanner.scan();
 
         // Then
-        verify(graphWriter, times(1)).instantiateAnomaly(contains("host2"), anyString());
-        verify(rabbitTemplate, times(1)).convertAndSend(anyString(), anyString(), any(Object.class));
+        verify(graphWriter, timeout(2000).times(1)).instantiateAnomaly(contains("host2"), anyString());
+        verify(rabbitTemplate, timeout(2000).times(1)).convertAndSend(anyString(), anyString(), any(Object.class));
     }
 }

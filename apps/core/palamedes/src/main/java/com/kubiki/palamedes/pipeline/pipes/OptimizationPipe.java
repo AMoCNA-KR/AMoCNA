@@ -21,7 +21,7 @@ public class OptimizationPipe implements MapePipe {
         // This pipe processes all active actions to provide visibility into their classification
 
         var data = context.actionData();
-        log.info("Action {} Classification:", context.actionId());
+        log.info("OptimizationPipe: Classification:");
         log.info("  - Functional Intent: {}", data.functionalIntent());
         log.info("  - Layer Boundary:    {}", data.layerBoundary());
         log.info("  - Execution Cost:    {}", data.executionCost());

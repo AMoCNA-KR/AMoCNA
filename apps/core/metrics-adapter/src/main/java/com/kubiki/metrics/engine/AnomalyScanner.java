@@ -13,6 +13,7 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
+import org.slf4j.MDC;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
@@ -126,18 +127,28 @@ public class AnomalyScanner {
             return Mono.empty();
         }
         String anomalyStateIri = properties.ontology().resourcesNamespace() + anomalyState;
+        String correlationId = "metrics-" + UUID.randomUUID();
         return Mono.fromRunnable(() -> {
-            graphWriter.instantiateAnomaly(targetResourceIri, anomalyStateIri);
+            MDC.put("correlationId", correlationId);
+            MDC.put("resourceIri", targetResourceIri);
+            MDC.put("changeKind", "STATE_CHANGED");
+            try {
+                log.info("Triggering anomaly {} for resource {}", anomalyStateIri, targetResourceIri);
+                graphWriter.instantiateAnomaly(targetResourceIri, anomalyStateIri);
 
-            // Notify via RabbitMQ
-            GraphUpdateMessage message = new GraphUpdateMessage(
-                    targetResourceIri,
-                    anomalyStateIri,
-                    "STATE_CHANGED",
-                    "metrics-" + UUID.randomUUID()
-            );
+                // Notify via RabbitMQ
+                GraphUpdateMessage message = new GraphUpdateMessage(
+                        targetResourceIri,
+                        anomalyStateIri,
+                        "STATE_CHANGED",
+                        correlationId
+                );
 
-            rabbitTemplate.convertAndSend("amocna.direct.exchange", "graph.updates", message);
+                rabbitTemplate.convertAndSend("amocna.topic.exchange", "graph.updates.metrics-adapter", message);
+                log.info("Successfully sent anomaly trigger notification for resource {}", targetResourceIri);
+            } finally {
+                MDC.clear();
+            }
         }).subscribeOn(Schedulers.boundedElastic()).then();
     }
 
@@ -148,18 +159,28 @@ public class AnomalyScanner {
             return Mono.empty();
         }
         String baseStateIri = properties.ontology().resourcesNamespace() + "State";
+        String correlationId = "metrics-" + UUID.randomUUID();
         return Mono.fromRunnable(() -> {
-            graphWriter.clearAnomalies(targetResourceIri);
+            MDC.put("correlationId", correlationId);
+            MDC.put("resourceIri", targetResourceIri);
+            MDC.put("changeKind", "DELETED");
+            try {
+                log.info("Clearing anomalies for resource {}", targetResourceIri);
+                graphWriter.clearAnomalies(targetResourceIri);
 
-            // Notify via RabbitMQ
-            GraphUpdateMessage message = new GraphUpdateMessage(
-                    targetResourceIri,
-                    baseStateIri,
-                    "DELETED",
-                    "metrics-" + UUID.randomUUID()
-            );
+                // Notify via RabbitMQ
+                GraphUpdateMessage message = new GraphUpdateMessage(
+                        targetResourceIri,
+                        baseStateIri,
+                        "DELETED",
+                        correlationId
+                );
 
-            rabbitTemplate.convertAndSend("amocna.direct.exchange", "graph.updates", message);
+                rabbitTemplate.convertAndSend("amocna.topic.exchange", "graph.updates.metrics-adapter", message);
+                log.info("Successfully sent anomaly clear notification for resource {}", targetResourceIri);
+            } finally {
+                MDC.clear();
+            }
         }).subscribeOn(Schedulers.boundedElastic()).then();
     }
 

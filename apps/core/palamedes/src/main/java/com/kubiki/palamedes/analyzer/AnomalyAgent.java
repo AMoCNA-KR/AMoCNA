@@ -61,6 +61,7 @@ public class AnomalyAgent {
      * on each graph-update message from Metis.
      */
     public void analyze() {
+        log.info("AnomalyAgent.analyze() triggered");
         lastTriggerTime.set(System.currentTimeMillis());
         doAnalyze();
     }
@@ -75,7 +76,7 @@ public class AnomalyAgent {
         long interval = palamedesProperties.engine().fallbackAnomalyScanRateMs();
         long elapsed = System.currentTimeMillis() - lastTriggerTime.get();
         if (elapsed >= interval) {
-            log.info("No graph-update received for {}ms — running fallback anomaly scan",
+            log.info("AnomalyAgent: No graph-update received for {}ms — running fallback anomaly scan",
                     elapsed);
             doAnalyze();
         } else {
@@ -84,9 +85,10 @@ public class AnomalyAgent {
     }
 
     private void doAnalyze() {
-        log.debug("Scanning for cluster anomalies...");
+        log.info("AnomalyAgent: doAnalyze() starting scan for cluster anomalies...");
 
         List<AnomalyTarget> anomalies = gateway.findAnomalies();
+        log.info("AnomalyAgent: Found {} anomaly targets in GraphDB", anomalies.size());
         boolean stateChanged = false;
 
         IRI imageUpdateIntentIri = ontologyRegistry.actionsOntology(IMAGE_UPDATE_INTENT);
@@ -96,16 +98,16 @@ public class AnomalyAgent {
         Set<IRI> processedRootCauses = new HashSet<>();
 
         for (var anomaly : anomalies) {
-            log.info("Anomaly detected: resource {} needs {}", anomaly.resourceName(), anomaly.intentIri());
+            log.info("AnomalyAgent: Anomaly detected: resource {} needs {}", anomaly.resourceName(), anomaly.intentIri());
 
             AnomalyTarget rootCause = rcaEngine.findRootCause(anomaly);
             if (!rootCause.resourceIri().equals(anomaly.resourceIri())) {
-                log.info("Root cause analysis redirected {} -> {} (intent: {})",
+                log.info("AnomalyAgent: Root cause analysis redirected {} -> {} (intent: {})",
                         anomaly.resourceName(), rootCause.resourceName(), rootCause.intentIri());
             }
 
             if (processedRootCauses.contains(rootCause.resourceIri())) {
-                log.debug("Target {} already has an action planned in this batch, skipping redundant anomaly report from {}", 
+                log.info("AnomalyAgent: Target {} already has an action planned in this batch, skipping redundant anomaly report from {}", 
                         rootCause.resourceName(), anomaly.resourceName());
                 continue;
             }
@@ -113,12 +115,14 @@ public class AnomalyAgent {
 
             // Check if idempotency window is open for this (target, intent) pair
             if (!gateway.isIdempotencyWindowOpen(rootCause.resourceIri(), rootCause.intentIri())) {
-                log.info("Action for target {} and intent {} is blocked by idempotency cooldown, skipping creation",
+                log.info("AnomalyAgent: Action for target {} and intent {} is blocked by idempotency cooldown, skipping creation",
                         rootCause.resourceName(), rootCause.intentIri());
                 continue;
             }
 
             String actionId = utils.generateActionId();
+            log.info("AnomalyAgent: Creating action workflow {} for resource {} with intent {}", 
+                    actionId, rootCause.resourceIri(), rootCause.intentIri());
             gateway.createActionWorkflow(rootCause.resourceIri(), rootCause.intentIri(), actionId);
 
             // Hydrate parameters for execution
@@ -132,18 +136,28 @@ public class AnomalyAgent {
                 details.ifPresent(d -> {
                     hydration.put("containerName", d.containerName());
                     hydration.put("imageRepository", d.imageRepository());
+                    log.info("AnomalyAgent: Hydrating details for container {} in repository {}", 
+                            d.containerName(), d.imageRepository());
 
                     vulnerabilityCatalog.selectFixVersion(d.imageRepository(), d.currentVersion(), upgradePolicy)
-                            .ifPresent(v -> hydration.put("targetVersion", v));
+                            .ifPresent(v -> {
+                                hydration.put("targetVersion", v);
+                                log.info("AnomalyAgent: Selected fix version {} for repository {} (current version: {})", 
+                                        v, d.imageRepository(), d.currentVersion());
+                            });
                 });
             }
 
+            log.info("AnomalyAgent: Storing action hydration for actionId {}: {}", actionId, hydration);
             gateway.storeActionHydration(actionId, hydration);
             stateChanged = true;
         }
 
         if (stateChanged) {
+            log.info("AnomalyAgent: State changed, publishing EngineWakeupEvent");
             publisher.publishEvent(new EngineWakeupEvent("New anomaly actions created"));
+        } else {
+            log.info("AnomalyAgent: doAnalyze() completed. No state changes.");
         }
     }
 }

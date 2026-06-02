@@ -6,6 +6,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Component;
 
+import org.slf4j.MDC;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -19,8 +20,8 @@ import java.util.concurrent.TimeUnit;
 @Component
 public class PalamedesNotifier {
 
-    public static final String EXCHANGE = "amocna.direct.exchange";
-    public static final String ROUTING_KEY = "graph.updates";
+    public static final String EXCHANGE = "amocna.topic.exchange";
+    public static final String ROUTING_KEY = "graph.updates.metis";
     private static final Logger log = LoggerFactory.getLogger(PalamedesNotifier.class);
     private static final int MAX_PUBLISH_ATTEMPTS = 5;
     private static final long INITIAL_RETRY_DELAY_MS = 1_000;
@@ -49,27 +50,41 @@ public class PalamedesNotifier {
      */
     public void notify(String resourceIri, String ontologyType,
                        String changeKind, String correlationId) {
-        GraphUpdateMessage message = new GraphUpdateMessage(
-                resourceIri, ontologyType, changeKind, correlationId);
+        MDC.put("correlationId", correlationId);
+        MDC.put("resourceIri", resourceIri);
+        MDC.put("changeKind", changeKind);
+        if (ontologyType != null) {
+            MDC.put("ontologyType", ontologyType);
+        }
 
-        long delayMs = INITIAL_RETRY_DELAY_MS;
-        for (int attempt = 1; attempt <= MAX_PUBLISH_ATTEMPTS; attempt++) {
-            try {
-                rabbitTemplate.convertAndSend(EXCHANGE, ROUTING_KEY, message);
-                log.debug("Published graph update to RabbitMQ [correlationId={}, resourceIri={}, changeKind={}]",
-                        correlationId, resourceIri, changeKind);
-                return;
-            } catch (Exception e) {
-                if (attempt >= MAX_PUBLISH_ATTEMPTS) {
-                    log.error("Failed to publish graph update to RabbitMQ after {} attempts [correlationId={}]: {}",
-                            MAX_PUBLISH_ATTEMPTS, correlationId, e.getMessage(), e);
+        try {
+            GraphUpdateMessage message = new GraphUpdateMessage(
+                    resourceIri, ontologyType, changeKind, correlationId);
+
+            long delayMs = INITIAL_RETRY_DELAY_MS;
+            for (int attempt = 1; attempt <= MAX_PUBLISH_ATTEMPTS; attempt++) {
+                try {
+                    rabbitTemplate.convertAndSend(EXCHANGE, ROUTING_KEY, message);
+                    log.info("Published graph update to exchange '{}' with routing key '{}' [correlationId={}, resourceIri={}, changeKind={}]",
+                            EXCHANGE, ROUTING_KEY, correlationId, resourceIri, changeKind);
                     return;
+                } catch (Exception e) {
+                    if (attempt >= MAX_PUBLISH_ATTEMPTS) {
+                        log.error("Failed to publish graph update to RabbitMQ after {} attempts [correlationId={}]: {}",
+                                MAX_PUBLISH_ATTEMPTS, correlationId, e.getMessage(), e);
+                        return;
+                    }
+                    log.warn("Failed to publish graph update to RabbitMQ (attempt {}/{}) [correlationId={}]: {}",
+                            attempt, MAX_PUBLISH_ATTEMPTS, correlationId, e.getMessage());
+                    sleep(delayMs);
+                    delayMs = Math.min(delayMs * 2, MAX_RETRY_DELAY_MS);
                 }
-                log.warn("Failed to publish graph update to RabbitMQ (attempt {}/{}) [correlationId={}]: {}",
-                        attempt, MAX_PUBLISH_ATTEMPTS, correlationId, e.getMessage());
-                sleep(delayMs);
-                delayMs = Math.min(delayMs * 2, MAX_RETRY_DELAY_MS);
             }
+        } finally {
+            MDC.remove("correlationId");
+            MDC.remove("resourceIri");
+            MDC.remove("changeKind");
+            MDC.remove("ontologyType");
         }
     }
 }

@@ -10,6 +10,7 @@ import com.kubiki.themis.policy.ConditionEvaluator;
 import io.micrometer.core.annotation.Timed;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.stereotype.Component;
@@ -34,54 +35,62 @@ public class ActionQueueListener {
     @RabbitListener(queues = RabbitMQConfig.ACTION_QUEUE)
     @Timed(value = "themis.queue.receive", description = "Time taken to process action from queue")
     public void receiveAction(ActionMessage message) {
-        log.info("Received action from queue: {}", message.actionId());
-
-        if (!conditionEvaluator.evaluatePreConditions(message.actionId())) {
-            log.warn("Pre-conditions failed for action: {}", message.actionId());
-            statusProducer.sendUpdate(new ActionStatusUpdate(message.actionId(), ExecutionStatus.FAILED_INTERNAL, "Pre-condition failed", 0));
-            return;
+        MDC.put("actionId", message.actionId());
+        if (message.protocol() != null) {
+            MDC.put("protocol", message.protocol().name());
         }
+        try {
+            log.info("Received action from queue: {}", message.actionId());
 
-        ProtocolExecutor executor = executors.stream()
-                .filter(e -> e.supports(message.protocol()))
-                .findFirst()
-                .orElse(null);
+            if (!conditionEvaluator.evaluatePreConditions(message.actionId())) {
+                log.warn("Pre-conditions failed for action: {}", message.actionId());
+                statusProducer.sendUpdate(new ActionStatusUpdate(message.actionId(), ExecutionStatus.FAILED_INTERNAL, "Pre-condition failed", 0));
+                return;
+            }
 
-        if (executor == null) {
-            log.error("No executor found for protocol: {}", message.protocol());
-            statusProducer.sendUpdate(new ActionStatusUpdate(message.actionId(), ExecutionStatus.FAILED_INTERNAL, "No executor for protocol", 0));
-            return;
-        }
+            ProtocolExecutor executor = executors.stream()
+                    .filter(e -> e.supports(message.protocol()))
+                    .findFirst()
+                    .orElse(null);
 
-        ExecutionResult result = executeWithRetry(executor, message);
+            if (executor == null) {
+                log.error("No executor found for protocol: {}", message.protocol());
+                statusProducer.sendUpdate(new ActionStatusUpdate(message.actionId(), ExecutionStatus.FAILED_INTERNAL, "No executor for protocol", 0));
+                return;
+            }
 
-        if (result.success()) {
-            int delay = properties.execution() != null ? properties.execution().postConditionDelayMs() : 0;
-            if (delay > 0) {
-                try {
-                    log.info("Waiting {}ms for cluster stabilization before post-condition verification", delay);
-                    Thread.sleep(delay);
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    log.error("Stabilization delay interrupted", e);
+            ExecutionResult result = executeWithRetry(executor, message);
+
+            if (result.success()) {
+                int delay = properties.execution() != null ? properties.execution().postConditionDelayMs() : 0;
+                if (delay > 0) {
+                    try {
+                        log.info("Waiting {}ms for cluster stabilization before post-condition verification", delay);
+                        Thread.sleep(delay);
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        log.error("Stabilization delay interrupted", e);
+                    }
+                }
+
+                if (!conditionEvaluator.evaluatePostConditions(message.actionId())) {
+                    log.warn("Post-condition verification failed for action: {}", message.actionId());
+                    result = ExecutionResult.failure(result.observedStatusCode(), "Post-condition verification failed", ExecutionStatus.FAILED_INTERNAL);
                 }
             }
 
-            if (!conditionEvaluator.evaluatePostConditions(message.actionId())) {
-                log.warn("Post-condition verification failed for action: {}", message.actionId());
-                result = ExecutionResult.failure(result.observedStatusCode(), "Post-condition verification failed", ExecutionStatus.FAILED_INTERNAL);
-            }
+            ActionStatusUpdate status = new ActionStatusUpdate(
+                    message.actionId(),
+                    result.status(),
+                    result.errorMessage(),
+                    result.observedStatusCode()
+            );
+
+            statusProducer.sendUpdate(status);
+            log.info("Sent status update for action {}: {}", message.actionId(), result.status());
+        } finally {
+            MDC.clear();
         }
-
-        ActionStatusUpdate status = new ActionStatusUpdate(
-                message.actionId(),
-                result.status(),
-                result.errorMessage(),
-                result.observedStatusCode()
-        );
-
-        statusProducer.sendUpdate(status);
-        log.info("Sent status update for action {}: {}", message.actionId(), result.status());
     }
 
     private ExecutionResult executeWithRetry(ProtocolExecutor executor, ActionMessage message) {
