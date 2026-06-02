@@ -42,13 +42,15 @@ class ActionQueueListenerTest {
         when(conditionEvaluator.evaluatePreConditions(any())).thenReturn(true);
         when(conditionEvaluator.evaluatePostConditions(any())).thenReturn(true);
         
-        ActionQueueListener target = new ActionQueueListener(List.of(executor));
+        ActionExecutionHandler targetHandler = new ActionExecutionHandler(List.of(executor));
         
-        var factory = new AspectJProxyFactory(target);
+        var factory = new AspectJProxyFactory(targetHandler);
         var aspect = new ActionVerificationAspect(conditionEvaluator, statusProducer, properties);
         factory.addAspect(aspect);
         
-        listener = factory.getProxy();
+        ActionExecutionHandler handlerProxy = factory.getProxy();
+        
+        listener = new ActionQueueListener(handlerProxy);
     }
 
     @Test
@@ -81,12 +83,14 @@ class ActionQueueListenerTest {
         // Ensure no executor supports this protocol
         ProtocolExecutor otherExecutor = mock(ProtocolExecutor.class);
         when(otherExecutor.supports(any())).thenReturn(false);
-        ActionQueueListener rawListener = new ActionQueueListener(List.of(otherExecutor));
+        ActionExecutionHandler rawHandler = new ActionExecutionHandler(List.of(otherExecutor));
         
-        AspectJProxyFactory factory = new AspectJProxyFactory(rawListener);
+        AspectJProxyFactory factory = new AspectJProxyFactory(rawHandler);
         ActionVerificationAspect aspect = new ActionVerificationAspect(conditionEvaluator, statusProducer, properties);
         factory.addAspect(aspect);
-        ActionQueueListener singleListener = factory.getProxy();
+        ActionExecutionHandler handlerProxy = factory.getProxy();
+        
+        ActionQueueListener singleListener = new ActionQueueListener(handlerProxy);
  
         singleListener.receiveAction(message);
 

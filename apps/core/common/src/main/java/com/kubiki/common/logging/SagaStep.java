@@ -13,4 +13,8 @@ import java.lang.annotation.Target;
 public @interface SagaStep {
     String name();
     String compensationMethod(); // Method name in the same bean to invoke for rolling back the step
+
+    int maxRetries() default 0; // Number of retries on failure (0 means execute only once)
+    long backoffMs() default 1000; // Wait time between retries in milliseconds
+    Class<? extends Throwable>[] retryOn() default {Exception.class}; // Types of exceptions to retry on
 }

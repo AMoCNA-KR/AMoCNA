@@ -20,30 +20,72 @@ public class SagaStepAspect {
     @Around("@annotation(sagaStep)")
     public Object manageSagaStep(ProceedingJoinPoint joinPoint, SagaStep sagaStep) throws Throwable {
         log.info("SagaStep Aspect: Intercepting step: '{}'", sagaStep.name());
+        
+        int maxAttempts = Math.max(1, sagaStep.maxRetries() + 1);
+        long backoffMs = sagaStep.backoffMs();
+        
         Object result = null;
-        try {
-            result = joinPoint.proceed();
-            
-            if (result != null) {
+        
+        for (int attempt = 1; attempt <= maxAttempts; attempt++) {
+            if (attempt > 1) {
+                log.info("SagaStep Aspect: Retrying step '{}' (attempt {}/{}) after backoff of {}ms", 
+                        sagaStep.name(), attempt, maxAttempts, backoffMs);
                 try {
-                    Method successMethod = result.getClass().getMethod("success");
-                    boolean success = (boolean) successMethod.invoke(result);
-                    if (!success) {
-                        log.warn("SagaStep Aspect: Step '{}' returned a failure result. Triggering compensation: '{}'", 
-                                sagaStep.name(), sagaStep.compensationMethod());
-                        invokeCompensation(joinPoint, sagaStep.compensationMethod());
-                    }
-                } catch (NoSuchMethodException e) {
-                    // Result doesn't have a success method, assume success since no exception was thrown
+                    Thread.sleep(backoffMs);
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    throw ie;
                 }
             }
-            return result;
-        } catch (Throwable t) {
-            log.error("SagaStep Aspect: Step '{}' failed with exception: {}. Triggering compensation: '{}'", 
-                    sagaStep.name(), t.getMessage(), sagaStep.compensationMethod());
-            invokeCompensation(joinPoint, sagaStep.compensationMethod());
-            throw t;
+            
+            try {
+                result = joinPoint.proceed();
+                
+                if (result != null) {
+                    try {
+                        Method successMethod = result.getClass().getMethod("success");
+                        boolean success = (boolean) successMethod.invoke(result);
+                        if (!success) {
+                            if (attempt < maxAttempts) {
+                                log.warn("SagaStep Aspect: Step '{}' returned a failure result on attempt {}/{}. Retrying...", 
+                                        sagaStep.name(), attempt, maxAttempts);
+                                continue; // Trigger retry
+                            } else {
+                                log.warn("SagaStep Aspect: Step '{}' returned a failure result after all attempts ({}). Triggering compensation: '{}'", 
+                                        sagaStep.name(), maxAttempts, sagaStep.compensationMethod());
+                                invokeCompensation(joinPoint, sagaStep.compensationMethod());
+                            }
+                        }
+                    } catch (NoSuchMethodException e) {
+                        // Result doesn't have a success method, assume success since no exception was thrown
+                    }
+                }
+                return result;
+            } catch (Throwable t) {
+                boolean shouldRetry = isRetryableException(t, sagaStep.retryOn());
+                
+                if (shouldRetry && attempt < maxAttempts) {
+                    log.warn("SagaStep Aspect: Step '{}' failed with exception: {} on attempt {}/{}. Retrying...", 
+                            sagaStep.name(), t.getMessage(), attempt, maxAttempts);
+                } else {
+                    log.error("SagaStep Aspect: Step '{}' failed permanently after all attempts ({}) due to: {}. Triggering compensation: '{}'", 
+                            sagaStep.name(), maxAttempts, t.getMessage(), sagaStep.compensationMethod());
+                    invokeCompensation(joinPoint, sagaStep.compensationMethod());
+                    throw t;
+                }
+            }
         }
+        
+        return result;
+    }
+
+    private boolean isRetryableException(Throwable t, Class<? extends Throwable>[] retryOn) {
+        for (Class<? extends Throwable> retryableClass : retryOn) {
+            if (retryableClass.isAssignableFrom(t.getClass())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private void invokeCompensation(ProceedingJoinPoint joinPoint, String compensationMethodName) {

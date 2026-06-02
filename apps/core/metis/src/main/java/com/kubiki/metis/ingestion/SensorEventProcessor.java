@@ -24,12 +24,10 @@ public class SensorEventProcessor {
 
     private final List<SensorEventHandler> handlers;
     private final SparqlClient sparqlClient;
-    private final MeterRegistry meterRegistry;
 
-    public SensorEventProcessor(List<SensorEventHandler> handlers, SparqlClient sparqlClient, MeterRegistry meterRegistry) {
+    public SensorEventProcessor(List<SensorEventHandler> handlers, SparqlClient sparqlClient) {
         this.handlers = handlers;
         this.sparqlClient = sparqlClient;
-        this.meterRegistry = meterRegistry;
     }
 
     /**
@@ -78,10 +76,8 @@ public class SensorEventProcessor {
 
         if (!collectedSparql.isEmpty() && !graphDbFailed) {
             executeSparqlBatch(collectedSparql);
-            processedCount = successResults.size();
-        } else {
-            processedCount = successResults.size();
         }
+        processedCount = successResults.size();
 
         return new ProcessResult(processedCount, failedCount, failureMessages, firstSuccess, graphDbFailed);
     }
