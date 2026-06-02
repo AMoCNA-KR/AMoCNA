@@ -15,6 +15,7 @@ import com.kubiki.common.logging.MdcContext;
 import com.kubiki.common.logging.MdcParam;
 import com.kubiki.common.logging.PreVerify;
 import com.kubiki.common.logging.PostVerify;
+import com.kubiki.common.logging.ObserveSLO;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.stereotype.Component;
@@ -31,6 +32,7 @@ public class ActionQueueListener {
     @PostVerify
     @MdcContext
     @RabbitListener(queues = RabbitMQConfig.ACTION_QUEUE)
+    @ObserveSLO(name = "themis.action.slo", thresholdMs = 10000)
     @Timed(value = "themis.queue.receive", description = "Time taken to process action from queue")
     public ExecutionResult receiveAction(
             @MdcParam(value = "actionId", property = "actionId")

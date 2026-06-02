@@ -53,6 +53,7 @@ public class AnomalyAgent {
     private final PalamedesProperties palamedesProperties;
     private final OntologyRegistry ontologyRegistry;
     private final VulnerabilityCatalog vulnerabilityCatalog;
+    private final AnomalyActionHandler actionHandler;
 
     private final AtomicLong lastTriggerTime = new AtomicLong(System.currentTimeMillis());
 
@@ -113,17 +114,10 @@ public class AnomalyAgent {
             }
             processedRootCauses.add(rootCause.resourceIri());
 
-            // Check if idempotency window is open for this (target, intent) pair
-            if (!gateway.isIdempotencyWindowOpen(rootCause.resourceIri(), rootCause.intentIri())) {
-                log.info("AnomalyAgent: Action for target {} and intent {} is blocked by idempotency cooldown, skipping creation",
-                        rootCause.resourceName(), rootCause.intentIri());
+            String actionId = utils.generateActionId();
+            if (!actionHandler.createActionWorkflow(rootCause.resourceIri(), rootCause.intentIri(), actionId)) {
                 continue;
             }
-
-            String actionId = utils.generateActionId();
-            log.info("AnomalyAgent: Creating action workflow {} for resource {} with intent {}", 
-                    actionId, rootCause.resourceIri(), rootCause.intentIri());
-            gateway.createActionWorkflow(rootCause.resourceIri(), rootCause.intentIri(), actionId);
 
             // Hydrate parameters for execution
             Map<String, String> hydration = new HashMap<>();

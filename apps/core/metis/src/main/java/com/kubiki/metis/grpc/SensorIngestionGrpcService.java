@@ -11,6 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.kubiki.common.logging.MdcContext;
 import com.kubiki.common.logging.MdcParam;
+import com.kubiki.common.logging.ValidateSchema;
 
 import java.util.stream.Collectors;
 
@@ -46,6 +47,7 @@ public class SensorIngestionGrpcService
 
     @Override
     @MdcContext
+    @ValidateSchema
     public void ingestBatch(
             @MdcParam(value = "correlationId", property = "correlationId") SensorBatch request,
             StreamObserver<IngestResponse> responseObserver) {
