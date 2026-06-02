@@ -4,12 +4,14 @@ import com.kubiki.common.model.ActionMessage;
 import com.kubiki.common.model.ActionStatusUpdate;
 import com.kubiki.common.model.ExecutionStatus;
 import com.kubiki.common.model.Protocol;
+import com.kubiki.themis.aspect.ActionVerificationAspect;
 import com.kubiki.themis.model.ExecutionResult;
 import com.kubiki.themis.config.ThemisProperties;
 import com.kubiki.themis.policy.ConditionEvaluator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.springframework.aop.aspectj.annotation.AspectJProxyFactory;
 
 import java.util.List;
 
@@ -40,7 +42,13 @@ class ActionQueueListenerTest {
         when(conditionEvaluator.evaluatePreConditions(any())).thenReturn(true);
         when(conditionEvaluator.evaluatePostConditions(any())).thenReturn(true);
         
-        listener = new ActionQueueListener(List.of(executor), statusProducer, conditionEvaluator, properties);
+        ActionQueueListener target = new ActionQueueListener(List.of(executor));
+        
+        var factory = new AspectJProxyFactory(target);
+        var aspect = new ActionVerificationAspect(conditionEvaluator, statusProducer, properties);
+        factory.addAspect(aspect);
+        
+        listener = factory.getProxy();
     }
 
     @Test
@@ -73,8 +81,13 @@ class ActionQueueListenerTest {
         // Ensure no executor supports this protocol
         ProtocolExecutor otherExecutor = mock(ProtocolExecutor.class);
         when(otherExecutor.supports(any())).thenReturn(false);
-        ActionQueueListener singleListener = new ActionQueueListener(List.of(otherExecutor), statusProducer, conditionEvaluator, properties);
-
+        ActionQueueListener rawListener = new ActionQueueListener(List.of(otherExecutor));
+        
+        AspectJProxyFactory factory = new AspectJProxyFactory(rawListener);
+        ActionVerificationAspect aspect = new ActionVerificationAspect(conditionEvaluator, statusProducer, properties);
+        factory.addAspect(aspect);
+        ActionQueueListener singleListener = factory.getProxy();
+ 
         singleListener.receiveAction(message);
 
         ArgumentCaptor<ActionStatusUpdate> captor = ArgumentCaptor.forClass(ActionStatusUpdate.class);
