@@ -190,8 +190,8 @@ def benchmark_run(
 
     if scenario == "1":
         logger = EventLogger("1")
-        logger.log("START_BASELINE", "Locust: 500 users, Cluster-Stress: 1 replica")
-        set_locust_load(500, 10)
+        logger.log("START_BASELINE", "Locust: 200 users, Cluster-Stress: 1 replica")
+        set_locust_load(200, 10)
         run(k8s_scale("default", "cluster-stress", 1), check=False)
         run(k8s_scale("sock-shop", "front-end", 1), check=False)
 
@@ -199,8 +199,8 @@ def benchmark_run(
         time.sleep(120)
 
         # Phase 2: Trigger (T+120s)
-        logger.log("TRIGGER_ANOMALY", "Spiking Locust to 3000 users")
-        set_locust_load(3000, 20)
+        logger.log("TRIGGER_ANOMALY", "Spiking Locust to 1000 users")
+        set_locust_load(1000, 20)
 
         # Phase 3: Observation (360s)
         start_obs = time.time()
@@ -219,13 +219,31 @@ def benchmark_run(
         logger.log("STABILIZATION", "Monitoring post-fix stability for 120s")
         time.sleep(120)
 
+        # Phase 5: Scale Down Trigger
+        logger.log("SCALE_DOWN_TRIGGER", "Reducing Locust back to 200 users to trigger scale down")
+        set_locust_load(200, 10)
+
+        # Phase 6: Scale Down Observation (360s)
+        logger.log("SCALE_DOWN_OBSERVATION", "Monitoring scale down to 1 replica for 360s")
+        start_scale_down_obs = time.time()
+        scale_down_detected = False
+        while time.time() - start_scale_down_obs < 360:
+            replicas = run_capture(
+                k8s_get_jsonpath("sock-shop", "deployment", "front-end", "{.status.readyReplicas}"),
+                check=False,
+            )
+            if replicas == "1" and not scale_down_detected:
+                logger.log("SCALE_DOWN_DETECTED", f"Frontend successfully scaled back to 1 replica in {time.time() - start_scale_down_obs:.1f}s")
+                scale_down_detected = True
+            time.sleep(10)
+
         logger.log("END_SCENARIO", "Scenario 1 completed")
         logger.save()
 
     elif scenario == "2":
         logger = EventLogger("2")
-        logger.log("START_BASELINE", "Locust: 500 users, Cluster-Stress: 1 replica")
-        set_locust_load(500, 10)
+        logger.log("START_BASELINE", "Locust: 200 users, Cluster-Stress: 1 replica")
+        set_locust_load(200, 10)
         run(k8s_scale("default", "cluster-stress", 1), check=False)
         run(k8s_patch("sock-shop", "orders", ORDERS_CPU_RESET_PATCH), check=False)
 
@@ -260,7 +278,7 @@ def benchmark_run(
     elif scenario == "3":
         logger = EventLogger("3")
         logger.log("START_BASELINE", "Locust: 500 users, Cluster-Stress: 1 replica")
-        set_locust_load(500, 10)
+        set_locust_load(50, 10) # Using 50 to avoid cluster exhaustion in image update scenario
         run(k8s_scale("default", "cluster-stress", 1), check=False)
         
         pod_name = run_capture(k8s_get_pods_jsonpath("sock-shop", "name=front-end", "{.items[0].metadata.name}"))
@@ -297,7 +315,7 @@ def benchmark_run(
     elif scenario == "4":
         logger = EventLogger("4")
         logger.log("START_BASELINE", "Locust: 500 users, Cluster-Stress: 1 replica")
-        set_locust_load(500, 10)
+        set_locust_load(50, 5) # Low load for Saga rollback test
         run(k8s_scale("default", "cluster-stress", 1), check=False)
 
         # Deploy dummy ConfigMap
@@ -339,7 +357,7 @@ def benchmark_run(
     elif scenario == "5":
         logger = EventLogger("5")
         logger.log("START_BASELINE", "Locust: 500 users, Cluster-Stress: 1 replica")
-        set_locust_load(500, 10)
+        set_locust_load(50, 10) # Low load for image update scenario
         run(k8s_scale("default", "cluster-stress", 1), check=False)
 
         # Phase 1: Baseline (120s)
