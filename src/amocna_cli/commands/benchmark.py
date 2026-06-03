@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import sys
 import time
 import json
@@ -9,6 +10,7 @@ from typing_extensions import Annotated
 import typer
 
 from amocna_cli.config import ProjectConfig
+from amocna_cli.commands.version import read_pom_version
 from amocna_cli.utils.ui import console, header, info, error, run, run_capture
 from amocna_cli.utils.shell import (
     LOCUST_SWARM_PYTHON_TEMPLATE,
@@ -31,6 +33,13 @@ app = typer.Typer(no_args_is_help=True)
 SOCK_SHOP_FRONTEND_IMAGE = "docker.io/weaveworksdemos/front-end"
 SOCK_SHOP_FRONTEND_VULNERABLE_TAG = "0.3.0"
 SOCK_SHOP_FRONTEND_PATCHED_TAG = "0.3.12"
+
+S6_NAMESPACE = "sock-shop"
+S6_SECRET_NAME = "regcred"
+S6_SIBLING_DEPLOY = "s6-sibling"
+S6_FAILING_DEPLOY = "s6-failing"
+S6_PRIVATE_IMAGE_APP = "s7-private-demo"
+S6_WORKLOADS_MANIFEST = "s6-registry-credential-workloads.yaml"
 
 # ─── Benchmark helpers ─────────────────────────────────────────────
 
@@ -126,6 +135,293 @@ class EventLogger:
         with open(self.log_file, "w") as f:
             json.dump(data, f, indent=2)
         info(f"Event log saved to {self.log_file}")
+        # Also print to console with elapsed time prefix
+
+def _load_k8s_manifest(cfg: ProjectConfig, filename: str, **replacements: str) -> str:
+    """Load a K8s manifest template from cli/resources/k8s and substitute placeholders."""
+    path = cfg.project_root / "cli" / "resources" / "k8s" / filename
+    if not path.is_file():
+        error(f"K8s manifest template not found: {path}")
+        sys.exit(1)
+    text = path.read_text()
+    for key, value in replacements.items():
+        text = text.replace("{" + key + "}", value)
+    return text
+
+
+def _require_registry_credentials() -> tuple[str, str]:
+    """Return (username, PAT) from the environment or exit."""
+    user = os.environ.get("AMOCNA_USER")
+    pat = os.environ.get("AMOCNA_PAT")
+    if not user:
+        error("AMOCNA_USER is not set. Export your GitHub username: export AMOCNA_USER=...")
+        sys.exit(1)
+    if not pat:
+        error("AMOCNA_PAT is not set. Export your GitHub PAT: export AMOCNA_PAT=...")
+        sys.exit(1)
+    return user, pat
+
+
+def _s7_private_image(cfg: ProjectConfig) -> str:
+    version = read_pom_version(cfg.project_root / cfg.parent_pom)
+    return f"{cfg.registry}/{S6_PRIVATE_IMAGE_APP}:{version}"
+
+
+def _s7_expected_version(cfg: ProjectConfig) -> str:
+    return read_pom_version(cfg.project_root / cfg.parent_pom)
+
+
+def _s7_deployment_image(namespace: str, deployment: str) -> str:
+    return run_capture(
+        k8s_get_jsonpath(
+            namespace,
+            "deployment",
+            deployment,
+            "{.spec.template.spec.containers[0].image}",
+        ),
+        check=False,
+    )
+
+
+def _s7_check_runtime_prerequisites(cfg: ProjectConfig) -> bool:
+    """Verify control-loop services run the expected version before Scenario 7."""
+    expected = _s7_expected_version(cfg)
+    services = [
+        ("metis", "metis"),
+        ("palamedes", "palamedes"),
+        ("themis", "themis"),
+    ]
+    mismatches: list[str] = []
+    for namespace, deployment in services:
+        image = _s7_deployment_image(namespace, deployment)
+        if not image:
+            mismatches.append(f"{deployment}: deployment/image not found")
+            continue
+        if f":{expected}" not in image:
+            mismatches.append(
+                f"{deployment}: running {image} (expected tag :{expected})"
+            )
+    if mismatches:
+        error("Scenario 6 preflight failed: control-loop images are out of sync.")
+        for mismatch in mismatches:
+            console.print(f"    - {mismatch}")
+        console.print(
+            "    Hint: rebuild/push and redeploy metis, palamedes, themis to the same project version."
+        )
+        return False
+    return True
+
+
+def _s7_print_timeout_diagnostics() -> None:
+    """Print concise diagnostics to explain why Scenario 6 may be stuck."""
+    info("Collecting Scenario 6 diagnostics...")
+    pod = run_capture(
+        k8s_get_pods_jsonpath(S6_NAMESPACE, "app=s6-failing", "{.items[0].metadata.name}"),
+        check=False,
+    )
+    if pod:
+        reason = run_capture(
+            [
+                "kubectl",
+                "get",
+                "pod",
+                pod,
+                "-n",
+                S6_NAMESPACE,
+                "-o=jsonpath={.status.containerStatuses[0].state.waiting.reason}",
+            ],
+            check=False,
+        )
+        msg = run_capture(
+            [
+                "kubectl",
+                "get",
+                "pod",
+                pod,
+                "-n",
+                S6_NAMESPACE,
+                "-o=jsonpath={.status.containerStatuses[0].state.waiting.message}",
+            ],
+            check=False,
+        )
+        console.print(f"    failing pod: {pod}")
+        console.print(f"    pull reason: {reason or '(unknown)'}")
+        if msg:
+            console.print(f"    pull message: {msg}")
+
+    dep_secret = run_capture(
+        k8s_get_jsonpath(
+            S6_NAMESPACE,
+            "deployment",
+            S6_FAILING_DEPLOY,
+            "{.spec.template.spec.imagePullSecrets[0].name}",
+        ),
+        check=False,
+    )
+    console.print(f"    deployment imagePullSecret: {dep_secret or '(none)'}")
+
+    pal_logs = run_capture(
+        ["kubectl", "logs", "-n", "palamedes", "deployment/palamedes", "--since=5m"],
+        check=False,
+    )
+    markers = [
+        "Planned imagePullSecret patch",
+        "AddImagePullSecretIntent",
+        "RegistryCredentialPlanner",
+    ]
+    found = [m for m in markers if m in pal_logs]
+    if found:
+        console.print(f"    palamedes markers found: {', '.join(found)}")
+    else:
+        console.print("    palamedes markers found: none")
+
+
+def _s7_wait_for_sibling_running(logger: EventLogger, timeout_seconds: int = 240) -> bool:
+    """Wait until sibling pod is Running so Palamedes can infer a working pull secret."""
+    logger.log(
+        "WAIT_SIBLING",
+        f"Waiting for sibling workload to become Running (timeout {timeout_seconds}s)",
+    )
+    checks = max(1, timeout_seconds // 5)
+    for i in range(checks):
+        phase = run_capture(
+            k8s_get_pods_jsonpath(S6_NAMESPACE, "app=s6-sibling", "{.items[0].status.phase}"),
+            check=False,
+        )
+        if phase == "Running":
+            logger.log("SIBLING_READY", f"Sibling pod is Running after {i * 5}s")
+            return True
+        console.print(
+            f"    Waiting for sibling to run (phase={phase or 'unknown'})... ({i * 5}s)"
+        )
+        time.sleep(5)
+    return False
+
+
+def _create_docker_registry_secret(namespace: str, name: str, username: str, password: str) -> None:
+    """Create or update a docker-registry pull secret (ghcr.io)."""
+    create = subprocess.run(
+        [
+            "kubectl",
+            "create",
+            "secret",
+            "docker-registry",
+            name,
+            "-n",
+            namespace,
+            "--docker-server=ghcr.io",
+            f"--docker-username={username}",
+            f"--docker-password={password}",
+            "--dry-run=client",
+            "-o",
+            "yaml",
+        ],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    subprocess.run(
+        ["kubectl", "apply", "-f", "-"],
+        input=create.stdout,
+        text=True,
+        check=True,
+    )
+
+
+def _apply_manifest_stdin(manifest: str) -> None:
+    subprocess.run(
+        ["kubectl", "apply", "-f", "-"],
+        input=manifest,
+        text=True,
+        check=True,
+    )
+
+
+def _cleanup_s7_benchmark(cfg: ProjectConfig) -> None:
+    """Remove Scenario 6 workloads, pull secret, and related GraphDB triples."""
+    for deploy in (S6_FAILING_DEPLOY, S6_SIBLING_DEPLOY):
+        run(k8s_delete_resource("deployment", deploy, namespace=S6_NAMESPACE), check=False)
+    run(k8s_delete_resource("secret", S6_SECRET_NAME, namespace=S6_NAMESPACE), check=False)
+    run(
+        k8s_delete_resource("serviceaccount", "s6-sibling-sa", namespace=S6_NAMESPACE),
+        check=False,
+    )
+    run(
+        k8s_delete_resource("serviceaccount", "s6-failing-sa", namespace=S6_NAMESPACE),
+        check=False,
+    )
+    clean_s7 = _load_sparql_query(cfg, "clean-s6.sparql")
+    run_sparql(cfg, clean_s7)
+
+
+def _poke_s7_failing_pod() -> None:
+    """Trigger a pod update so Metis re-asserts ImagePullBackOffState after phase sensing."""
+    pods_raw = run_capture(
+        k8s_get_pods_jsonpath(
+            S6_NAMESPACE,
+            "app=s6-failing",
+            "{range .items[*]}{.metadata.name}|{.metadata.deletionTimestamp}{'\\n'}{end}",
+        ),
+        check=False,
+    )
+    pod_name = None
+    for line in (pods_raw or "").splitlines():
+        if not line.strip():
+            continue
+        parts = line.split("|")
+        name = parts[0] if len(parts) > 0 else ""
+        deletion_ts = parts[1] if len(parts) > 1 else ""
+        deletion_ts = deletion_ts.strip()
+        if not deletion_ts:
+            pod_name = name
+            break
+    if pod_name is None:
+        # Fallback to first available pod if all are terminating.
+        pod_name = run_capture(
+            k8s_get_pods_jsonpath(
+                S6_NAMESPACE, "app=s6-failing", "{.items[0].metadata.name}"
+            ),
+            check=False,
+        )
+    if not pod_name:
+        return
+    run(
+        [
+            "kubectl",
+            "annotate",
+            "pod",
+            pod_name,
+            "-n",
+            S6_NAMESPACE,
+            f"amocna.benchmark/s6-poke={int(time.time())}",
+            "--overwrite",
+        ],
+        check=False,
+    )
+
+def _s7_failing_pod_snapshots() -> list[tuple[str, str, str, bool]]:
+    """
+    Return [(podName, phase, waitingReason, terminating), ...] for app=s6-failing.
+    """
+    raw = run_capture(
+        k8s_get_pods_jsonpath(
+            S6_NAMESPACE,
+            "app=s6-failing",
+            "{range .items[*]}{.metadata.name}|{.status.phase}|{.status.containerStatuses[0].state.waiting.reason}|{.metadata.deletionTimestamp}{'\\n'}{end}",
+        ),
+        check=False,
+    )
+    snapshots: list[tuple[str, str, str, bool]] = []
+    for line in (raw or "").splitlines():
+        if not line.strip():
+            continue
+        parts = line.split("|")
+        name = parts[0] if len(parts) > 0 else ""
+        phase = parts[1] if len(parts) > 1 else ""
+        reason = parts[2] if len(parts) > 2 else ""
+        deletion_ts = parts[3].strip() if len(parts) > 3 else ""
+        snapshots.append((name, phase or "", reason or "", bool(deletion_ts)))
+    return snapshots
 
 
 # ─── Benchmark Subcommands ─────────────────────────────────────────
@@ -204,6 +500,9 @@ def benchmark_stop(ctx: typer.Context):
         check=False,
     )
 
+    info("Removing Scenario 7 benchmark workloads and graph triples...")
+    _cleanup_s7_benchmark(cfg)
+
     info("System successfully returned to baseline.")
     console.print()
 
@@ -224,8 +523,15 @@ def benchmark_load(
 def benchmark_run(
     ctx: typer.Context,
     scenario: Annotated[
-        str, typer.Option(help="Scenario to run (1, 2, 3, 4, 5, 6, all)")
+        str, typer.Option(help="Scenario to run (1, 2, 3, 4, 5, 6, 7, all)")
     ],
+    keep_on_failure: Annotated[
+        bool,
+        typer.Option(
+            "--keep-on-failure",
+            help="Keep scenario resources for debugging when a scenario fails.",
+        ),
+    ] = False,
 ):
     """Run a specific scenario or all benchmarks."""
     cfg: ProjectConfig = ctx.obj
@@ -535,7 +841,6 @@ def benchmark_run(
         logger.log("END_SCENARIO", "Scenario 5 completed")
         logger.save()
         run(k8s_scale("default", "cluster-stress", 0), check=False)
-
     elif scenario == "6":
         logger = EventLogger("6")
         logger.log("START_BASELINE", "Locust: 200 users, Cluster-Stress: 1 replica")
@@ -599,12 +904,214 @@ def benchmark_run(
 
         logger.log("END_SCENARIO", "Scenario 6 completed")
         logger.save()
+        stop_locust()
         run(k8s_scale("default", "cluster-stress", 0), check=False)
-        run(k8s_delete_resource("configmap", "orders-config", namespace="sock-shop"))
+        run(k8s_delete_resource("configmap", "orders-config", namespace="sock-shop"), check=False,)
+    elif scenario == "7":
+        logger = EventLogger("7")
+        logger.log(
+            "START_SCENARIO",
+            "Registry Credential Remediation (infer imagePullSecret from healthy sibling and patch failing Deployment)",
+        )
+        private_image = _s7_private_image(cfg)
+        logger.log("CONFIG", f"Using private image: {private_image}")
+
+        logger.log("PRECHECK", "Checking AMoCNA service image versions...")
+        if not _s7_check_runtime_prerequisites(cfg):
+            logger.log("PRECHECK_FAILED", "Control-loop services out of sync; aborting Scenario 7")
+            logger.save()
+            return
+
+        logger.log("CLEANUP", "Step 1: Cleaning up any previous Scenario 7 resources...")
+        _cleanup_s7_benchmark(cfg)
+
+        user, pat = _require_registry_credentials()
+        logger.log(
+            "STEP_2",
+            f"Creating docker-registry secret '{S6_SECRET_NAME}' in {S6_NAMESPACE}...",
+        )
+        _create_docker_registry_secret(S6_NAMESPACE, S6_SECRET_NAME, user, pat)
+        secret_type = run_capture(
+            ["kubectl", "get", "secret", S6_SECRET_NAME, "-n", S6_NAMESPACE, "-o", "jsonpath={.type}"],
+            check=False,
+        )
+        if secret_type != "kubernetes.io/dockerconfigjson":
+            logger.log(
+                "STEP_2_FAILED",
+                f"Secret verification failed (type={secret_type or 'missing'})",
+            )
+            if keep_on_failure:
+                logger.log("KEEP_ON_FAILURE", "Keeping resources for post-failure debugging")
+            else:
+                _cleanup_s7_benchmark(cfg)
+            logger.save()
+            error(
+                f"✖ ERROR: Secret '{S6_SECRET_NAME}' missing or invalid in namespace '{S6_NAMESPACE}'."
+            )
+            return
+        logger.log("STEP_2_DONE", "docker-registry secret created and verified")
+
+        logger.log(
+            "STEP_3",
+            "Deploying workloads (failing starts immediately; sibling starts later)...",
+        )
+        manifest = _load_k8s_manifest(
+            cfg, S6_WORKLOADS_MANIFEST, private_image=private_image
+        )
+        _apply_manifest_stdin(manifest)
+
+        logger.log("STEP_4", "Waiting for failing pod ImagePullBackOff before enabling sibling...")
+        pull_backoff = False
+        failing_ran_without_pull_failure = False
+        for i in range(18):
+            time.sleep(5)
+            snapshots = _s7_failing_pod_snapshots()
+            active = [s for s in snapshots if not s[3]]
+            pull_failure = next(
+                (s for s in active if s[2] in ("ImagePullBackOff", "ErrImagePull")),
+                None,
+            )
+            if pull_failure:
+                logger.log(
+                    "PULL_FAILURE_DETECTED",
+                    f"Failing pod pull error detected on {pull_failure[0]}: {pull_failure[2]}",
+                )
+                pull_backoff = True
+                break
+            if active and all(s[1] == "Running" for s in active):
+                logger.log(
+                    "NO_PULL_FAILURE",
+                    "All active failing pods reached Running before any pull failure (likely image cache hit)",
+                )
+                failing_ran_without_pull_failure = True
+                break
+            states = ", ".join(
+                f"{name}:{phase or 'unknown'}/{reason or 'none'}{'(term)' if term else ''}"
+                for name, phase, reason, term in snapshots
+            ) or "none"
+            console.print(
+                f"    Waiting for pull failure (pods={states})... ({i * 5}s)"
+            )
+
+        if failing_ran_without_pull_failure:
+            if keep_on_failure:
+                logger.log("KEEP_ON_FAILURE", "Keeping resources for post-failure debugging")
+            else:
+                _cleanup_s7_benchmark(cfg)
+            logger.save()
+            error(
+                "✖ Scenario precondition failed: s6-failing became Running (no ImagePullBackOff). "
+                "This usually means the image was already cached on the node."
+            )
+            return
+
+        if not pull_backoff:
+            logger.log(
+                "TIMEOUT",
+                "Failing workload did not reach ImagePullBackOff within 90s",
+            )
+            if keep_on_failure:
+                logger.log("KEEP_ON_FAILURE", "Keeping resources for post-failure debugging")
+            else:
+                _cleanup_s7_benchmark(cfg)
+            logger.save()
+            error("✖ TIMEOUT: Failing workload did not reach ImagePullBackOff within 90s.")
+            return
+
+        logger.log("STEP_5", "Scaling sibling to 1 replica to provide valid pull secret source...")
+        run(k8s_scale(S6_NAMESPACE, S6_SIBLING_DEPLOY, 1), check=False)
+        if not _s7_wait_for_sibling_running(logger):
+            logger.log(
+                "TIMEOUT_SIBLING",
+                "Sibling workload did not become Running after scale-up",
+            )
+            _s7_print_timeout_diagnostics()
+            if keep_on_failure:
+                logger.log("KEEP_ON_FAILURE", "Keeping resources for post-failure debugging")
+            else:
+                _cleanup_s7_benchmark(cfg)
+            logger.save()
+            error("✖ TIMEOUT: Sibling workload did not reach Running within 240s after scale-up.")
+            return
+
+        start_time = time.time()
+        patched = False
+        healed = False
+        logger.log("STEP_6", "Polling for autonomic imagePullSecrets patch and pod recovery...")
+        for i in range(24):
+            time.sleep(5)
+            secret = run_capture(
+                k8s_get_jsonpath(
+                    S6_NAMESPACE,
+                    "deployment",
+                    S6_FAILING_DEPLOY,
+                    "{.spec.template.spec.imagePullSecrets[0].name}",
+                ),
+                check=False,
+            )
+            phase = run_capture(
+                k8s_get_pods_jsonpath(
+                    S6_NAMESPACE, "app=s6-failing", "{.items[0].status.phase}"
+                ),
+                check=False,
+            )
+            if secret == S6_SECRET_NAME:
+                patched = True
+            if phase == "Running":
+                healed = True
+            if patched and healed:
+                duration = time.time() - start_time
+                logger.log(
+                    "REMEDIATION_DETECTED",
+                    f"Deployment patched with '{S6_SECRET_NAME}' and failing pod is Running in {duration:.1f}s",
+                )
+                info(
+                    f"[green]✔ SUCCESS: Deployment patched with '{S6_SECRET_NAME}' and "
+                    f"failing pod is Running in {duration:.1f}s![/green]"
+                )
+                break
+            console.print(
+                f"    imagePullSecrets={secret or '(none)'}, pod phase={phase or 'unknown'}... "
+                f"({i * 5}s)"
+            )
+
+        if not patched:
+            logger.log(
+                "TIMEOUT_NO_PATCH",
+                "Autonomic loop did not patch imagePullSecrets within 120s",
+            )
+            error(
+                "✖ TIMEOUT: Autonomic loop did not patch imagePullSecrets within 120s."
+            )
+            _s7_print_timeout_diagnostics()
+            if keep_on_failure:
+                logger.log("KEEP_ON_FAILURE", "Keeping resources for post-failure debugging")
+            else:
+                _cleanup_s7_benchmark(cfg)
+                logger.log("CLEANUP", "Cleaned up Scenario 7 resources after failure")
+        elif not healed:
+            logger.log(
+                "TIMEOUT_NOT_HEALED",
+                "Deployment patched but failing pod did not reach Running within 120s",
+            )
+            error(
+                "✖ TIMEOUT: Deployment was patched but failing pod did not reach Running within 120s."
+            )
+            _s7_print_timeout_diagnostics()
+            if keep_on_failure:
+                logger.log("KEEP_ON_FAILURE", "Keeping resources for post-failure debugging")
+            else:
+                _cleanup_s7_benchmark(cfg)
+                logger.log("CLEANUP", "Cleaned up Scenario 7 resources after failure")
+        else:
+            logger.log("CLEANUP", "Cleaning up Scenario 7 resources...")
+            _cleanup_s7_benchmark(cfg)
+        logger.log("END_SCENARIO", "Scenario 7 completed")
+        logger.save()
 
     elif scenario == "all":
         info("Starting complete automated benchmark cycle...")
-        for sc in ["1", "2", "3", "4", "5", "6"]:
+        for sc in ["1", "2", "3", "4", "5", "6", "7"]:
             run(["amocna", "benchmark", "run", "--scenario", sc])
             info("Waiting 60 seconds between scenarios for cluster cooling...")
             time.sleep(60)

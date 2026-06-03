@@ -77,6 +77,7 @@ public class ContainerImageSensor extends AbstractNamespacedSensor {
         for (Container container : containers) {
             emitter.emitPodContainer(ns, name, container);
         }
+        emitter.emitPodPullSecrets(ns, name, pod.getSpec().getImagePullSecrets());
     }
 
     private static boolean containerImagesChanged(Pod oldPod, Pod newPod) {

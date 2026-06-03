@@ -118,6 +118,9 @@ public class ContainerAnomalySensor extends AbstractNamespacedSensor {
             if ("CrashLoopBackOff".equals(reason)) {
                 return CneeOntology.STATE_CONTAINER_CRASH_LOOP;
             }
+            if ("ImagePullBackOff".equals(reason) || "ErrImagePull".equals(reason)) {
+                return CneeOntology.STATE_IMAGE_PULL_BACKOFF;
+            }
         }
 
         if (terminated != null) {

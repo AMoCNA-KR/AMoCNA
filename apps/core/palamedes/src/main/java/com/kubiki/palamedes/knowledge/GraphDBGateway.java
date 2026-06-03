@@ -9,6 +9,7 @@ import com.kubiki.palamedes.model.ActiveActionSummary;
 import com.kubiki.palamedes.model.AnomalyTarget;
 import com.kubiki.palamedes.model.ImageInTopology;
 import com.kubiki.palamedes.model.ImageUpdateTarget;
+import com.kubiki.palamedes.model.RegistryAuthTarget;
 import com.kubiki.palamedes.model.WorkflowState;
 import com.kubiki.palamedes.model.WorkflowStateMapper;
 import com.kubiki.palamedes.knowledge.Result;
@@ -299,6 +300,17 @@ public class GraphDBGateway {
                         bs.hasBinding("service") ? (IRI) bs.getValue("service") : null,
                         bs.hasBinding("serviceName") ? bs.getValue("serviceName").stringValue() : null
                 ))
+                .toList();
+    }
+
+    @Timed(value = "palamedes.graphdb.query", extraTags = {"type", "registry-auth"}, description = "Time taken to find registry auth failures")
+    public List<RegistryAuthTarget> findRegistryAuthFailures() {
+        return sparqlRepository.findRegistryAuthFailures().stream()
+                .map(bs -> new RegistryAuthTarget(
+                        (IRI) bs.getValue("deployment"),
+                        bs.getValue("deploymentName").stringValue(),
+                        bs.getValue("namespace").stringValue(),
+                        bs.getValue("pullSecretName").stringValue()))
                 .toList();
     }
 

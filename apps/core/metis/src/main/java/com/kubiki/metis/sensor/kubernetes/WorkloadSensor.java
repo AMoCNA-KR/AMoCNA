@@ -25,6 +25,7 @@ public class WorkloadSensor extends AbstractNamespacedSensor {
     private final SensorEventPublisher publisher;
     private final IriFactory iriFactory;
     private final ContainerImageEmitter imageEmitter;
+    private final String cneeNamespace;
 
     public WorkloadSensor(KubernetesClient client,
                           MetisProperties properties,
@@ -33,6 +34,7 @@ public class WorkloadSensor extends AbstractNamespacedSensor {
         super(client, properties);
         this.publisher = publisher;
         this.iriFactory = iriFactory;
+        this.cneeNamespace = properties.ontology().cneeNamespace();
         this.imageEmitter = new ContainerImageEmitter(
                 publisher, iriFactory, properties.ontology().cneeNamespace());
     }
@@ -127,6 +129,8 @@ public class WorkloadSensor extends AbstractNamespacedSensor {
         for (io.fabric8.kubernetes.api.model.Container container : containers) {
             imageEmitter.emitTemplateContainer(ns, CneeOntology.KIND_DEPLOYMENT, name, container);
         }
+        imageEmitter.emitWorkloadPullSecrets(ns, CneeOntology.KIND_DEPLOYMENT, name,
+                dep.getSpec().getTemplate().getSpec().getImagePullSecrets());
     }
 
     private void emitStatefulSetTemplateImages(StatefulSet ss) {
@@ -183,6 +187,7 @@ public class WorkloadSensor extends AbstractNamespacedSensor {
                 .setOntologyType(type)
                 .setResourceId(name)
                 .setResourceName(name)
+                .putProperties(cneeNamespace + CneeOntology.PROP_NAMESPACE, ns)
                 .build();
 
         publisher.publish(SensorEventPublisher.withTimestamp(

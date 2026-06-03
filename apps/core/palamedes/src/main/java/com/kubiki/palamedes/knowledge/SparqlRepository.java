@@ -69,4 +69,7 @@ public interface SparqlRepository {
 
     @SparqlQuery(resource = "sparql/find-images-in-topology.sparql")
     List<BindingSet> findImagesInTopology();
+
+    @SparqlQuery(resource = "sparql/find-registry-auth-failures.sparql")
+    List<BindingSet> findRegistryAuthFailures();
 }

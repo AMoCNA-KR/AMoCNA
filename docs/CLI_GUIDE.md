@@ -252,6 +252,19 @@ The `benchmark` subcommand provides automated control loops to run evaluation sc
   ./amocna.py benchmark run --scenario 5
   ```
 
+#### Scenario 7: Registry Credential Remediation
+
+- **Goal**: Detect `ImagePullBackOff` on a workload pulling from a private registry, infer the correct `imagePullSecret` from a healthy sibling in the same namespace, and patch the failing Deployment.
+- **Process**: Creates `regcred` in `sock-shop` (requires `AMOCNA_USER` and `AMOCNA_PAT` for `ghcr.io`), deploys `s6-sibling` (with `imagePullSecrets`) and `s6-failing` (without) both using the private `ghcr.io/amocna-kr/metis` image from the project POM version. Metis senses `ImagePullBackOffState` and topology; Palamedes runs sibling-secret inference; Themis patches `imagePullSecrets`. The CLI polls until `regcred` appears on the Deployment and the failing pod is `Running`, then removes benchmark workloads and graph triples.
+- **Prerequisites**: AMoCNA stack on `1.7.6-SNAPSHOT` (or newer) with Scenario 7 ontology/blueprint loaded; cluster can pull `ghcr.io/amocna-kr/metis` when credentials are present.
+- **Execution**:
+
+  ```bash
+  export AMOCNA_USER=your_github_user
+  export AMOCNA_PAT=your_github_pat
+  ./amocna.py benchmark run --scenario 7
+  ```
+
 ### 5.2 Helper Routines
 
 - **Status Check**: Inspect active workloads, pod counts, and Locust traffic parameters:
