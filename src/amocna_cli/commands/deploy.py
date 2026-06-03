@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import base64
+import os
 import subprocess
 import sys
 from typing import Optional
@@ -106,6 +107,70 @@ def _wait_for_rabbitmq(dry_run: bool = False) -> None:
     else:
         info("[yellow](Dry Run) Skipped waiting for RabbitMQ deployment readiness.[/yellow]")
 
+
+def _registry_server(registry: str) -> str:
+    """Extract registry host from config registry value."""
+    return registry.split("/", 1)[0]
+
+
+def _require_pull_secret_env() -> tuple[str, str]:
+    user = os.environ.get("AMOCNA_USER")
+    pat = os.environ.get("AMOCNA_PAT")
+    if not user:
+        error("AMOCNA_USER is not set. Required for creating ghcr-login image pull secrets.")
+        error("Set it before deploy: export AMOCNA_USER=your_github_user")
+        sys.exit(1)
+    if not pat:
+        error("AMOCNA_PAT is not set. Required for creating ghcr-login image pull secrets.")
+        error("Set it before deploy: export AMOCNA_PAT=your_github_pat")
+        sys.exit(1)
+    return user, pat
+
+
+def _create_pull_secret(namespace: str, server: str, user: str, password: str, dry_run: bool = False) -> None:
+    create = subprocess.run(
+        [
+            "kubectl",
+            "create",
+            "secret",
+            "docker-registry",
+            "ghcr-login",
+            "-n",
+            namespace,
+            f"--docker-server={server}",
+            f"--docker-username={user}",
+            f"--docker-password={password}",
+            "--dry-run=client",
+            "-o",
+            "yaml",
+        ],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    _kubectl_apply_stdin(create.stdout, dry_run=dry_run)
+
+
+def _ensure_core_pull_secrets(cfg: ProjectConfig, dry_run: bool = False) -> None:
+    """Create ghcr-login secret in core namespaces before workloads start."""
+    core_dir = cfg.project_root / "infra" / "core"
+    namespaces = ["metis", "palamedes", "themis", "metrics-adapter"]
+    user, pat = _require_pull_secret_env()
+    server = _registry_server(cfg.registry)
+
+    info("Ensuring core namespaces exist...")
+    for ns in namespaces:
+        ns_manifest = core_dir / f"{ns}-00-namespace.yaml"
+        if not ns_manifest.is_file():
+            warn(f"Namespace manifest not found, skipping: {ns_manifest}")
+            continue
+        run(k8s_apply_manifest(str(ns_manifest), dry_run=dry_run))
+
+    info("Creating/updating ghcr-login image pull secrets for core namespaces...")
+    for ns in namespaces:
+        _create_pull_secret(ns, server, user, pat, dry_run=dry_run)
+    info("Image pull secrets ready in metis/palamedes/themis/metrics-adapter.")
+
 @app.callback(invoke_without_command=True)
 def deploy_cmd(
     ctx: typer.Context,
@@ -131,6 +196,7 @@ def deploy_cmd(
     header("Deploying AMoCNA to Kubernetes")
 
     _deploy_graphdb(cfg, dry_run=dry_run)
+    _ensure_core_pull_secrets(cfg, dry_run=dry_run)
 
     full_path = cfg.project_root / "infra"
     with console.status(f"[bold green]Applying Kubernetes Kustomization in {full_path}...[/bold green]"):
