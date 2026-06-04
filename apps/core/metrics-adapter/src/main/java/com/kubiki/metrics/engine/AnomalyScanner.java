@@ -38,6 +38,7 @@ public class AnomalyScanner {
     private final MeterRegistry meterRegistry;
 
     private final Map<String, Integer> violationCounter = new ConcurrentHashMap<>();
+    private final Map<String, java.time.Instant> lastTriggeredTimes = new ConcurrentHashMap<>();
 
     @Scheduled(fixedDelayString = "${scanner.interval:10000}")
     @Timed(value = "amocna.monitor.scan", description = "Time taken to perform anomaly scan")
@@ -71,6 +72,15 @@ public class AnomalyScanner {
 
                                 if (count >= threshold.persistenceWindow()) {
                                     violationCounter.remove(key);
+
+                                    // Cooldown Check
+                                    java.time.Instant lastTriggered = lastTriggeredTimes.get(key);
+                                    if (lastTriggered != null && java.time.Duration.between(lastTriggered, java.time.Instant.now()).toSeconds() < threshold.cooldownSeconds()) {
+                                        log.info("Throttling anomaly trigger for {}: {} (cooldown active)", threshold.name(), targetResourceIri);
+                                        return Mono.empty();
+                                    }
+
+                                    lastTriggeredTimes.put(key, java.time.Instant.now());
                                     return Mono.just(new AnomalyBatchItem(targetResourceIri, threshold.anomalyState(), true));
                                 } else {
                                     violationCounter.put(key, count);
