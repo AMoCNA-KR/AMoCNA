@@ -57,7 +57,7 @@ public final class CneeOntology {
     public static final String STATE_RUNNING = "ExecutionUnitRunning";
     public static final String STATE_FAILED = "ExecutionUnitFailed";
     public static final String STATE_SUCCEEDED = "ExecutionUnitSucceeded";
-    public static final String STATE_UNKNOWN = "Unknown";
+    public static final String STATE_UNKNOWN = "ExecutionUnitUnknown";
     public static final String STATE_CONTAINER_CRASH_LOOP = "ContainerCrashLoopBackOffState";
 
     // -------------------------------------------------------------------------
@@ -73,7 +73,6 @@ public final class CneeOntology {
     // -------------------------------------------------------------------------
     // Pod anomaly states — subclasses of both ExecutionUnitState and Anomaly.
     // -------------------------------------------------------------------------
-    public static final String STATE_POD_PENDING = "ExecutionUnitPendingState";
     public static final String STATE_IMAGE_PULL_BACKOFF = "ImagePullBackOffState";
     public static final String STATE_NODE_NOT_READY = "NodeNotReadyState";
 
