@@ -167,6 +167,13 @@ def k8s_rollout_status(resource: str, namespace: str | None = None, timeout: str
         cmd.extend(["-n", namespace])
     return cmd
 
+def k8s_rollout_restart(resource: str, namespace: str | None = None) -> list[str]:
+    """Build a kubectl rollout restart command."""
+    cmd = ["kubectl", "rollout", "restart", resource]
+    if namespace:
+        cmd.extend(["-n", namespace])
+    return cmd
+
 def k8s_wait_ready(resource_type: str, label_selector: str, namespace: str | None = None, timeout: str = "5m") -> list[str]:
     """Build a kubectl wait ready command."""
     cmd = ["kubectl", "wait", "--for=condition=ready", resource_type, "-l", label_selector, f"--timeout={timeout}"]

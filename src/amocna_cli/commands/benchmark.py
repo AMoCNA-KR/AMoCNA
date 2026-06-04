@@ -22,6 +22,7 @@ from amocna_cli.utils.shell import (
     k8s_scale,
     k8s_patch,
     k8s_set_image,
+    k8s_rollout_restart,
     k8s_get_jsonpath,
     k8s_get_pods_jsonpath,
     k8s_delete_resource,
@@ -548,8 +549,8 @@ def benchmark_run(
         time.sleep(120)
 
         # Phase 2: Trigger (T+120s)
-        logger.log("TRIGGER_ANOMALY", "Spiking Locust to 2000 users")
-        set_locust_load(2000, 20)
+        logger.log("TRIGGER_ANOMALY", "Spiking Locust to 1000 users")
+        set_locust_load(1000, 20)
 
         # Phase 3: Observation (360s)
         start_obs = time.time()
@@ -566,6 +567,8 @@ def benchmark_run(
                     "REMEDIATION_DETECTED",
                     f"Frontend successfully scaled to 3 replicas in {time.time() - start_obs:.1f}s",
                 )
+                logger.log("TRAFFIC_REBALANCE", "Restarting Locust workers to balance traffic across new replicas...")
+                run(k8s_rollout_restart("deployment/locust-worker", namespace="sock-shop"), check=False)
                 remediation_detected = True
             time.sleep(10)
 

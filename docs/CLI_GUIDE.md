@@ -252,6 +252,16 @@ The `benchmark` subcommand provides automated control loops to run evaluation sc
   ./amocna.py benchmark run --scenario 5
   ```
 
+#### Scenario 6: Multi-Step Saga Remediation (Green Path)
+
+- **Goal**: Evaluate successful multi-step remediation (ConfigMap patch + Pod restart) without failures.
+- **Process**: Sets a baseline load (200 users), ensures `cluster-stress` is at 1 replica, and creates an `orders-config` ConfigMap with `updated=false`. It then injects `ConfigDriftState` into GraphDB for the `orders` service. The autonomic system executes the remediation plan (patch ConfigMap to `true` and restart Pods), and the CLI polls until the ConfigMap is successfully patched.
+- **Execution**:
+
+  ```bash
+  ./amocna.py benchmark run --scenario 6
+  ```
+
 #### Scenario 7: Registry Credential Remediation
 
 - **Goal**: Detect `ImagePullBackOff` on a workload pulling from a private registry, infer the correct `imagePullSecret` from a healthy sibling in the same namespace, and patch the failing Deployment.
