@@ -192,6 +192,42 @@
     
 
 
+    <!-- http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/managesProxy -->
+
+    <owl:ObjectProperty rdf:about="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/managesProxy">
+        <rdfs:domain rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/ServiceMeshControlPlane"/>
+        <rdfs:range rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/SidecarProxy"/>
+    </owl:ObjectProperty>
+    
+
+
+    <!-- http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/interceptsTrafficFor -->
+
+    <owl:ObjectProperty rdf:about="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/interceptsTrafficFor">
+        <rdfs:domain rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/SidecarProxy"/>
+        <rdfs:range rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/Container"/>
+    </owl:ObjectProperty>
+    
+
+
+    <!-- http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/bindsToGateway -->
+
+    <owl:ObjectProperty rdf:about="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/bindsToGateway">
+        <rdfs:domain rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/VirtualService"/>
+        <rdfs:range rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/Gateway"/>
+    </owl:ObjectProperty>
+    
+
+
+    <!-- http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/routesToWorkload -->
+
+    <owl:ObjectProperty rdf:about="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/routesToWorkload">
+        <rdfs:domain rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/VirtualService"/>
+        <rdfs:range rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/Workload"/>
+    </owl:ObjectProperty>
+    
+
+
     <!-- 
     ///////////////////////////////////////////////////////////////////////////////////////
     //
@@ -208,6 +244,33 @@
     <owl:DatatypeProperty rdf:about="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/allocatedCPU">
         <rdfs:domain rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/ExecutionUnit"/>
         <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </owl:DatatypeProperty>
+    
+
+
+    <!-- http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/trafficWeight -->
+
+    <owl:DatatypeProperty rdf:about="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/trafficWeight">
+        <rdfs:domain rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/VirtualService"/>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#integer"/>
+    </owl:DatatypeProperty>
+    
+
+
+    <!-- http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/gatewayProtocol -->
+
+    <owl:DatatypeProperty rdf:about="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/gatewayProtocol">
+        <rdfs:domain rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/Gateway"/>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </owl:DatatypeProperty>
+    
+
+
+    <!-- http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/mtlsEnabled -->
+
+    <owl:DatatypeProperty rdf:about="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/mtlsEnabled">
+        <rdfs:domain rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/SidecarProxy"/>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#boolean"/>
     </owl:DatatypeProperty>
     
 
@@ -822,10 +885,80 @@
     
 
 
+    <!-- http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/VirtualService -->
+
+    <owl:Class rdf:about="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/VirtualService">
+        <rdfs:subClassOf rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/ApplicationLayerElement"/>
+        <rdfs:subClassOf>
+            <owl:Restriction>
+                <owl:onProperty rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/bindsToGateway"/>
+                <owl:someValuesFrom rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/Gateway"/>
+            </owl:Restriction>
+        </rdfs:subClassOf>
+        <rdfs:subClassOf>
+            <owl:Restriction>
+                <owl:onProperty rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/routesToWorkload"/>
+                <owl:someValuesFrom rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/Workload"/>
+            </owl:Restriction>
+        </rdfs:subClassOf>
+        <rdfs:subClassOf>
+            <owl:Restriction>
+                <owl:onProperty rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/trafficWeight"/>
+                <owl:someValuesFrom rdf:resource="http://www.w3.org/2001/XMLSchema#integer"/>
+            </owl:Restriction>
+        </rdfs:subClassOf>
+        <rdfs:comment>A logical routing rule that defines how traffic is directed to a specific microservice (e.g., Istio VirtualService).</rdfs:comment>
+    </owl:Class>
+
+    <!-- http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/SidecarProxy -->
+
+    <owl:Class rdf:about="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/SidecarProxy">
+        <rdfs:subClassOf rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/Container"/>
+        <rdfs:subClassOf>
+            <owl:Restriction>
+                <owl:onProperty rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/interceptsTrafficFor"/>
+                <owl:someValuesFrom rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/Container"/>
+            </owl:Restriction>
+        </rdfs:subClassOf>
+        <rdfs:subClassOf>
+            <owl:Restriction>
+                <owl:onProperty rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/mtlsEnabled"/>
+                <owl:someValuesFrom rdf:resource="http://www.w3.org/2001/XMLSchema#boolean"/>
+            </owl:Restriction>
+        </rdfs:subClassOf>
+        <rdfs:comment>A specialized container (e.g., Envoy) running alongside an application container to handle networking, security, and observability.</rdfs:comment>
+    </owl:Class>
+
+    <!-- http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/ServiceMeshControlPlane -->
+
+    <owl:Class rdf:about="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/ServiceMeshControlPlane">
+        <rdfs:subClassOf rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/ContainerizationLayerElement"/>
+        <rdfs:subClassOf>
+            <owl:Restriction>
+                <owl:onProperty rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/managesProxy"/>
+                <owl:someValuesFrom rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/SidecarProxy"/>
+            </owl:Restriction>
+        </rdfs:subClassOf>
+        <rdfs:comment>The management component of a service mesh (e.g., Istiod) that configures sidecar proxies and manages service discovery and security policies.</rdfs:comment>
+    </owl:Class>
+
+    <!-- http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/Gateway -->
+
+    <owl:Class rdf:about="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/Gateway">
+        <rdfs:subClassOf rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/ContainerizationLayerElement"/>
+        <rdfs:subClassOf>
+            <owl:Restriction>
+                <owl:onProperty rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/gatewayProtocol"/>
+                <owl:someValuesFrom rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+            </owl:Restriction>
+        </rdfs:subClassOf>
+        <rdfs:comment>A managed entry or exit point for traffic into or out of the service mesh.</rdfs:comment>
+    </owl:Class>
+
     <!-- http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/Secret -->
 
     <owl:Class rdf:about="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/Secret">
-        <rdfs:subClassOf rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/ManagementElement"/>
+        <rdfs:subClassOf rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/ContainerizationLayerElement"/>
         <rdfs:comment>A Kubernetes Secret. Referenced by cnee:authenticatesWith from an ExecutionUnit (e.g. a registry pull secret in spec.imagePullSecrets) and may cnee:grantsAccessTo an ImageRegistry.</rdfs:comment>
     </owl:Class>
     
