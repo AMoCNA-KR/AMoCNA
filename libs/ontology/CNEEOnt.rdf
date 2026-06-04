@@ -340,6 +340,33 @@
     
 
 
+    <!-- http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/messagingProtocol -->
+
+    <owl:DatatypeProperty rdf:about="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/messagingProtocol">
+        <rdfs:domain rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/MessageBroker"/>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </owl:DatatypeProperty>
+    
+
+
+    <!-- http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/maxMessageSize -->
+
+    <owl:DatatypeProperty rdf:about="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/maxMessageSize">
+        <rdfs:domain rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/MessageBroker"/>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </owl:DatatypeProperty>
+    
+
+
+    <!-- http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/retentionPeriod -->
+
+    <owl:DatatypeProperty rdf:about="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/retentionPeriod">
+        <rdfs:domain rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/MessageBroker"/>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </owl:DatatypeProperty>
+    
+
+
     <!-- 
     ///////////////////////////////////////////////////////////////////////////////////////
     //
@@ -444,7 +471,7 @@
                 <owl:someValuesFrom rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/InfrastructureLayerElement"/>
             </owl:Restriction>
         </rdfs:subClassOf>
-<rdfs:subClassOf>
+        <rdfs:subClassOf>
             <owl:Restriction>
                 <owl:onProperty rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/locatedIn"/>
                 <owl:someValuesFrom rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/TopologyElement"/>
@@ -857,6 +884,14 @@
         <rdfs:subClassOf rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/Node"/>
     </owl:Class>
     
+
+
+    <!-- http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/MessageBroker -->
+
+    <owl:Class rdf:about="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/MessageBroker">
+        <rdfs:subClassOf rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/ApplicationLayerElement"/>
+    </owl:Class>
+
 
 
     <!-- http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/Metric -->
@@ -1278,6 +1313,18 @@
             <owl:Restriction>
                 <owl:onProperty rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/dependsOnResource"/>
                 <owl:someValuesFrom rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/InfrastructureLayerElement"/>
+            </owl:Restriction>
+        </rdfs:subClassOf>
+        <rdfs:subClassOf>
+            <owl:Restriction>
+                <owl:onProperty rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/publishesTo"/>
+                <owl:someValuesFrom rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/MessageBroker"/>
+            </owl:Restriction>
+        </rdfs:subClassOf>
+        <rdfs:subClassOf>
+            <owl:Restriction>
+                <owl:onProperty rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/consumesFrom"/>
+                <owl:someValuesFrom rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/MessageBroker"/>
             </owl:Restriction>
         </rdfs:subClassOf>
         <rdfs:comment>Represents an application or a component of an application running on the infrastructure.</rdfs:comment>
