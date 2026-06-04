@@ -7,3 +7,4 @@ resourceKind: "Service"
 resourceLabel: "name"
 namespaceLabel: "namespace"
 persistenceWindow: 1
+cooldownSeconds: 0

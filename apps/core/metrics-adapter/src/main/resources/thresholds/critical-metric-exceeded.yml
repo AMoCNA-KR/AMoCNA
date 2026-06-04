@@ -6,3 +6,5 @@ anomalyState: "ContainerCPUThrottledState"
 resourceKind: "Pod"
 resourceLabel: "pod"
 namespaceLabel: "namespace"
+persistenceWindow: 1
+cooldownSeconds: 0

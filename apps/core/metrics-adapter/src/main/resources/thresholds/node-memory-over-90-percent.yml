@@ -5,3 +5,5 @@ value: 0.9
 anomalyState: "NodeMemoryStarvedState"
 resourceKind: "Node"
 resourceLabel: "instance"
+persistenceWindow: 1
+cooldownSeconds: 0
