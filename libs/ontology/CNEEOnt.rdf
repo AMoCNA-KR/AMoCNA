@@ -239,15 +239,6 @@
         <rdfs:range rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/ServiceAccount"/>
         <rdfs:comment>Links an ExecutionUnit to the ServiceAccount identity it uses.</rdfs:comment>
     </owl:ObjectProperty>
-    
-
-
-    <!-- http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/usesStorage -->
-
-    <owl:ObjectProperty rdf:about="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/usesStorage">
-        <rdfs:range rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/StorageResource"/>
-    </owl:ObjectProperty>
-    
 
 
     <!-- http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/managesProxy -->
@@ -810,12 +801,6 @@
         </rdfs:subClassOf>
         <rdfs:subClassOf>
             <owl:Restriction>
-                <owl:onProperty rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/usesStorage"/>
-                <owl:someValuesFrom rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/StorageResource"/>
-            </owl:Restriction>
-        </rdfs:subClassOf>
-        <rdfs:subClassOf>
-            <owl:Restriction>
                 <owl:onProperty rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/allocatedCPU"/>
                 <owl:someValuesFrom rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
             </owl:Restriction>
@@ -1185,12 +1170,6 @@
 
     <owl:Class rdf:about="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/Node">
         <rdfs:subClassOf rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/ContainerizationLayerElement"/>
-        <rdfs:subClassOf>
-            <owl:Restriction>
-                <owl:onProperty rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/isHostedOn"/>
-                <owl:someValuesFrom rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/ComputeResource"/>
-            </owl:Restriction>
-        </rdfs:subClassOf>
         <rdfs:subClassOf>
             <owl:Restriction>
                 <owl:onProperty rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/isPartOf"/>
