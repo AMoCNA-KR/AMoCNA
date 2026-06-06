@@ -15,6 +15,20 @@ spec:
       labels:
         app: graphdb
     spec:
+      tolerations:
+        - key: "amocna"
+          operator: "Equal"
+          value: "true"
+          effect: "NoSchedule"
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: node-role
+                    operator: In
+                    values:
+                      - amocna
       initContainers:
         - name: graphdb-init
           image: ontotext/graphdb:11.3.3

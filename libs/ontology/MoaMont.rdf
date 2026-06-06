@@ -5,8 +5,8 @@
      xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
      xmlns:xml="http://www.w3.org/XML/1998/namespace"
      xmlns:xsd="http://www.w3.org/2001/XMLSchema#"
-     xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
-     xmlns:moam="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#">
+     xmlns:moam="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#"
+     xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">
     <owl:Ontology rdf:about="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont">
         <rdfs:comment>Ontology about knowledge representation of actions used in Cloud Native Execution Enviroment by autonomic computing components</rdfs:comment>
     </owl:Ontology>
@@ -349,6 +349,24 @@
     
 
 
+    <!-- http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#AddImagePullSecretIntent -->
+
+    <owl:Class rdf:about="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#AddImagePullSecretIntent">
+        <rdfs:subClassOf rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#PatchAction"/>
+        <rdfs:comment>Semantic goal (WHAT axis): add an imagePullSecret to heal an ImagePullBackOff. FunctionalIntent axis.</rdfs:comment>
+    </owl:Class>
+
+
+
+    <!-- http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#AddImagePullSecretAction -->
+
+    <owl:Class rdf:about="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#AddImagePullSecretAction">
+        <rdfs:subClassOf rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#SimpleAction"/>
+        <rdfs:comment>Structural class (HOW axis): single kubectl patch imagePullSecrets command. Paired with AddImagePullSecretIntent via hasFunctionalIntent.</rdfs:comment>
+    </owl:Class>
+    
+
+
     <!-- http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#AutonomicAction -->
 
     <owl:Class rdf:about="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#AutonomicAction">
@@ -471,6 +489,15 @@
     
 
 
+    <!-- http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#ConfigRemediationWorkflow -->
+
+    <owl:Class rdf:about="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#ConfigRemediationWorkflow">
+        <rdfs:subClassOf rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#ComplexWorkflow"/>
+        <rdfs:comment>ConfigMap patch followed by Pod restart</rdfs:comment>
+    </owl:Class>
+    
+
+
     <!-- http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#ConfigurationAction -->
 
     <owl:Class rdf:about="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#ConfigurationAction">
@@ -485,6 +512,15 @@
     <owl:Class rdf:about="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#EvacuateAction">
         <rdfs:subClassOf rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#MobilityAction"/>
         <owl:disjointWith rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#MigrateAction"/>
+    </owl:Class>
+    
+
+
+    <!-- http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#EvacuateNodeWorkflow -->
+
+    <owl:Class rdf:about="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#EvacuateNodeWorkflow">
+        <rdfs:subClassOf rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#ComplexWorkflow"/>
+        <rdfs:comment>Multi-stage node evacuation: Drain -&gt; Move -&gt; Route</rdfs:comment>
     </owl:Class>
     
 
@@ -530,32 +566,56 @@
     
 
 
+    <!-- http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#HorizontalScaleDownAction -->
+
+    <owl:Class rdf:about="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#HorizontalScaleDownAction">
+        <rdfs:subClassOf rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#ScalingAction"/>
+        <rdfs:comment>Semantic goal: reduce horizontal replica count. FunctionalIntent axis.</rdfs:comment>
+    </owl:Class>
+
+
+
+    <!-- http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#ScaleDownAction -->
+
+    <owl:Class rdf:about="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#ScaleDownAction">
+        <rdfs:subClassOf rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#SimpleAction"/>
+        <rdfs:comment>Structural class (HOW axis): single kubectl scale --replicas=N command. Paired with HorizontalScaleDownAction via hasFunctionalIntent.</rdfs:comment>
+    </owl:Class>
+    
+
+
     <!-- http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#HorizontalScalingAction -->
 
     <owl:Class rdf:about="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#HorizontalScalingAction">
         <rdfs:subClassOf rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#ScalingAction"/>
         <owl:disjointWith rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#VerticalScalingAction"/>
+        <rdfs:comment>Semantic goal: increase horizontal replica count. FunctionalIntent axis.</rdfs:comment>
     </owl:Class>
+
+
+
+    <!-- http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#ScaleUpAction -->
+
+    <owl:Class rdf:about="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#ScaleUpAction">
+        <rdfs:subClassOf rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#SimpleAction"/>
+        <rdfs:comment>Structural class (HOW axis): single kubectl scale --replicas=N command. Paired with HorizontalScalingAction via hasFunctionalIntent.</rdfs:comment>
+    </owl:Class>
+    
+
+
     <!-- http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#ImageUpdateAction -->
+
     <owl:Class rdf:about="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#ImageUpdateAction">
         <rdfs:subClassOf rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#SimpleAction"/>
     </owl:Class>
+    
 
-    <!-- http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#PatchConfigAction -->
-    <owl:Class rdf:about="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#PatchConfigAction">
-        <rdfs:subClassOf rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#SimpleAction"/>
+
+    <!-- http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#ImageUpdateIntent -->
+
+    <owl:Class rdf:about="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#ImageUpdateIntent">
+        <rdfs:subClassOf rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#UpdateAction"/>
     </owl:Class>
-
-    <!-- http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#RestartPodAction -->
-    <owl:Class rdf:about="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#RestartPodAction">
-        <rdfs:subClassOf rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#SimpleAction"/>
-    </owl:Class>
-
-    <!-- http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#RollbackConfigAction -->
-    <owl:Class rdf:about="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#RollbackConfigAction">
-        <rdfs:subClassOf rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#SimpleAction"/>
-    </owl:Class>
-
     
 
 
@@ -610,6 +670,28 @@
     
 
 
+    <!-- http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#PatchConfigAction -->
+
+    <owl:Class rdf:about="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#PatchConfigAction">
+        <rdfs:subClassOf rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#SimpleAction"/>
+    </owl:Class>
+    
+
+
+    <!-- http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#PatchConfigIntent -->
+
+    <owl:Class rdf:about="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#PatchConfigIntent">
+        <rdfs:subClassOf rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#PatchAction"/>
+        <rdfs:subClassOf>
+            <owl:Restriction>
+                <owl:onProperty rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#hasCompensation"/>
+                <owl:someValuesFrom rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#RollbackConfigIntent"/>
+            </owl:Restriction>
+        </rdfs:subClassOf>
+    </owl:Class>
+    
+
+
     <!-- http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#RestartAction -->
 
     <owl:Class rdf:about="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#RestartAction">
@@ -618,10 +700,51 @@
     
 
 
+    <!-- http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#RestartPodAction -->
+
+    <owl:Class rdf:about="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#RestartPodAction">
+        <rdfs:subClassOf rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#SimpleAction"/>
+    </owl:Class>
+    
+
+
+    <!-- http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#RestartPodIntent -->
+
+    <owl:Class rdf:about="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#RestartPodIntent">
+        <rdfs:subClassOf rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#RestartAction"/>
+    </owl:Class>
+    
+
+
     <!-- http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#RollbackAction -->
 
     <owl:Class rdf:about="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#RollbackAction">
         <rdfs:subClassOf rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#ConfigurationAction"/>
+    </owl:Class>
+    
+
+
+    <!-- http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#RollbackConfigAction -->
+
+    <owl:Class rdf:about="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#RollbackConfigAction">
+        <rdfs:subClassOf rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#SimpleAction"/>
+    </owl:Class>
+    
+
+
+    <!-- http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#RollbackConfigIntent -->
+
+    <owl:Class rdf:about="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#RollbackConfigIntent">
+        <rdfs:subClassOf rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#RollbackAction"/>
+    </owl:Class>
+    
+
+
+    <!-- http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#SafeUpdateWorkflow -->
+
+    <owl:Class rdf:about="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#SafeUpdateWorkflow">
+        <rdfs:subClassOf rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#ComplexWorkflow"/>
+        <rdfs:comment>Safe update with rollback capability</rdfs:comment>
     </owl:Class>
     
 
@@ -810,40 +933,19 @@ before patching).</rdfs:comment>
 
     <owl:Class rdf:about="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#VerticalScalingAction">
         <rdfs:subClassOf rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#ScalingAction"/>
-    </owl:Class>
-    <!-- http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#ImageUpdateIntent -->
-    <owl:Class rdf:about="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#ImageUpdateIntent">
-        <rdfs:subClassOf rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#UpdateAction"/>
+        <rdfs:comment>Semantic goal: adjust CPU/memory resource requests and limits. FunctionalIntent axis.</rdfs:comment>
     </owl:Class>
 
-    <!-- http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#AddImagePullSecretIntent -->
-    <owl:Class rdf:about="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#AddImagePullSecretIntent">
-        <rdfs:subClassOf rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#PatchAction"/>
-        <rdfs:comment>Patches a workload's spec.template.spec.imagePullSecrets to add an existing registry pull secret, healing an ImagePullBackOff caused by a missing imagePullSecret.</rdfs:comment>
-    </owl:Class>
 
-    <!-- http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#PatchConfigIntent -->
-    <owl:Class rdf:about="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#PatchConfigIntent">
-        <rdfs:subClassOf rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#PatchAction"/>
-        <rdfs:subClassOf>
-            <owl:Restriction>
-                <owl:onProperty rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#hasCompensation"/>
-                <owl:someValuesFrom rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#RollbackConfigIntent"/>
-            </owl:Restriction>
-        </rdfs:subClassOf>
-    </owl:Class>
 
-    <!-- http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#RestartPodIntent -->
-    <owl:Class rdf:about="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#RestartPodIntent">
-        <rdfs:subClassOf rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#RestartAction"/>
-    </owl:Class>
+    <!-- http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#ScaleVerticallyAction -->
 
-    <!-- http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#RollbackConfigIntent -->
-    <owl:Class rdf:about="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#RollbackConfigIntent">
-        <rdfs:subClassOf rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#RollbackAction"/>
+    <owl:Class rdf:about="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#ScaleVerticallyAction">
+        <rdfs:subClassOf rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#SimpleAction"/>
+        <rdfs:comment>Structural class (HOW axis): single kubectl patch updating resource requests/limits. Paired with VerticalScalingAction via hasFunctionalIntent.</rdfs:comment>
     </owl:Class>
-
     
+
 
 
     <!-- 
@@ -857,33 +959,31 @@ before patching).</rdfs:comment>
     
 
 
-    <!-- Complex Workflows -->
+    <!-- http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#ApplicationLayer -->
 
-    <owl:NamedIndividual rdf:about="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#EvacuateNodeWorkflow">
-        <rdf:type rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#ComplexWorkflow"/>
-        <rdfs:comment>Multi-stage node evacuation: Drain -> Move -> Route</rdfs:comment>
+    <owl:NamedIndividual rdf:about="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#ApplicationLayer">
+        <rdf:type rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#LayerBoundary"/>
     </owl:NamedIndividual>
+    
 
-    <owl:NamedIndividual rdf:about="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#SafeUpdateWorkflow">
-        <rdf:type rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#ComplexWorkflow"/>
-        <rdfs:comment>Safe update with rollback capability</rdfs:comment>
-    </owl:NamedIndividual>
-    <owl:NamedIndividual rdf:about="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#ConfigRemediationWorkflow">
-        <rdf:type rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#ComplexWorkflow"/>
-        <moam:isDecomposedInto rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#PatchConfigStep"/>
-        <moam:isDecomposedInto rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#RestartPodStep"/>
-        <rdfs:comment>ConfigMap patch followed by Pod restart</rdfs:comment>
-    </owl:NamedIndividual>
 
-    <owl:NamedIndividual rdf:about="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#PatchConfigStep">
-        <rdf:type rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#PatchConfigIntent"/>
-    </owl:NamedIndividual>
+    <!-- http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#ContainerizationLayer -->
 
-    <owl:NamedIndividual rdf:about="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#RestartPodStep">
-        <rdf:type rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#RestartPodIntent"/>
-        <moam:dependsOn rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#PatchConfigStep"/>
+    <owl:NamedIndividual rdf:about="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#ContainerizationLayer">
+        <rdf:type rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#LayerBoundary"/>
     </owl:NamedIndividual>
+    
 
+
+    <!-- http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#InfrastructureLayer -->
+
+    <owl:NamedIndividual rdf:about="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#InfrastructureLayer">
+        <rdf:type rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#LayerBoundary"/>
+    </owl:NamedIndividual>
+    
+
+
+    <!-- http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#State_Compensating -->
 
     <owl:NamedIndividual rdf:about="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#State_Compensating">
         <rdf:type rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#ExecutionState"/>
@@ -935,21 +1035,6 @@ before patching).</rdfs:comment>
 
     <owl:NamedIndividual rdf:about="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#State_Validated">
         <rdf:type rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#ExecutionState"/>
-    </owl:NamedIndividual>
-    
-
-    <!-- Layer Boundaries -->
-
-    <owl:NamedIndividual rdf:about="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#InfrastructureLayer">
-        <rdf:type rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#LayerBoundary"/>
-    </owl:NamedIndividual>
-
-    <owl:NamedIndividual rdf:about="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#ContainerizationLayer">
-        <rdf:type rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#LayerBoundary"/>
-    </owl:NamedIndividual>
-
-    <owl:NamedIndividual rdf:about="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#ApplicationLayer">
-        <rdf:type rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#LayerBoundary"/>
     </owl:NamedIndividual>
     
 

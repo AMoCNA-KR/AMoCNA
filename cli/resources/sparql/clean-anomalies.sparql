@@ -7,6 +7,7 @@ WHERE {
   ?state a ?stateType .
   FILTER(?stateType IN (cnee:ResponseTimeSlaViolatedState, cnee:ResponseTimeNormalState, cnee:SecurityVulnerabilityDetectedState, cnee:ConfigDriftState))
 }
+;
 
 DELETE {
   ?s cnee:hasState cnee:ImagePullBackOffState .

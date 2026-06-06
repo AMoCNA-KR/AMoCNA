@@ -65,11 +65,7 @@ public class ModelMapper {
             return Result.failure("No bindings found for action: " + actionId);
         }
 
-        // Industrial Rule: Select the most specific Intent
-        IRI intent = selectBestIntent(bindings);
-        String intentStr = intent.stringValue();
-
-        if (isComplexWorkflow(intentStr)) {
+        if (isComplexWorkflow(bindings)) {
             return mapComplexWorkflow(actionId, bindings, allBindings);
         }
         return mapSimpleAction(actionId, bindings);
@@ -87,11 +83,15 @@ public class ModelMapper {
                         && !i.getLocalName().equals("SimpleAction")
                         && !i.getLocalName().equals("ComplexWorkflow"))
                 .findFirst()
-                .orElse(intents.isEmpty() ? null : intents.getFirst());
+                .orElse(intents.isEmpty() ? null : intents.get(0));
     }
 
-    private boolean isComplexWorkflow(String intent) {
-        return intent != null && intent.endsWith(INTENT_SUFFIX_COMPLEX);
+    private boolean isComplexWorkflow(List<BindingSet> bindings) {
+        return bindings.stream()
+                .map(bs -> bs.getValue(BINDING_INTENT))
+                .filter(v -> v instanceof IRI)
+                .map(v -> (IRI) v)
+                .anyMatch(i -> i.getLocalName().equals("ComplexWorkflow") || i.getLocalName().endsWith(INTENT_SUFFIX_COMPLEX));
     }
 
     private Result<ActionData> mapSimpleAction(IRI actionId, List<BindingSet> bindings) {
