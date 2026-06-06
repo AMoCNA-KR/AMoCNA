@@ -26,6 +26,7 @@ public record ThresholdDefinition(
         String resourceKind,
         String resourceLabel,
         String namespaceLabel,
-        int persistenceWindow
+        int persistenceWindow,
+        int cooldownSeconds
 ) {
 }

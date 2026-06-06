@@ -53,8 +53,8 @@ class AnomalyScannerTest {
     @Test
     void scan_HandlesRabbitMqErrorAndContinues() {
         // Given
-        ThresholdDefinition t1 = new ThresholdDefinition("t1", "query1", ">", 0.5, "Anomaly1", "node", "name", null, 1);
-        ThresholdDefinition t2 = new ThresholdDefinition("t2", "query2", ">", 0.5, "Anomaly2", "node", "name", null, 1);
+        ThresholdDefinition t1 = new ThresholdDefinition("t1", "query1", ">", 0.5, "Anomaly1", "node", "name", null, 1, 0);
+        ThresholdDefinition t2 = new ThresholdDefinition("t2", "query2", ">", 0.5, "Anomaly2", "node", "name", null, 1, 0);
         when(thresholdsLoader.getThresholds()).thenReturn(List.of(t1, t2));
 
         when(prometheusClient.query("query1")).thenReturn(Flux.just(new PrometheusClient.QueryResult(Map.of("name", "host1"), 1.0)));
@@ -75,8 +75,8 @@ class AnomalyScannerTest {
     @Test
     void scan_HandlesPrometheusErrorAndContinues() {
         // Given
-        ThresholdDefinition t1 = new ThresholdDefinition("t1", "query1", ">", 0.5, "Anomaly1", "node", "name", null, 1);
-        ThresholdDefinition t2 = new ThresholdDefinition("t2", "query2", ">", 0.5, "Anomaly2", "node", "name", null, 1);
+        ThresholdDefinition t1 = new ThresholdDefinition("t1", "query1", ">", 0.5, "Anomaly1", "node", "name", null, 1, 0);
+        ThresholdDefinition t2 = new ThresholdDefinition("t2", "query2", ">", 0.5, "Anomaly2", "node", "name", null, 1, 0);
         when(thresholdsLoader.getThresholds()).thenReturn(List.of(t1, t2));
 
         when(prometheusClient.query("query1")).thenReturn(Flux.error(new RuntimeException("Prometheus down")));
@@ -87,6 +87,45 @@ class AnomalyScannerTest {
 
         // Then
         verify(graphWriter, timeout(2000).times(1)).instantiateAnomaly(contains("host2"), anyString());
+        verify(rabbitTemplate, timeout(2000).times(1)).convertAndSend(anyString(), anyString(), any(Object.class));
+    }
+
+    @Test
+    void scan_EnforcesCooldown() {
+        // Given
+        // Threshold with 60s cooldown
+        ThresholdDefinition t1 = new ThresholdDefinition("t1", "query1", ">", 0.5, "Anomaly1", "node", "name", null, 1, 60);
+        when(thresholdsLoader.getThresholds()).thenReturn(List.of(t1));
+
+        when(prometheusClient.query("query1")).thenReturn(Flux.just(new PrometheusClient.QueryResult(Map.of("name", "host1"), 1.0)));
+
+        // When - First trigger
+        anomalyScanner.scan();
+
+        // Then - Triggered once
+        verify(graphWriter, timeout(2000).times(1)).instantiateAnomaly(anyString(), anyString());
+
+        // When - Second trigger (within cooldown)
+        anomalyScanner.scan();
+
+        // Then - Still only triggered once
+        verify(graphWriter, timeout(2000).times(1)).instantiateAnomaly(anyString(), anyString());
+    }
+
+    @Test
+    void scan_ClearsSpecificAnomalyStateWhenNotViolated() {
+        // Given
+        ThresholdDefinition t1 = new ThresholdDefinition("t1", "query1", ">", 0.5, "Anomaly1", "node", "name", null, 1, 0);
+        when(thresholdsLoader.getThresholds()).thenReturn(List.of(t1));
+
+        // 0.1 is not > 0.5 (not violated)
+        when(prometheusClient.query("query1")).thenReturn(Flux.just(new PrometheusClient.QueryResult(Map.of("name", "host1"), 0.1)));
+
+        // When
+        anomalyScanner.scan();
+
+        // Then - Clears ONLY the specific anomaly type for the resource
+        verify(graphWriter, timeout(2000).times(1)).clearAnomalies("http://resources/node_host1", "http://resources/Anomaly1");
         verify(rabbitTemplate, timeout(2000).times(1)).convertAndSend(anyString(), anyString(), any(Object.class));
     }
 }

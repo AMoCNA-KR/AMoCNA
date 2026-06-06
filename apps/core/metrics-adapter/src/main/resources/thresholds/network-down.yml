@@ -6,3 +6,4 @@ anomalyState: "NetworkPartitionState"
 resourceKind: "Node"
 resourceLabel: "instance"
 persistenceWindow: 1
+cooldownSeconds: 0

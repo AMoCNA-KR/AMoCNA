@@ -2,61 +2,66 @@
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
 # Scenario 1
-moam:HorizontalScalingAction moam:hasExecutionProtocol "SHELL" ;
-                             moam:hasExecutionInstruction "kubectl scale deployment ${resourceName} --replicas=3 -n ${namespace}" ;
-                             moam:hasExpectedStatusCode "0"^^xsd:integer ;
-                             moam:hasFunctionalIntent moam:HorizontalScalingAction ;
-                             moam:hasLayerBoundary moam:ContainerizationLayer ;
-                             moam:idempotencyWindowSeconds "300"^^xsd:integer .
+moam:ScaleUpAction moam:hasExecutionProtocol "SHELL" ;
+                   moam:hasExecutionInstruction "kubectl scale deployment ${resourceName} --replicas=3 -n ${namespace}" ;
+                   moam:hasExpectedStatusCode "0"^^xsd:integer ;
+                   moam:hasFunctionalIntent moam:HorizontalScalingAction ;
+                   moam:hasLayerBoundary moam:ContainerizationLayer ;
+                   moam:idempotencyWindowSeconds "300"^^xsd:integer .
 
 # Scenario 1 (Scale Down)
-moam:HorizontalScaleDownAction moam:hasExecutionProtocol "SHELL" ;
-                               moam:hasExecutionInstruction "kubectl scale deployment ${resourceName} --replicas=1 -n ${namespace}" ;
-                               moam:hasExpectedStatusCode "0"^^xsd:integer ;
-                               moam:hasFunctionalIntent moam:HorizontalScaleDownAction ;
-                               moam:hasLayerBoundary moam:ContainerizationLayer ;
-                               moam:idempotencyWindowSeconds "300"^^xsd:integer .
+moam:ScaleDownAction moam:hasExecutionProtocol "SHELL" ;
+                     moam:hasExecutionInstruction "kubectl scale deployment ${resourceName} --replicas=1 -n ${namespace}" ;
+                     moam:hasExpectedStatusCode "0"^^xsd:integer ;
+                     moam:hasFunctionalIntent moam:HorizontalScaleDownAction ;
+                     moam:hasLayerBoundary moam:ContainerizationLayer ;
+                     moam:idempotencyWindowSeconds "300"^^xsd:integer .
 
 # Scenario 2
-moam:VerticalScalingAction moam:hasExecutionProtocol "SHELL" ;
-                           moam:hasExecutionInstruction "kubectl patch deployment ${resourceName} -n ${namespace} --patch '{\"spec\": {\"template\": {\"spec\": {\"containers\": [{\"name\": \"${resourceName}\", \"resources\": {\"requests\": {\"cpu\": \"1\"}, \"limits\": {\"cpu\": \"1\"}}}]}}}}'" ;
-                           moam:hasExpectedStatusCode "0"^^xsd:integer ;
-                           moam:hasFunctionalIntent moam:VerticalScalingAction ;
-                           moam:hasLayerBoundary moam:ContainerizationLayer ;
-                           moam:idempotencyWindowSeconds "300"^^xsd:integer .
+moam:ScaleVerticallyAction moam:hasExecutionProtocol "SHELL" ;
+                            moam:hasExecutionInstruction "kubectl patch deployment ${resourceName} -n ${namespace} --patch '{\"spec\": {\"template\": {\"spec\": {\"containers\": [{\"name\": \"${resourceName}\", \"resources\": {\"requests\": {\"cpu\": \"1\"}, \"limits\": {\"cpu\": \"1\"}}}]}}}}'" ;
+                            moam:hasExpectedStatusCode "0"^^xsd:integer ;
+                            moam:hasFunctionalIntent moam:VerticalScalingAction ;
+                            moam:hasLayerBoundary moam:ContainerizationLayer ;
+                            moam:idempotencyWindowSeconds "300"^^xsd:integer .
 
 # Scenario 3
-moam:ImageUpdateIntent moam:hasExecutionProtocol "SHELL" ;
-                       moam:hasExecutionInstruction "kubectl set image deployment/${resourceName} ${containerName}=${imageRepository}:${targetVersion} -n ${namespace}" ;
-                       moam:hasExpectedStatusCode "0"^^xsd:integer ;
-                       moam:hasFunctionalIntent moam:ImageUpdateAction ;
-                       moam:hasLayerBoundary moam:ContainerizationLayer ;
-                       moam:idempotencyWindowSeconds "300"^^xsd:integer .
+moam:ImageUpdateAction moam:hasExecutionProtocol "SHELL" ;
+                        moam:hasExecutionInstruction "kubectl set image deployment/${resourceName} ${containerName}=${imageRepository}:${targetVersion} -n ${namespace}" ;
+                        moam:hasExpectedStatusCode "0"^^xsd:integer ;
+                        moam:hasFunctionalIntent moam:ImageUpdateIntent ;
+                        moam:hasLayerBoundary moam:ContainerizationLayer ;
+                        moam:idempotencyWindowSeconds "300"^^xsd:integer .
 
 # Scenario 4
-moam:PatchConfigIntent moam:hasExecutionProtocol "SHELL" ;
-                       moam:hasExecutionInstruction "kubectl patch configmap ${resourceName}-config --type merge -p '{\"data\":{\"updated\":\"true\"}}'" ;
+moam:ConfigRemediationWorkflow moam:hasFunctionalIntent moam:SagaRemediationIntent ;
+                               moam:isDecomposedInto moam:PatchConfigAction ,
+                                                    moam:RestartPodAction .
+
+moam:PatchConfigAction moam:hasExecutionProtocol "SHELL" ;
+                       moam:hasExecutionInstruction "kubectl patch configmap ${resourceName}-config -n ${namespace} --type merge -p '{\"data\":{\"updated\":\"true\"}}'" ;
                        moam:hasExpectedStatusCode "0"^^xsd:integer ;
-                       moam:hasFunctionalIntent moam:PatchConfigAction ;
+                       moam:hasFunctionalIntent moam:PatchConfigIntent ;
+                       moam:hasCompensation moam:RollbackConfigAction ;
                        moam:hasLayerBoundary moam:ContainerizationLayer ;
                        moam:idempotencyWindowSeconds "300"^^xsd:integer .
 
-moam:RestartPodIntent moam:hasExecutionProtocol "SHELL" ;
-                      moam:hasExecutionInstruction "kubectl rollout restart deployment/${resourceName}" ;
+moam:RestartPodAction moam:hasExecutionProtocol "SHELL" ;
+                      moam:hasExecutionInstruction "kubectl rollout restart deployment/${resourceName} -n ${namespace}" ;
                       moam:hasExpectedStatusCode "0"^^xsd:integer ;
-                      moam:hasFunctionalIntent moam:RestartPodAction ;
+                      moam:hasFunctionalIntent moam:RestartPodIntent ;
                       moam:hasLayerBoundary moam:ContainerizationLayer ;
                       moam:idempotencyWindowSeconds "300"^^xsd:integer .
 
-moam:RollbackConfigIntent moam:hasExecutionProtocol "SHELL" ;
-                          moam:hasExecutionInstruction "kubectl patch configmap ${resourceName}-config --type merge -p '{\"data\":{\"updated\":\"false\"}}'" ;
+moam:RollbackConfigAction moam:hasExecutionProtocol "SHELL" ;
+                          moam:hasExecutionInstruction "kubectl patch configmap ${resourceName}-config -n ${namespace} --type merge -p '{\"data\":{\"updated\":\"false\"}}'" ;
                           moam:hasExpectedStatusCode "0"^^xsd:integer ;
-                          moam:hasFunctionalIntent moam:RollbackConfigAction ;
+                          moam:hasFunctionalIntent moam:RollbackConfigIntent ;
                           moam:hasLayerBoundary moam:ContainerizationLayer ;
                           moam:idempotencyWindowSeconds "300"^^xsd:integer .
 
 # Scenario 7 — Registry Credential Remediation
-moam:AddImagePullSecretIntent moam:hasExecutionProtocol "SHELL" ;
+moam:AddImagePullSecretAction moam:hasExecutionProtocol "SHELL" ;
                               moam:hasExecutionInstruction "kubectl patch deployment ${resourceName} -n ${namespace} --type merge -p '{\"spec\":{\"template\":{\"spec\":{\"imagePullSecrets\":[{\"name\":\"${pullSecretName}\"}]}}}}'" ;
                               moam:hasExpectedStatusCode "0"^^xsd:integer ;
                               moam:hasFunctionalIntent moam:AddImagePullSecretIntent ;

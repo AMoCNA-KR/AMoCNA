@@ -12,9 +12,7 @@ import com.kubiki.palamedes.model.ImageUpdateTarget;
 import com.kubiki.palamedes.model.RegistryAuthTarget;
 import com.kubiki.palamedes.model.WorkflowState;
 import com.kubiki.palamedes.model.WorkflowStateMapper;
-import com.kubiki.palamedes.knowledge.Result;
 import io.micrometer.core.annotation.Timed;
-import io.micrometer.core.instrument.MeterRegistry;
 import lombok.RequiredArgsConstructor;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
@@ -67,7 +65,6 @@ public class GraphDBGateway {
     private final WorkflowStateMapper workflowStateMapper;
     private final OntologyRegistry ontologyRegistry;
     private final PalamedesProperties properties;
-    private final MeterRegistry meterRegistry;
 
     @Timed(value = "palamedes.graphdb.transition", description = "Time taken to transition action state")
     public void transitionState(IRI actionId, String stateFragment) {

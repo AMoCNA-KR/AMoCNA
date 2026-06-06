@@ -16,6 +16,13 @@ spec:
       serviceAccountName: metis
       imagePullSecrets:
         - name: ghcr-login
+      tolerations:
+        - key: "amocna"
+          operator: "Equal"
+          value: "true"
+          effect: "NoSchedule"
+      nodeSelector:
+        node-role: amocna
       initContainers:
         - name: wait-for-graphdb
           image: curlimages/curl:8.12.1
@@ -45,7 +52,7 @@ spec:
               echo "RabbitMQ is reachable."
       containers:
         - name: metis
-          image: ghcr.io/amocna-kr/metis:1.10.3-SNAPSHOT
+          image: ghcr.io/amocna-kr/metis:1.12.7-SNAPSHOT
           imagePullPolicy: Always
           ports:
             - containerPort: 50052

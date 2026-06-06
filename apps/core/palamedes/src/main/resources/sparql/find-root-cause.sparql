@@ -12,6 +12,7 @@ WHERE {
 
   ?anomalyResource ${PREFIX::RESOURCES_PREFIX}:hasState ?state .
   ?state a ?anomalyType .
+  FILTER (!isBlank(?anomalyType))
 
   # 3. Escalate to the remediation target (e.g. from Pod to its parent Deployment)
   # If the resource is part of something else, follow the chain UP to find the highest parent.

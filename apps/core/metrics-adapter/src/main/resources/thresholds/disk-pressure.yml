@@ -5,3 +5,5 @@ value: 1
 anomalyState: "StorageDiskSpaceExhaustedState"
 resourceKind: "Node"
 resourceLabel: "node"
+persistenceWindow: 1
+cooldownSeconds: 0

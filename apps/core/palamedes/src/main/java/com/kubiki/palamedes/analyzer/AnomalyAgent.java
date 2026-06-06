@@ -1,14 +1,12 @@
 package com.kubiki.palamedes.analyzer;
 
-import com.kubiki.common.ontology.OntologyRegistry;
-import com.kubiki.common.vulnerability.UpgradePolicy;
-import com.kubiki.common.vulnerability.VulnerabilityCatalog;
+import com.kubiki.palamedes.analyzer.hydration.ActionHydrator;
 import com.kubiki.palamedes.config.PalamedesProperties;
 import com.kubiki.palamedes.knowledge.GraphDBGateway;
 import com.kubiki.palamedes.model.AnomalyTarget;
-import com.kubiki.palamedes.model.ImageUpdateTarget;
 import com.kubiki.palamedes.pipeline.EngineWakeupEvent;
 import com.kubiki.palamedes.reasoner.RcaEngine;
+import com.kubiki.palamedes.service.RemediationFilterService;
 import com.kubiki.palamedes.utils.ActionUtils;
 import lombok.RequiredArgsConstructor;
 import org.eclipse.rdf4j.model.IRI;
@@ -22,38 +20,27 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * AnomalyAgent (MAPE-Analyze):
  * Scans for resources in AnomalyState and creates remediation workflows.
- *
- * <h2>Triggering strategy</h2>
- * <ul>
- *   <li><b>Event-driven:</b> {@link #analyze()} is called by
- *       {@link com.kubiki.palamedes.listener.GraphUpdateListener} immediately
- *       when a graph-update message arrives from Metis via RabbitMQ.</li>
- *   <li><b>Fallback poll:</b> If no graph-update message has been received for
- *       10 minutes, the scheduled {@link #fallbackAnalyze()} fires to catch
- *       any missed events (e.g. after a RabbitMQ outage).</li>
- * </ul>
+ * Refactored using Strategy pattern for hydration and clean code principles.
  */
 @Service
 @RequiredArgsConstructor
 public class AnomalyAgent {
     private static final Logger log = LoggerFactory.getLogger(AnomalyAgent.class);
-    private static final String IMAGE_UPDATE_INTENT = "ImageUpdateIntent";
 
     private final GraphDBGateway gateway;
     private final RcaEngine rcaEngine;
     private final ActionUtils utils;
     private final ApplicationEventPublisher publisher;
-    private final PalamedesProperties palamedesProperties;
-    private final OntologyRegistry ontologyRegistry;
-    private final VulnerabilityCatalog vulnerabilityCatalog;
     private final AnomalyActionHandler actionHandler;
+    private final RemediationFilterService filterService;
+    private final List<ActionHydrator> hydrators;
+    private final PalamedesProperties properties;
 
     private final AtomicLong lastTriggerTime = new AtomicLong(System.currentTimeMillis());
 
@@ -70,88 +57,118 @@ public class AnomalyAgent {
     /**
      * Fallback scheduler — runs according to configured rate but only executes the analysis
      * if no event-driven trigger has occurred within the interval.
-     * This catches anomalies that might have been missed due to messaging outages.
      */
     @Scheduled(fixedRateString = "${palamedes.engine.fallback-anomaly-scan-rate-ms}")
     public void fallbackAnalyze() {
-        long interval = palamedesProperties.engine().fallbackAnomalyScanRateMs();
+        long interval = properties.engine().fallbackAnomalyScanRateMs();
         long elapsed = System.currentTimeMillis() - lastTriggerTime.get();
         if (elapsed >= interval) {
-            log.info("AnomalyAgent: No graph-update received for {}ms — running fallback anomaly scan",
-                    elapsed);
+            log.info("AnomalyAgent: No graph-update received for {}ms — running fallback anomaly scan", elapsed);
             doAnalyze();
         } else {
-            log.debug("Fallback poll skipped — last trigger was {}s ago", elapsed / 1000);
+            log.debug("Fallback scan skipped — last trigger was {}s ago", elapsed / 1000);
         }
     }
 
     private void doAnalyze() {
-        log.info("AnomalyAgent: doAnalyze() starting scan for cluster anomalies...");
+        log.info("AnomalyAgent: Starting cluster anomaly scan...");
 
         List<AnomalyTarget> anomalies = gateway.findAnomalies();
-        log.info("AnomalyAgent: Found {} anomaly targets in GraphDB", anomalies.size());
-        boolean stateChanged = false;
-
-        IRI imageUpdateIntentIri = ontologyRegistry.actionsOntology(IMAGE_UPDATE_INTENT);
-        UpgradePolicy upgradePolicy = UpgradePolicy.valueOf(
-                palamedesProperties.vulnerability().upgradePolicy().toUpperCase());
-
-        Set<IRI> processedRootCauses = new HashSet<>();
-
-        for (var anomaly : anomalies) {
-            log.info("AnomalyAgent: Anomaly detected: resource {} needs {}", anomaly.resourceName(), anomaly.intentIri());
-
-            AnomalyTarget rootCause = rcaEngine.findRootCause(anomaly);
-            if (!rootCause.resourceIri().equals(anomaly.resourceIri())) {
-                log.info("AnomalyAgent: Root cause analysis redirected {} -> {} (intent: {})",
-                        anomaly.resourceName(), rootCause.resourceName(), rootCause.intentIri());
-            }
-
-            if (processedRootCauses.contains(rootCause.resourceIri())) {
-                log.info("AnomalyAgent: Target {} already has an action planned in this batch, skipping redundant anomaly report from {}", 
-                        rootCause.resourceName(), anomaly.resourceName());
-                continue;
-            }
-            processedRootCauses.add(rootCause.resourceIri());
-
-            String actionId = utils.generateActionId();
-            if (!actionHandler.createActionWorkflow(rootCause.resourceIri(), rootCause.intentIri(), actionId)) {
-                continue;
-            }
-
-            // Hydrate parameters for execution
-            Map<String, String> hydration = new HashMap<>();
-            hydration.put("namespace", ImageRemediationPlanner.parseNamespaceFromDeploymentIri(rootCause.resourceIri()));
-            hydration.put("resourceName", rootCause.resourceName());
-
-            // Specialized hydration for ImageUpdateIntent
-            if (rootCause.intentIri().equals(imageUpdateIntentIri)) {
-                Optional<ImageUpdateTarget> details = gateway.findWorkloadDetails(rootCause.resourceIri());
-                details.ifPresent(d -> {
-                    hydration.put("containerName", d.containerName());
-                    hydration.put("imageRepository", d.imageRepository());
-                    log.info("AnomalyAgent: Hydrating details for container {} in repository {}", 
-                            d.containerName(), d.imageRepository());
-
-                    vulnerabilityCatalog.selectFixVersion(d.imageRepository(), d.currentVersion(), upgradePolicy)
-                            .ifPresent(v -> {
-                                hydration.put("targetVersion", v);
-                                log.info("AnomalyAgent: Selected fix version {} for repository {} (current version: {})", 
-                                        v, d.imageRepository(), d.currentVersion());
-                            });
-                });
-            }
-
-            log.info("AnomalyAgent: Storing action hydration for actionId {}: {}", actionId, hydration);
-            gateway.storeActionHydration(actionId, hydration);
-            stateChanged = true;
+        if (anomalies.isEmpty()) {
+            log.info("AnomalyAgent: No anomalies found in GraphDB.");
+            return;
         }
 
+        log.info("AnomalyAgent: Discovered {} anomaly targets", anomalies.size());
+
+        Map<IRI, Set<AnomalyTarget>> groupedRemediations = groupAnomaliesByRootCause(anomalies);
+        boolean stateChanged = false;
+
+        for (var entry : groupedRemediations.entrySet()) {
+            if (processResourceRemediation(entry.getValue())) {
+                stateChanged = true;
+            }
+        }
+
+        finalizeAnalysis(stateChanged);
+    }
+
+    private Map<IRI, Set<AnomalyTarget>> groupAnomaliesByRootCause(List<AnomalyTarget> anomalies) {
+        Map<IRI, Set<AnomalyTarget>> resourceToIntents = new HashMap<>();
+        for (var anomaly : anomalies) {
+            AnomalyTarget rootCause = rcaEngine.findRootCause(anomaly);
+            resourceToIntents.computeIfAbsent(rootCause.resourceIri(), k -> new HashSet<>()).add(rootCause);
+        }
+        return resourceToIntents;
+    }
+
+    private boolean processResourceRemediation(Set<AnomalyTarget> candidates) {
+        AnomalyTarget selected = selectBestRemediation(candidates);
+
+        if (!isIntentAllowed(selected)) {
+            return false;
+        }
+
+        log.info("AnomalyAgent: Triggering {} for resource {}", 
+                selected.intentIri().getLocalName(), selected.resourceName());
+
+        String actionId = utils.generateActionId();
+        if (!actionHandler.createActionWorkflow(selected.resourceIri(), selected.intentIri(), actionId)) {
+            return false;
+        }
+
+        hydrateAndStoreAction(actionId, selected);
+        return true;
+    }
+
+    private boolean isIntentAllowed(AnomalyTarget target) {
+        String intentName = target.intentIri().getLocalName();
+        boolean allowed = filterService.isIntentAllowed(intentName);
+        
+        if (!allowed) {
+            log.debug("AnomalyAgent: Intent {} is NOT ALLOWED for resource {}", 
+                    intentName, target.resourceName());
+        } else {
+            log.debug("AnomalyAgent: Intent {} is ALLOWED for resource {}",
+                    intentName, target.resourceName());
+        }
+        
+        return allowed;
+    }
+
+    private void hydrateAndStoreAction(String actionId, AnomalyTarget target) {
+        ActionHydrator hydrator = findBestHydrator(target.intentIri());
+        Map<String, String> hydration = hydrator.hydrate(target);
+        
+        log.info("AnomalyAgent: Storing action hydration for {}: {}", actionId, hydration);
+        gateway.storeActionHydration(actionId, hydration);
+    }
+
+    private ActionHydrator findBestHydrator(IRI intentIri) {
+        return hydrators.stream()
+                .filter(h -> h.supports(intentIri))
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("No hydrator found for intent: " + intentIri));
+    }
+
+    private AnomalyTarget selectBestRemediation(Set<AnomalyTarget> candidates) {
+        if (candidates.size() == 1) {
+            return candidates.iterator().next();
+        }
+
+        // Prefer Workflows over single actions
+        return candidates.stream()
+                .filter(t -> t.intentIri().getLocalName().endsWith("Workflow"))
+                .findFirst()
+                .orElse(candidates.iterator().next());
+    }
+
+    private void finalizeAnalysis(boolean stateChanged) {
         if (stateChanged) {
-            log.info("AnomalyAgent: State changed, publishing EngineWakeupEvent");
+            log.info("AnomalyAgent: New remediations planned, waking up MAPE engine.");
             publisher.publishEvent(new EngineWakeupEvent("New anomaly actions created"));
         } else {
-            log.info("AnomalyAgent: doAnalyze() completed. No state changes.");
+            log.info("AnomalyAgent: Analysis completed. No new actions created.");
         }
     }
 }

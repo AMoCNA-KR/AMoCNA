@@ -13,6 +13,8 @@ spec:
       labels:
         app: locust-master
     spec:
+      nodeSelector:
+        node-role: load-gen
       containers:
       - name: master
         image: locustio/locust
@@ -59,6 +61,8 @@ spec:
       labels:
         app: locust-worker
     spec:
+      nodeSelector:
+        node-role: load-gen
       containers:
       - name: worker
         image: locustio/locust

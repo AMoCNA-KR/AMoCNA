@@ -86,4 +86,4 @@ k8s:
   # GraphDB hostPath PV (infra/graphdb/01-storage.yaml) — wiped on undeploy unless --keep-graphdb-data
   graphdb_storage:
     host_path: /data/graphdb
-    node_hostname: kube-worker-0
+    node_hostname: kube-worker-extra-77df2b39

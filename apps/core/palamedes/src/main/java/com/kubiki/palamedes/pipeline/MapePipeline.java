@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.Map;
 import com.kubiki.common.logging.MdcPropagatingExecutor;
 import java.util.concurrent.Executors;
+import java.util.concurrent.locks.ReentrantLock;
 
 @Service
 @RequiredArgsConstructor
@@ -26,30 +27,39 @@ public class MapePipeline {
     private final List<MapePipe> pipes;
     private final GraphDBGateway graphDBGateway;
     private final PalamedesProperties palamedesProperties;
+    private final ReentrantLock runLock = new ReentrantLock();
 
 
     @EventListener(EngineWakeupEvent.class)
     @Scheduled(fixedRateString = "${palamedes.engine.fallback-pipeline-rate-ms}")
     public void run() {
-        log.info("MapePipeline.run() triggered");
-
-        List<ActiveActionSummary> activeActions = graphDBGateway.findActiveActions();
-        if (activeActions.isEmpty()) {
-            log.info("MapePipeline: No active actions found in the Petri Net. Pipeline run finished.");
+        if (!runLock.tryLock()) {
+            log.debug("MapePipeline.run() already in progress, skipping trigger");
             return;
         }
-        log.info("MapePipeline: Found {} active actions in the Petri Net", activeActions.size());
+        try {
+            log.info("MapePipeline.run() triggered");
 
-        int batchSize = palamedesProperties.engine().batchSize();
-        List<List<ActiveActionSummary>> batches = partition(activeActions, batchSize);
-        log.info("MapePipeline: Partitioned active actions into {} batches", batches.size());
-
-        try (var executor = MdcPropagatingExecutor.newVirtualThreadPerTaskExecutor()) {
-            for (List<ActiveActionSummary> batch : batches) {
-                executor.submit(() -> processBatch(batch));
+            List<ActiveActionSummary> activeActions = graphDBGateway.findActiveActions();
+            if (activeActions.isEmpty()) {
+                log.info("MapePipeline: No active actions found in the Petri Net. Pipeline run finished.");
+                return;
             }
-        } catch (Exception e) {
-            log.error("Error in MAPE Pipeline virtual thread execution: {}", e.getMessage(), e);
+            log.info("MapePipeline: Found {} active actions in the Petri Net", activeActions.size());
+
+            int batchSize = palamedesProperties.engine().batchSize();
+            List<List<ActiveActionSummary>> batches = partition(activeActions, batchSize);
+            log.info("MapePipeline: Partitioned active actions into {} batches", batches.size());
+
+            try (var executor = MdcPropagatingExecutor.newVirtualThreadPerTaskExecutor()) {
+                for (List<ActiveActionSummary> batch : batches) {
+                    executor.submit(() -> processBatch(batch));
+                }
+            } catch (Exception e) {
+                log.error("Error in MAPE Pipeline virtual thread execution: {}", e.getMessage(), e);
+            }
+        } finally {
+            runLock.unlock();
         }
     }
 

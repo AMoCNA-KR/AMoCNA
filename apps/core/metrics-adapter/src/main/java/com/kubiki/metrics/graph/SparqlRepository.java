@@ -14,6 +14,7 @@ public interface SparqlRepository {
 
     @Template(resource = "sparql/clear-anomalies.sparql")
     String clearAnomalies(
-            @Type(TemplateType.IRI) @Bind("IRI::targetResource") String targetResource
+            @Type(TemplateType.IRI) @Bind("IRI::targetResource") String targetResource,
+            @Type(TemplateType.IRI) @Bind("IRI::anomalyType") String anomalyType
     );
 }
