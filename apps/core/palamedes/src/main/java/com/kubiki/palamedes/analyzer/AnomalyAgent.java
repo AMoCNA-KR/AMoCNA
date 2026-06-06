@@ -1,6 +1,7 @@
 package com.kubiki.palamedes.analyzer;
 
 import com.kubiki.palamedes.analyzer.hydration.ActionHydrator;
+import com.kubiki.palamedes.config.PalamedesProperties;
 import com.kubiki.palamedes.knowledge.GraphDBGateway;
 import com.kubiki.palamedes.model.AnomalyTarget;
 import com.kubiki.palamedes.pipeline.EngineWakeupEvent;
@@ -39,6 +40,7 @@ public class AnomalyAgent {
     private final AnomalyActionHandler actionHandler;
     private final RemediationFilterService filterService;
     private final List<ActionHydrator> hydrators;
+    private final PalamedesProperties properties;
 
     private final AtomicLong lastTriggerTime = new AtomicLong(System.currentTimeMillis());
 
@@ -58,7 +60,7 @@ public class AnomalyAgent {
      */
     @Scheduled(fixedRateString = "${palamedes.engine.fallback-anomaly-scan-rate-ms}")
     public void fallbackAnalyze() {
-        long interval = palamedesProperties.engine().fallbackAnomalyScanRateMs();
+        long interval = properties.engine().fallbackAnomalyScanRateMs();
         long elapsed = System.currentTimeMillis() - lastTriggerTime.get();
         if (elapsed >= interval) {
             log.info("AnomalyAgent: No graph-update received for {}ms — running fallback anomaly scan", elapsed);

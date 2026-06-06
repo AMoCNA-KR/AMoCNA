@@ -1,7 +1,11 @@
 ${SPARQL_PREFIXES}
-SELECT ?action ?payload WHERE {
+SELECT DISTINCT ?action ?payload WHERE {
   VALUES ?action { ${IRI::actionIds} }
-  # Search up the hierarchy to allow SAGA steps to inherit hydration from their parents
+  
+  # Search up the decomposition hierarchy to allow SAGA steps to inherit hydration.
+  # We use property path (isPartOf | ^isDecomposedInto) to follow both relational and decomposition links.
   ?parent (^${PREFIX::ACTIONS_PREFIX}:isDecomposedInto)* ?action .
+  
+  # Return the payload from the nearest parent (including self) that has one.
   ?parent ${PREFIX::ACTIONS_PREFIX}:hydrationPayload ?payload .
 }
