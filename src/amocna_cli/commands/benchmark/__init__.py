@@ -3,8 +3,6 @@ from __future__ import annotations
 import os
 import sys
 import time
-import json
-import datetime
 import subprocess
 from typing_extensions import Annotated
 import typer
@@ -21,8 +19,6 @@ from amocna_cli.utils.shell import (
     k8s_exec,
     k8s_scale,
     k8s_patch,
-    k8s_set_image,
-    k8s_rollout_restart,
     k8s_get_jsonpath,
     k8s_get_pods_jsonpath,
     k8s_delete_resource,
@@ -84,12 +80,11 @@ def set_palamedes_filter(intents: list[str]) -> None:
         console.print(
             "  [bold yellow]⚠[/bold yellow] Clearing Palamedes intent filter (Allow ALL)"
         )
+        # Use sh -c for consistency and to ensure internal DNS resolution works reliably in the pod
         cmd = [
-            "curl",
-            "-s",
-            "-X",
-            "DELETE",
-            "http://palamedes.palamedes.svc.cluster.local:8080/api/filters/intents",
+            "sh",
+            "-c",
+            "curl -s -X DELETE http://palamedes.palamedes.svc.cluster.local:8080/api/filters/intents",
         ]
     else:
         console.print(
@@ -98,16 +93,11 @@ def set_palamedes_filter(intents: list[str]) -> None:
         import json
 
         payload = json.dumps(list(intents))
-        # Use single quotes for shell safety within kubectl run
+        # Use sh -c to safely pass the JSON string in single quotes, avoiding shell globbing of brackets []
         cmd = [
-            "curl",
-            "-s",
-            "-X",
-            "POST",
-            "-H",
-            "Content-Type: application/json",
-            "-d",
-            payload,
+            "sh",
+            "-c",
+            f"curl -s -X POST -H 'Content-Type: application/json' -d '{payload}' "
             "http://palamedes.palamedes.svc.cluster.local:8080/api/filters/intents",
         ]
 
@@ -554,7 +544,8 @@ def benchmark_load(
 
 
 from amocna_cli.commands.benchmark.registry import ScenarioRegistry
-import amocna_cli.commands.benchmark.scenarios # Trigger registration
+import amocna_cli.commands.benchmark.scenarios  # Trigger registration
+
 
 @app.command("run")
 def benchmark_run(
@@ -581,10 +572,12 @@ def benchmark_run(
                 sc.run(keep_on_failure=keep_on_failure)
             except Exception as e:
                 error(f"✖ Scenario {sc_id} failed, continuing with next. Error: {e}")
-            
+
             info("Waiting 60 seconds between scenarios for cluster cooling...")
             time.sleep(60)
-        info("[green]✔ Complete automated benchmark run successfully completed![/green]")
+        info(
+            "[green]✔ Complete automated benchmark run successfully completed![/green]"
+        )
         return
 
     try:

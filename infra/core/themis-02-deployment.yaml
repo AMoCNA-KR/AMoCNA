@@ -16,6 +16,13 @@ spec:
       serviceAccountName: themis
       imagePullSecrets:
         - name: ghcr-login
+      tolerations:
+        - key: "amocna"
+          operator: "Equal"
+          value: "true"
+          effect: "NoSchedule"
+      nodeSelector:
+        node-role: amocna
       initContainers:
         - name: wait-for-rabbitmq
           image: curlimages/curl:8.12.1
@@ -32,7 +39,7 @@ spec:
               echo "RabbitMQ is reachable."
       containers:
         - name: themis
-          image: ghcr.io/amocna-kr/themis:1.11.4-SNAPSHOT
+          image: ghcr.io/amocna-kr/themis:1.12.7-SNAPSHOT
           imagePullPolicy: Always
           ports:
             - containerPort: 8080
