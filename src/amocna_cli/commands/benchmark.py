@@ -56,18 +56,17 @@ def _load_sparql_query(cfg: ProjectConfig, filename: str) -> str:
 
 def run_sparql(cfg: ProjectConfig, update_query: str) -> None:
     """Execute a SPARQL Update query inside GraphDB using a temporary pod in K8s."""
-    curl_args = [
-        "curl",
-        "-s",
-        "-X",
-        "POST",
-        "http://graphdb.graphdb.svc.cluster.local:7200/repositories/amocna/statements",
-        "-H",
-        "Content-Type: application/sparql-update",
-        "--data",
-        update_query,
+    # Use sh -c to allow piping the query via stdin to curl, avoiding shell escaping hell with large queries
+    curl_cmd = [
+        "sh",
+        "-c",
+        "curl -s -X POST http://graphdb.graphdb.svc.cluster.local:7200/repositories/amocna/statements "
+        "-H 'Content-Type: application/sparql-update' --data-binary @-",
     ]
-    run(k8s_run_pod("amocna-sparql-trigger", "curlimages/curl:8.12.1", curl_args))
+    # We use subprocess.run directly here to manage the input stream
+    console.print(f"  [dim]$ (sparql-update via pod) [/dim]")
+    pod_cmd = k8s_run_pod("amocna-sparql-trigger", "curlimages/curl:8.12.1", curl_cmd)
+    subprocess.run(pod_cmd, input=update_query, text=True, check=True)
 
 
 def set_locust_load(users: int, rate: int) -> None:
@@ -138,6 +137,7 @@ class EventLogger:
         info(f"Event log saved to {self.log_file}")
         # Also print to console with elapsed time prefix
 
+
 def _load_k8s_manifest(cfg: ProjectConfig, filename: str, **replacements: str) -> str:
     """Load a K8s manifest template from cli/resources/k8s and substitute placeholders."""
     path = cfg.project_root / "cli" / "resources" / "k8s" / filename
@@ -155,7 +155,9 @@ def _require_registry_credentials() -> tuple[str, str]:
     user = os.environ.get("AMOCNA_USER")
     pat = os.environ.get("AMOCNA_PAT")
     if not user:
-        error("AMOCNA_USER is not set. Export your GitHub username: export AMOCNA_USER=...")
+        error(
+            "AMOCNA_USER is not set. Export your GitHub username: export AMOCNA_USER=..."
+        )
         sys.exit(1)
     if not pat:
         error("AMOCNA_PAT is not set. Export your GitHub PAT: export AMOCNA_PAT=...")
@@ -217,7 +219,9 @@ def _s7_print_timeout_diagnostics() -> None:
     """Print concise diagnostics to explain why Scenario 6 may be stuck."""
     info("Collecting Scenario 6 diagnostics...")
     pod = run_capture(
-        k8s_get_pods_jsonpath(S6_NAMESPACE, "app=s6-failing", "{.items[0].metadata.name}"),
+        k8s_get_pods_jsonpath(
+            S6_NAMESPACE, "app=s6-failing", "{.items[0].metadata.name}"
+        ),
         check=False,
     )
     if pod:
@@ -277,7 +281,9 @@ def _s7_print_timeout_diagnostics() -> None:
         console.print("    palamedes markers found: none")
 
 
-def _s7_wait_for_sibling_running(logger: EventLogger, timeout_seconds: int = 240) -> bool:
+def _s7_wait_for_sibling_running(
+    logger: EventLogger, timeout_seconds: int = 240
+) -> bool:
     """Wait until sibling pod is Running so Palamedes can infer a working pull secret."""
     logger.log(
         "WAIT_SIBLING",
@@ -286,7 +292,9 @@ def _s7_wait_for_sibling_running(logger: EventLogger, timeout_seconds: int = 240
     checks = max(1, timeout_seconds // 5)
     for i in range(checks):
         phase = run_capture(
-            k8s_get_pods_jsonpath(S6_NAMESPACE, "app=s6-sibling", "{.items[0].status.phase}"),
+            k8s_get_pods_jsonpath(
+                S6_NAMESPACE, "app=s6-sibling", "{.items[0].status.phase}"
+            ),
             check=False,
         )
         if phase == "Running":
@@ -299,7 +307,9 @@ def _s7_wait_for_sibling_running(logger: EventLogger, timeout_seconds: int = 240
     return False
 
 
-def _create_docker_registry_secret(namespace: str, name: str, username: str, password: str) -> None:
+def _create_docker_registry_secret(
+    namespace: str, name: str, username: str, password: str
+) -> None:
     """Create or update a docker-registry pull secret (ghcr.io)."""
     create = subprocess.run(
         [
@@ -341,8 +351,14 @@ def _apply_manifest_stdin(manifest: str) -> None:
 def _cleanup_s7_benchmark(cfg: ProjectConfig) -> None:
     """Remove Scenario 6 workloads, pull secret, and related GraphDB triples."""
     for deploy in (S6_FAILING_DEPLOY, S6_SIBLING_DEPLOY):
-        run(k8s_delete_resource("deployment", deploy, namespace=S6_NAMESPACE), check=False)
-    run(k8s_delete_resource("secret", S6_SECRET_NAME, namespace=S6_NAMESPACE), check=False)
+        run(
+            k8s_delete_resource("deployment", deploy, namespace=S6_NAMESPACE),
+            check=False,
+        )
+    run(
+        k8s_delete_resource("secret", S6_SECRET_NAME, namespace=S6_NAMESPACE),
+        check=False,
+    )
     run(
         k8s_delete_resource("serviceaccount", "s6-sibling-sa", namespace=S6_NAMESPACE),
         check=False,
@@ -399,6 +415,7 @@ def _poke_s7_failing_pod() -> None:
         ],
         check=False,
     )
+
 
 def _s7_failing_pod_snapshots() -> list[tuple[str, str, str, bool]]:
     """
@@ -483,8 +500,9 @@ def benchmark_stop(ctx: typer.Context):
     info("Scaling down front-end to 1...")
     run(k8s_scale("sock-shop", "front-end", 1), check=False)
 
-    info("Resetting orders CPU requests...")
+    info("Resetting orders CPU requests and scaling to 1 replica...")
     run(k8s_patch("sock-shop", "orders", ORDERS_CPU_RESET_PATCH), check=False)
+    run(k8s_scale("sock-shop", "orders", 1), check=False)
 
     # Clean up ConfigDriftState / SecurityVulnerabilityDetectedState if any
     info("Cleaning up GraphDB anomaly states...")
@@ -549,8 +567,8 @@ def benchmark_run(
         time.sleep(120)
 
         # Phase 2: Trigger (T+120s)
-        logger.log("TRIGGER_ANOMALY", "Spiking Locust to 1000 users")
-        set_locust_load(1000, 20)
+        logger.log("TRIGGER_ANOMALY", "Spiking Locust to 1800 users")
+        set_locust_load(1800, 50)
 
         # Phase 3: Observation (360s)
         start_obs = time.time()
@@ -567,8 +585,27 @@ def benchmark_run(
                     "REMEDIATION_DETECTED",
                     f"Frontend successfully scaled to 3 replicas in {time.time() - start_obs:.1f}s",
                 )
-                logger.log("TRAFFIC_REBALANCE", "Restarting Locust workers to balance traffic across new replicas...")
-                run(k8s_rollout_restart("deployment/locust-worker", namespace="sock-shop"), check=False)
+                logger.log(
+                    "TRAFFIC_REBALANCE",
+                    "Restarting Locust workers to balance traffic across new replicas...",
+                )
+                run(
+                    k8s_rollout_restart(
+                        "deployment/locust-worker", namespace="sock-shop"
+                    ),
+                    check=False,
+                )
+
+                # Wait for workers to be ready and master to see them
+                logger.log("WAIT_WORKERS", "Waiting 30s for workers to reconnect...")
+                time.sleep(30)
+
+                logger.log(
+                    "RESUME_TRAFFIC",
+                    "Re-triggering Locust swarm (1800 users, 50 rate)...",
+                )
+                set_locust_load(1800, 50)
+
                 remediation_detected = True
             time.sleep(10)
 
@@ -611,20 +648,70 @@ def benchmark_run(
 
     elif scenario == "2":
         logger = EventLogger("2")
-        logger.log("START_BASELINE", "Locust: 200 users, Cluster-Stress: 1 replica")
+        logger.log(
+            "START_BASELINE",
+            "Locust: 200 users, Cluster-Stress: 1 replica, Orders: 1 replica",
+        )
         set_locust_load(200, 10)
         run(k8s_scale("default", "cluster-stress", 1), check=False)
+        run(k8s_scale("sock-shop", "orders", 1), check=False)
         run(k8s_patch("sock-shop", "orders", ORDERS_CPU_RESET_PATCH), check=False)
 
         # Phase 1: Baseline (120s)
         time.sleep(120)
 
+        # Find the node where orders is running
+        orders_node = (
+            run_capture(
+                [
+                    "kubectl",
+                    "get",
+                    "pods",
+                    "-n",
+                    "sock-shop",
+                    "-l",
+                    "name=orders",
+                    "-o",
+                    "jsonpath={.items[0].spec.nodeName}",
+                ],
+                check=False,
+            )
+            .strip()
+            .replace("'", "")
+        )
+        info(f"Orders pod is running on node: {orders_node}")
+
+        # Prepare patches
+        stress_patch = json.dumps(
+            {
+                "spec": {
+                    "template": {
+                        "spec": {
+                            "nodeSelector": {"kubernetes.io/hostname": orders_node},
+                            "containers": [
+                                {
+                                    "name": "stress",
+                                    "args": ["--cpu", "2", "--timeout", "600s"],
+                                    "resources": {
+                                        "requests": {"cpu": "100m", "memory": "200Mi"},
+                                        "limits": {"cpu": "1800m", "memory": "3000Mi"},
+                                    },
+                                }
+                            ],
+                        }
+                    }
+                }
+            }
+        )
+
         # Phase 2: Trigger (T+120s)
         logger.log(
             "TRIGGER_ANOMALY",
-            "Scaling cluster-stress to 5 replicas to generate node pressure",
+            f"Patching cluster-stress to node {orders_node}, scaling to 3 replicas, and spiking Locust load to 1500 users to generate pressure",
         )
-        run(k8s_scale("default", "cluster-stress", 5))
+        run(k8s_patch("default", "cluster-stress", stress_patch), check=False)
+        run(k8s_scale("default", "cluster-stress", 3))
+        set_locust_load(1500, 30)
 
         # Phase 3: Observation (360s)
         start_obs = time.time()
@@ -644,6 +731,27 @@ def benchmark_run(
                     "REMEDIATION_DETECTED",
                     f"Orders CPU requests autonomically patched to 1 in {time.time() - start_obs:.1f}s",
                 )
+                logger.log(
+                    "TRAFFIC_REBALANCE",
+                    "Restarting Locust workers to balance traffic across new pods...",
+                )
+                run(
+                    k8s_rollout_restart(
+                        "deployment/locust-worker", namespace="sock-shop"
+                    ),
+                    check=False,
+                )
+
+                # Wait for workers to be ready and master to see them
+                logger.log("WAIT_WORKERS", "Waiting 30s for workers to reconnect...")
+                time.sleep(30)
+
+                logger.log(
+                    "RESUME_TRAFFIC",
+                    "Re-triggering Locust swarm (1500 users, 30 rate)...",
+                )
+                set_locust_load(1500, 30)
+
                 remediation_detected = True
             time.sleep(10)
 
@@ -654,7 +762,48 @@ def benchmark_run(
         logger.log("END_SCENARIO", "Scenario 2 completed")
         logger.save()
         stop_locust()
+
+        # Cleanup
         run(k8s_scale("default", "cluster-stress", 0), check=False)
+        run(k8s_scale("sock-shop", "orders", 1), check=False)
+
+        # Restore cluster-stress settings
+        stress_restore = json.dumps(
+            {
+                "spec": {
+                    "template": {
+                        "spec": {
+                            "nodeSelector": {"kubernetes.io/hostname": "kube-worker-3"},
+                            "containers": [
+                                {
+                                    "name": "stress",
+                                    "args": [
+                                        "--cpu",
+                                        "2",
+                                        "--io",
+                                        "1",
+                                        "--vm",
+                                        "1",
+                                        "--vm-bytes",
+                                        "2350M",
+                                        "--timeout",
+                                        "600s",
+                                    ],
+                                    "resources": {
+                                        "requests": {
+                                            "cpu": "1200m",
+                                            "memory": "2400Mi",
+                                        },
+                                        "limits": {"cpu": "1200m", "memory": "2450Mi"},
+                                    },
+                                }
+                            ],
+                        }
+                    }
+                }
+            }
+        )
+        run(k8s_patch("default", "cluster-stress", stress_restore), check=False)
         run(k8s_patch("sock-shop", "orders", ORDERS_CPU_RESET_PATCH), check=False)
 
     elif scenario == "3":
@@ -717,7 +866,18 @@ def benchmark_run(
 
     elif scenario == "4":
         logger = EventLogger("4")
-        logger.log("START_BASELINE", "Locust: 500 users, Cluster-Stress: 1 replica")
+        header("Scenario 4: Multi-Step Saga Remediation (Red Path Rollback)")
+
+        # Phase 0: Initialization (Ensure clean state)
+        logger.log("INIT", "Cleaning up stale resources and states...")
+        run(k8s_delete_resource("configmap", "orders-config", namespace="sock-shop"), check=False)
+        run(k8s_scale("sock-shop", "orders", 1), check=False)
+        run_sparql(cfg, _load_sparql_query(cfg, "clean-anomalies.sparql"))
+        run_sparql(cfg, _load_sparql_query(cfg, "clean-actions.sparql"))
+        run_sparql(cfg, _load_sparql_query(cfg, "restore-restart.sparql"))
+        time.sleep(15) # Give Metis/Palamedes time to sync
+
+        logger.log("START_BASELINE", "Locust: 50 users, Cluster-Stress: 1 replica")
         set_locust_load(50, 5)  # Low load for Saga rollback test
         run(k8s_scale("default", "cluster-stress", 1), check=False)
 
@@ -909,7 +1069,10 @@ def benchmark_run(
         logger.save()
         stop_locust()
         run(k8s_scale("default", "cluster-stress", 0), check=False)
-        run(k8s_delete_resource("configmap", "orders-config", namespace="sock-shop"), check=False,)
+        run(
+            k8s_delete_resource("configmap", "orders-config", namespace="sock-shop"),
+            check=False,
+        )
     elif scenario == "7":
         logger = EventLogger("7")
         logger.log(
@@ -921,11 +1084,16 @@ def benchmark_run(
 
         logger.log("PRECHECK", "Checking AMoCNA service image versions...")
         if not _s7_check_runtime_prerequisites(cfg):
-            logger.log("PRECHECK_FAILED", "Control-loop services out of sync; aborting Scenario 7")
+            logger.log(
+                "PRECHECK_FAILED",
+                "Control-loop services out of sync; aborting Scenario 7",
+            )
             logger.save()
             return
 
-        logger.log("CLEANUP", "Step 1: Cleaning up any previous Scenario 7 resources...")
+        logger.log(
+            "CLEANUP", "Step 1: Cleaning up any previous Scenario 7 resources..."
+        )
         _cleanup_s7_benchmark(cfg)
 
         user, pat = _require_registry_credentials()
@@ -935,7 +1103,16 @@ def benchmark_run(
         )
         _create_docker_registry_secret(S6_NAMESPACE, S6_SECRET_NAME, user, pat)
         secret_type = run_capture(
-            ["kubectl", "get", "secret", S6_SECRET_NAME, "-n", S6_NAMESPACE, "-o", "jsonpath={.type}"],
+            [
+                "kubectl",
+                "get",
+                "secret",
+                S6_SECRET_NAME,
+                "-n",
+                S6_NAMESPACE,
+                "-o",
+                "jsonpath={.type}",
+            ],
             check=False,
         )
         if secret_type != "kubernetes.io/dockerconfigjson":
@@ -944,7 +1121,9 @@ def benchmark_run(
                 f"Secret verification failed (type={secret_type or 'missing'})",
             )
             if keep_on_failure:
-                logger.log("KEEP_ON_FAILURE", "Keeping resources for post-failure debugging")
+                logger.log(
+                    "KEEP_ON_FAILURE", "Keeping resources for post-failure debugging"
+                )
             else:
                 _cleanup_s7_benchmark(cfg)
             logger.save()
@@ -963,7 +1142,10 @@ def benchmark_run(
         )
         _apply_manifest_stdin(manifest)
 
-        logger.log("STEP_4", "Waiting for failing pod ImagePullBackOff before enabling sibling...")
+        logger.log(
+            "STEP_4",
+            "Waiting for failing pod ImagePullBackOff before enabling sibling...",
+        )
         pull_backoff = False
         failing_ran_without_pull_failure = False
         for i in range(18):
@@ -988,17 +1170,20 @@ def benchmark_run(
                 )
                 failing_ran_without_pull_failure = True
                 break
-            states = ", ".join(
-                f"{name}:{phase or 'unknown'}/{reason or 'none'}{'(term)' if term else ''}"
-                for name, phase, reason, term in snapshots
-            ) or "none"
-            console.print(
-                f"    Waiting for pull failure (pods={states})... ({i * 5}s)"
+            states = (
+                ", ".join(
+                    f"{name}:{phase or 'unknown'}/{reason or 'none'}{'(term)' if term else ''}"
+                    for name, phase, reason, term in snapshots
+                )
+                or "none"
             )
+            console.print(f"    Waiting for pull failure (pods={states})... ({i * 5}s)")
 
         if failing_ran_without_pull_failure:
             if keep_on_failure:
-                logger.log("KEEP_ON_FAILURE", "Keeping resources for post-failure debugging")
+                logger.log(
+                    "KEEP_ON_FAILURE", "Keeping resources for post-failure debugging"
+                )
             else:
                 _cleanup_s7_benchmark(cfg)
             logger.save()
@@ -1014,14 +1199,21 @@ def benchmark_run(
                 "Failing workload did not reach ImagePullBackOff within 90s",
             )
             if keep_on_failure:
-                logger.log("KEEP_ON_FAILURE", "Keeping resources for post-failure debugging")
+                logger.log(
+                    "KEEP_ON_FAILURE", "Keeping resources for post-failure debugging"
+                )
             else:
                 _cleanup_s7_benchmark(cfg)
             logger.save()
-            error("✖ TIMEOUT: Failing workload did not reach ImagePullBackOff within 90s.")
+            error(
+                "✖ TIMEOUT: Failing workload did not reach ImagePullBackOff within 90s."
+            )
             return
 
-        logger.log("STEP_5", "Scaling sibling to 1 replica to provide valid pull secret source...")
+        logger.log(
+            "STEP_5",
+            "Scaling sibling to 1 replica to provide valid pull secret source...",
+        )
         run(k8s_scale(S6_NAMESPACE, S6_SIBLING_DEPLOY, 1), check=False)
         if not _s7_wait_for_sibling_running(logger):
             logger.log(
@@ -1030,17 +1222,23 @@ def benchmark_run(
             )
             _s7_print_timeout_diagnostics()
             if keep_on_failure:
-                logger.log("KEEP_ON_FAILURE", "Keeping resources for post-failure debugging")
+                logger.log(
+                    "KEEP_ON_FAILURE", "Keeping resources for post-failure debugging"
+                )
             else:
                 _cleanup_s7_benchmark(cfg)
             logger.save()
-            error("✖ TIMEOUT: Sibling workload did not reach Running within 240s after scale-up.")
+            error(
+                "✖ TIMEOUT: Sibling workload did not reach Running within 240s after scale-up."
+            )
             return
 
         start_time = time.time()
         patched = False
         healed = False
-        logger.log("STEP_6", "Polling for autonomic imagePullSecrets patch and pod recovery...")
+        logger.log(
+            "STEP_6", "Polling for autonomic imagePullSecrets patch and pod recovery..."
+        )
         for i in range(24):
             time.sleep(5)
             secret = run_capture(
@@ -1088,7 +1286,9 @@ def benchmark_run(
             )
             _s7_print_timeout_diagnostics()
             if keep_on_failure:
-                logger.log("KEEP_ON_FAILURE", "Keeping resources for post-failure debugging")
+                logger.log(
+                    "KEEP_ON_FAILURE", "Keeping resources for post-failure debugging"
+                )
             else:
                 _cleanup_s7_benchmark(cfg)
                 logger.log("CLEANUP", "Cleaned up Scenario 7 resources after failure")
@@ -1102,7 +1302,9 @@ def benchmark_run(
             )
             _s7_print_timeout_diagnostics()
             if keep_on_failure:
-                logger.log("KEEP_ON_FAILURE", "Keeping resources for post-failure debugging")
+                logger.log(
+                    "KEEP_ON_FAILURE", "Keeping resources for post-failure debugging"
+                )
             else:
                 _cleanup_s7_benchmark(cfg)
                 logger.log("CLEANUP", "Cleaned up Scenario 7 resources after failure")

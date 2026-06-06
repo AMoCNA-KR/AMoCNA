@@ -96,37 +96,34 @@ public class AnomalyAgent {
         UpgradePolicy upgradePolicy = UpgradePolicy.valueOf(
                 palamedesProperties.vulnerability().upgradePolicy().toUpperCase());
 
-        Set<IRI> processedRootCauses = new HashSet<>();
-
+        // 1. Group anomalies by their root cause resource to avoid redundant or conflicting remediations
+        Map<IRI, Set<AnomalyTarget>> resourceToIntents = new HashMap<>();
         for (var anomaly : anomalies) {
-            log.info("AnomalyAgent: Anomaly detected: resource {} needs {}", anomaly.resourceName(), anomaly.intentIri());
-
             AnomalyTarget rootCause = rcaEngine.findRootCause(anomaly);
-            if (!rootCause.resourceIri().equals(anomaly.resourceIri())) {
-                log.info("AnomalyAgent: Root cause analysis redirected {} -> {} (intent: {})",
-                        anomaly.resourceName(), rootCause.resourceName(), rootCause.intentIri());
-            }
+            resourceToIntents.computeIfAbsent(rootCause.resourceIri(), k -> new HashSet<>()).add(rootCause);
+        }
 
-            if (processedRootCauses.contains(rootCause.resourceIri())) {
-                log.info("AnomalyAgent: Target {} already has an action planned in this batch, skipping redundant anomaly report from {}", 
-                        rootCause.resourceName(), anomaly.resourceName());
-                continue;
-            }
-            processedRootCauses.add(rootCause.resourceIri());
+        for (Map.Entry<IRI, Set<AnomalyTarget>> entry : resourceToIntents.entrySet()) {
+            Set<AnomalyTarget> candidates = entry.getValue();
+
+            // 2. Optimization: Select the most comprehensive remediation (Workflow > Simple Action)
+            AnomalyTarget selected = selectBestRemediation(candidates);
+            log.info("AnomalyAgent: Selected remediation {} for resource {} from {} candidates", 
+                    selected.intentIri().getLocalName(), selected.resourceName(), candidates.size());
 
             String actionId = utils.generateActionId();
-            if (!actionHandler.createActionWorkflow(rootCause.resourceIri(), rootCause.intentIri(), actionId)) {
+            if (!actionHandler.createActionWorkflow(selected.resourceIri(), selected.intentIri(), actionId)) {
                 continue;
             }
 
             // Hydrate parameters for execution
             Map<String, String> hydration = new HashMap<>();
-            hydration.put("namespace", ImageRemediationPlanner.parseNamespaceFromDeploymentIri(rootCause.resourceIri()));
-            hydration.put("resourceName", rootCause.resourceName());
+            hydration.put("namespace", ImageRemediationPlanner.parseNamespaceFromDeploymentIri(selected.resourceIri()));
+            hydration.put("resourceName", selected.resourceName());
 
             // Specialized hydration for ImageUpdateIntent
-            if (rootCause.intentIri().equals(imageUpdateIntentIri)) {
-                Optional<ImageUpdateTarget> details = gateway.findWorkloadDetails(rootCause.resourceIri());
+            if (selected.intentIri().equals(imageUpdateIntentIri)) {
+                Optional<ImageUpdateTarget> details = gateway.findWorkloadDetails(selected.resourceIri());
                 details.ifPresent(d -> {
                     hydration.put("containerName", d.containerName());
                     hydration.put("imageRepository", d.imageRepository());
@@ -153,5 +150,21 @@ public class AnomalyAgent {
         } else {
             log.info("AnomalyAgent: doAnalyze() completed. No state changes.");
         }
+    }
+
+    /**
+     * Heuristic to select the best remediation intent among multiple candidates for the same resource.
+     * Prioritizes Workflows over individual Intents.
+     */
+    private AnomalyTarget selectBestRemediation(Set<AnomalyTarget> candidates) {
+        if (candidates.size() == 1) {
+            return candidates.iterator().next();
+        }
+
+        // Prefer Workflows
+        return candidates.stream()
+                .filter(t -> t.intentIri().getLocalName().endsWith("Workflow"))
+                .findFirst()
+                .orElse(candidates.iterator().next());
     }
 }

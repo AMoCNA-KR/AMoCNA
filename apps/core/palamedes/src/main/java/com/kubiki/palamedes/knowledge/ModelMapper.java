@@ -18,7 +18,7 @@ public class ModelMapper {
 
     private static final Logger log = LoggerFactory.getLogger(ModelMapper.class);
 
-    private static final String INTENT_SUFFIX_COMPLEX = "ComplexWorkflow";
+    private static final String INTENT_SUFFIX_COMPLEX = "Workflow";
 
     private static final String BINDING_INTENT = "intent";
     private static final String BINDING_TARGET = "target";

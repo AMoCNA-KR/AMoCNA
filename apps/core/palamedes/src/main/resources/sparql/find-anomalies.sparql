@@ -10,6 +10,7 @@ WHERE {
   # 2. Find resource that HAS this anomaly type
   ?resource ${PREFIX::RESOURCES_PREFIX}:hasState ?state .
   ?state a ?anomalyType .
+  FILTER (!isBlank(?anomalyType))
   ?resource ${PREFIX::RESOURCES_PREFIX}:resourceName ?resourceName .
   
   # 3. Filter out resources that already have an active action
