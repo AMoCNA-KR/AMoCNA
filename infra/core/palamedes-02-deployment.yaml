@@ -44,7 +44,7 @@ spec:
               echo "RabbitMQ is reachable."
       containers:
         - name: palamedes
-          image: ghcr.io/amocna-kr/palamedes:1.10.3-SNAPSHOT
+          image: ghcr.io/amocna-kr/palamedes:1.11.4-SNAPSHOT
           imagePullPolicy: Always
           ports:
             - containerPort: 8081
