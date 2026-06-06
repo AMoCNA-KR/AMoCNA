@@ -1,5 +1,7 @@
 ${SPARQL_PREFIXES}
 SELECT ?action ?payload WHERE {
   VALUES ?action { ${IRI::actionIds} }
-  ?action ${PREFIX::ACTIONS_PREFIX}:hydrationPayload ?payload .
+  # Search up the hierarchy to allow SAGA steps to inherit hydration from their parents
+  ?parent (^${PREFIX::ACTIONS_PREFIX}:isDecomposedInto)* ?action .
+  ?parent ${PREFIX::ACTIONS_PREFIX}:hydrationPayload ?payload .
 }

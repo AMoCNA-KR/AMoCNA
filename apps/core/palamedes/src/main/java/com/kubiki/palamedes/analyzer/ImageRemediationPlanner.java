@@ -7,6 +7,7 @@ import com.kubiki.palamedes.config.PalamedesProperties;
 import com.kubiki.palamedes.knowledge.GraphDBGateway;
 import com.kubiki.palamedes.model.ImageInTopology;
 import com.kubiki.palamedes.model.ImageUpdateTarget;
+import com.kubiki.palamedes.service.RemediationFilterService;
 import com.kubiki.palamedes.utils.ActionUtils;
 import lombok.RequiredArgsConstructor;
 import org.eclipse.rdf4j.model.IRI;
@@ -33,16 +34,22 @@ public class ImageRemediationPlanner {
     private final VulnerabilityCatalog vulnerabilityCatalog;
     private final PalamedesProperties properties;
     private final OntologyRegistry ontologyRegistry;
+    private final RemediationFilterService filterService;
 
     /**
      * Matches sensed {@code Image} entities in GraphDB against the CVE catalog and plans
      * {@code ImageUpdateIntent} workflows for affected deployments. No anomaly state is written to GraphDB.
      */
     public boolean scanCatalogAndPlan() {
+        IRI intentIri = ontologyRegistry.actionsOntology(IMAGE_UPDATE_INTENT);
+        if (!filterService.isIntentAllowed(intentIri.getLocalName())) {
+            log.debug("ImageRemediationPlanner: Skipping scan - {} is filtered out.", intentIri.getLocalName());
+            return false;
+        }
+
         log.info("ImageRemediationPlanner: Starting image vulnerability scan against CVE catalog...");
         UpgradePolicy upgradePolicy = UpgradePolicy.valueOf(
                 properties.vulnerability().upgradePolicy().toUpperCase());
-        IRI intentIri = ontologyRegistry.actionsOntology(IMAGE_UPDATE_INTENT);
 
         List<ImageInTopology> images = gateway.findImagesInTopology();
         log.info("ImageRemediationPlanner: Found {} images in current topology to evaluate", images.size());

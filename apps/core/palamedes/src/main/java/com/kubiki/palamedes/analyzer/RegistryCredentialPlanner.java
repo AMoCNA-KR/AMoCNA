@@ -3,6 +3,7 @@ package com.kubiki.palamedes.analyzer;
 import com.kubiki.common.ontology.OntologyRegistry;
 import com.kubiki.palamedes.knowledge.GraphDBGateway;
 import com.kubiki.palamedes.model.RegistryAuthTarget;
+import com.kubiki.palamedes.service.RemediationFilterService;
 import com.kubiki.palamedes.utils.ActionUtils;
 import lombok.RequiredArgsConstructor;
 import org.eclipse.rdf4j.model.IRI;
@@ -33,6 +34,7 @@ public class RegistryCredentialPlanner {
     private final GraphDBGateway gateway;
     private final ActionUtils utils;
     private final OntologyRegistry ontologyRegistry;
+    private final RemediationFilterService filterService;
 
     /**
      * Scans GraphDB for registry-auth failures and plans a patch for each affected
@@ -41,6 +43,12 @@ public class RegistryCredentialPlanner {
      * @return {@code true} if at least one workflow was planned
      */
     public boolean scanAndPlan() {
+        IRI intentIri = ontologyRegistry.actionsOntology(ADD_IMAGE_PULL_SECRET_INTENT);
+        if (!filterService.isIntentAllowed(intentIri.getLocalName())) {
+            log.debug("RegistryCredentialPlanner: Skipping scan - {} is filtered out.", intentIri.getLocalName());
+            return false;
+        }
+
         Map<IRI, RegistryAuthTarget> uniqueByDeployment = new LinkedHashMap<>();
         for (RegistryAuthTarget target : gateway.findRegistryAuthFailures()) {
             uniqueByDeployment.putIfAbsent(target.deploymentIri(), target);
@@ -49,7 +57,6 @@ public class RegistryCredentialPlanner {
             return false;
         }
 
-        IRI intentIri = ontologyRegistry.actionsOntology(ADD_IMAGE_PULL_SECRET_INTENT);
         for (RegistryAuthTarget target : uniqueByDeployment.values()) {
             String actionId = utils.generateActionId();
             gateway.createActionWorkflow(target.deploymentIri(), intentIri, actionId);
