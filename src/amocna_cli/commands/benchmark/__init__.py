@@ -169,7 +169,7 @@ def _require_registry_credentials() -> tuple[str, str]:
 
 
 def _s7_private_image(cfg: ProjectConfig) -> str:
-    version = read_pom_version(cfg.project_root / cfg.parent_pom)
+    version = "1.10.3-SNAPSHOT"
     return f"{cfg.registry}/{S6_PRIVATE_IMAGE_APP}:{version}"
 
 
