@@ -89,7 +89,7 @@ public class AnomalyScanner {
                                 if (violationCounter.containsKey(key)) {
                                     violationCounter.remove(key);
                                 }
-                                return Mono.just(new AnomalyBatchItem(targetResourceIri, null, false));
+                                return Mono.just(new AnomalyBatchItem(targetResourceIri, threshold.anomalyState(), false));
                             }
                             return Mono.empty();
                         }))
@@ -106,22 +106,23 @@ public class AnomalyScanner {
     private void executeBatch(List<AnomalyBatchItem> items) {
         log.debug("Executing anomaly batch with {} items", items.size());
 
-        // Group by resource to avoid redundant operations in the same batch
-        Map<String, AnomalyBatchItem> lastActionPerResource = new HashMap<>();
+        // Group by resource and anomaly state to avoid redundant operations in the same batch
+        Map<String, AnomalyBatchItem> lastActionPerState = new HashMap<>();
         for (var item : items) {
-            AnomalyBatchItem existing = lastActionPerResource.get(item.resourceIri());
+            String key = item.resourceIri() + "#" + item.anomalyState();
+            AnomalyBatchItem existing = lastActionPerState.get(key);
             if (existing == null || (!existing.isTrigger() && item.isTrigger())) {
-                lastActionPerResource.put(item.resourceIri(), item);
+                lastActionPerState.put(key, item);
             }
         }
 
-        for (var item : lastActionPerResource.values()) {
+        for (var item : lastActionPerState.values()) {
             if (item.isTrigger()) {
                 triggerAnomaly(item.resourceIri(), item.anomalyState())
                         .subscribeOn(Schedulers.boundedElastic())
                         .subscribe();
             } else {
-                clearAnomaly(item.resourceIri())
+                clearAnomaly(item.resourceIri(), item.anomalyState())
                         .subscribeOn(Schedulers.boundedElastic())
                         .subscribe();
             }
@@ -163,25 +164,25 @@ public class AnomalyScanner {
     }
 
     @Timed(value = "amocna.monitor.clear", description = "Time taken to clear anomaly in GraphDB")
-    private Mono<Void> clearAnomaly(String targetResourceIri) {
-        if (properties.ontology() == null || properties.ontology().resourcesNamespace() == null) {
-            log.error("Cannot clear anomaly: ontology properties are null");
+    private Mono<Void> clearAnomaly(String targetResourceIri, String anomalyState) {
+        if (properties.ontology() == null || properties.ontology().resourcesNamespace() == null || anomalyState == null) {
+            log.error("Cannot clear anomaly: ontology properties or state is null");
             return Mono.empty();
         }
-        String baseStateIri = properties.ontology().resourcesNamespace() + "State";
+        String anomalyStateIri = properties.ontology().resourcesNamespace() + anomalyState;
         String correlationId = "metrics-" + UUID.randomUUID();
         return Mono.fromRunnable(() -> {
             MDC.put("correlationId", correlationId);
             MDC.put("resourceIri", targetResourceIri);
             MDC.put("changeKind", "DELETED");
             try {
-                log.info("Clearing anomalies for resource {}", targetResourceIri);
-                graphWriter.clearAnomalies(targetResourceIri);
+                log.info("Clearing anomaly {} for resource {}", anomalyStateIri, targetResourceIri);
+                graphWriter.clearAnomalies(targetResourceIri, anomalyStateIri);
 
                 // Notify via RabbitMQ
                 GraphUpdateMessage message = new GraphUpdateMessage(
                         targetResourceIri,
-                        baseStateIri,
+                        anomalyStateIri,
                         "DELETED",
                         correlationId
                 );

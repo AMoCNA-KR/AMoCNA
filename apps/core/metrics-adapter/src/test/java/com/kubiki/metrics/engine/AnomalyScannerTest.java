@@ -111,4 +111,21 @@ class AnomalyScannerTest {
         // Then - Still only triggered once
         verify(graphWriter, timeout(2000).times(1)).instantiateAnomaly(anyString(), anyString());
     }
+
+    @Test
+    void scan_ClearsSpecificAnomalyStateWhenNotViolated() {
+        // Given
+        ThresholdDefinition t1 = new ThresholdDefinition("t1", "query1", ">", 0.5, "Anomaly1", "node", "name", null, 1, 0);
+        when(thresholdsLoader.getThresholds()).thenReturn(List.of(t1));
+
+        // 0.1 is not > 0.5 (not violated)
+        when(prometheusClient.query("query1")).thenReturn(Flux.just(new PrometheusClient.QueryResult(Map.of("name", "host1"), 0.1)));
+
+        // When
+        anomalyScanner.scan();
+
+        // Then - Clears ONLY the specific anomaly type for the resource
+        verify(graphWriter, timeout(2000).times(1)).clearAnomalies("http://resources/node_host1", "http://resources/Anomaly1");
+        verify(rabbitTemplate, timeout(2000).times(1)).convertAndSend(anyString(), anyString(), any(Object.class));
+    }
 }

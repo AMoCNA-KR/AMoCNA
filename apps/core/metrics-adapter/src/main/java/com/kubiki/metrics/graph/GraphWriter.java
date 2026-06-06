@@ -66,18 +66,18 @@ public class GraphWriter {
         }
     }
 
-    public void clearAnomalies(String targetResourceIri) {
+    public void clearAnomalies(String targetResourceIri, String anomalyTypeIri) {
         if (repository == null) {
             log.error("Cannot clear anomalies: repository is not initialized");
             return;
         }
 
         try (RepositoryConnection conn = repository.getConnection()) {
-            String updateQuery = sparqlRepository.clearAnomalies(targetResourceIri);
+            String updateQuery = sparqlRepository.clearAnomalies(targetResourceIri, anomalyTypeIri);
             conn.prepareUpdate(updateQuery).execute();
-            log.info("Cleared all states for resource {}", targetResourceIri);
+            log.info("Cleared state type {} for resource {}", anomalyTypeIri, targetResourceIri);
         } catch (Exception e) {
-            log.error("Failed to clear anomalies in GraphDB for resource {}", targetResourceIri, e);
+            log.error("Failed to clear anomalies of type {} in GraphDB for resource {}", anomalyTypeIri, targetResourceIri, e);
             if (e instanceof InterruptedException || (e.getCause() != null && e.getCause() instanceof InterruptedException)) {
                 Thread.currentThread().interrupt();
             }
