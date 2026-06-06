@@ -53,13 +53,19 @@ public class AnomalyAgent {
     }
 
     /**
-     * Fallback scheduler — runs according to configured rate.
+     * Fallback scheduler — runs according to configured rate but only executes the analysis
+     * if no event-driven trigger has occurred within the interval.
      */
     @Scheduled(fixedRateString = "${palamedes.engine.fallback-anomaly-scan-rate-ms}")
     public void fallbackAnalyze() {
+        long interval = palamedesProperties.engine().fallbackAnomalyScanRateMs();
         long elapsed = System.currentTimeMillis() - lastTriggerTime.get();
-        log.info("AnomalyAgent: No graph-update received for {}ms — running fallback anomaly scan", elapsed);
-        doAnalyze();
+        if (elapsed >= interval) {
+            log.info("AnomalyAgent: No graph-update received for {}ms — running fallback anomaly scan", elapsed);
+            doAnalyze();
+        } else {
+            log.debug("Fallback scan skipped — last trigger was {}s ago", elapsed / 1000);
+        }
     }
 
     private void doAnalyze() {
