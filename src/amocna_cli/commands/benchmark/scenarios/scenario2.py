@@ -66,7 +66,8 @@ class Scenario2(Scenario):
                 check=False,
             )
             if cpu == "1" and not remediation_detected:
-                self.logger.log("REMEDIATION_DETECTED", "Orders CPU requests patched to 1")
+                remediation_time = time.time() - start_obs
+                self.logger.log("REMEDIATION_DETECTED", f"Orders CPU requests patched to 1 in {remediation_time:.2f}s")
                 self.logger.log("TRAFFIC_REBALANCE", "Restarting Locust workers...")
                 run(k8s_rollout_restart("deployment/locust-worker", namespace="sock-shop"), check=False)
                 time.sleep(30)

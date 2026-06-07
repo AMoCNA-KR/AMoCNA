@@ -45,7 +45,8 @@ class Scenario5(Scenario):
                 check=False,
             )
             if SOCK_SHOP_FRONTEND_PATCHED_TAG in image and not remediation_detected:
-                self.logger.log("REMEDIATION_DETECTED", f"Frontend patched to {SOCK_SHOP_FRONTEND_PATCHED_TAG}")
+                remediation_time = time.time() - start_obs
+                self.logger.log("REMEDIATION_DETECTED", f"Frontend patched to {SOCK_SHOP_FRONTEND_PATCHED_TAG} in {remediation_time:.2f}s")
                 remediation_detected = True
                 break
             time.sleep(10)
