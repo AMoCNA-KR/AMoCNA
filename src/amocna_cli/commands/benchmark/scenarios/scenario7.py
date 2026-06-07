@@ -33,7 +33,7 @@ class Scenario7(Scenario):
                 return
 
             self.logger.log("INIT", "Cleaning up previous resources...")
-            set_palamedes_filter(self.allowed_intents)
+            set_palamedes_filter(self.allowed_intents, logger=self.logger)
             _cleanup_s7_benchmark(self.cfg)
 
             self.initialize()

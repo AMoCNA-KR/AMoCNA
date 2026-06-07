@@ -13,7 +13,7 @@ from amocna_cli.utils.shell import (
 class Scenario6(Scenario):
     id = "6"
     name = "Single-Step Config Remediation (Green Path)"
-    allowed_intents = ["PatchConfigIntent"]
+    allowed_intents = ["ConfigRemediationWorkflow"]
 
     def initialize(self) -> None:
         from amocna_cli.commands.benchmark import run_sparql, _load_sparql_query

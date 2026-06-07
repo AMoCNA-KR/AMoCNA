@@ -72,7 +72,7 @@ class Scenario(abc.ABC):
             header(f"Scenario {self.id}: {self.name}")
             
             self.logger.log("INIT", "Cleaning up stale resources and states...")
-            set_palamedes_filter(self.allowed_intents)
+            set_palamedes_filter(self.allowed_intents, logger=self.logger)
             self.initialize()
             time.sleep(15) # Sync wait
 
