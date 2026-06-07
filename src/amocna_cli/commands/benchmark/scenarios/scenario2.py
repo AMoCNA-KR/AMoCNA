@@ -25,35 +25,28 @@ class Scenario2(Scenario):
     def setup_baseline(self) -> None:
         from amocna_cli.commands.benchmark import set_locust_load
         set_locust_load(200, 10)
-        run(k8s_scale("default", "cluster-stress", 1), check=False)
         run(k8s_scale("sock-shop", "orders", 1), check=False)
         run(k8s_patch("sock-shop", "orders", ORDERS_CPU_RESET_PATCH), check=False)
 
     def trigger_anomaly(self) -> None:
         from amocna_cli.commands.benchmark import set_locust_load
-        orders_node = run_capture(
-            ["kubectl", "get", "pods", "-n", "sock-shop", "-l", "name=orders", "-o", "jsonpath={.items[0].spec.nodeName}"],
-            check=False
-        ).strip().replace("'", "")
-        info(f"Orders pod is running on node: {orders_node}")
-
-        stress_patch = json.dumps({
+        
+        # We trigger the anomaly by strictly throttling the orders service
+        # instead of using external cluster-stress.
+        throttle_patch = json.dumps({
             "spec": {"template": {"spec": {
-                "nodeSelector": {"kubernetes.io/hostname": orders_node},
                 "containers": [{
-                    "name": "stress",
-                    "args": ["--cpu", "2", "--timeout", "600s"],
+                    "name": "orders",
                     "resources": {
-                        "requests": {"cpu": "100m", "memory": "200Mi"},
-                        "limits": {"cpu": "1800m", "memory": "3000Mi"},
+                        "requests": {"cpu": "100m"},
+                        "limits": {"cpu": "100m"},
                     },
                 }]
             }}}
         })
 
-        self.logger.log("TRIGGER_ANOMALY", f"Patching cluster-stress to node {orders_node}")
-        run(k8s_patch("default", "cluster-stress", stress_patch), check=False)
-        run(k8s_scale("default", "cluster-stress", 3))
+        self.logger.log("TRIGGER_ANOMALY", "Throttling orders service CPU to 100m")
+        run(k8s_patch("sock-shop", "orders", throttle_patch), check=False)
         set_locust_load(1500, 30)
 
     def observe_remediation(self) -> None:
@@ -79,22 +72,5 @@ class Scenario2(Scenario):
     def cleanup(self) -> None:
         from amocna_cli.commands.benchmark import stop_locust
         stop_locust()
-        run(k8s_scale("default", "cluster-stress", 0), check=False)
         run(k8s_scale("sock-shop", "orders", 1), check=False)
-        
-        # Restore default stress settings
-        stress_restore = json.dumps({
-            "spec": {"template": {"spec": {
-                "nodeSelector": {"kubernetes.io/hostname": "kube-worker-3"},
-                "containers": [{
-                    "name": "stress",
-                    "args": ["--cpu", "2", "--io", "1", "--vm", "1", "--vm-bytes", "2350M", "--timeout", "600s"],
-                    "resources": {
-                        "requests": {"cpu": "1200m", "memory": "2400Mi"},
-                        "limits": {"cpu": "1200m", "memory": "2450Mi"},
-                    },
-                }]
-            }}}
-        })
-        run(k8s_patch("default", "cluster-stress", stress_restore), check=False)
         run(k8s_patch("sock-shop", "orders", ORDERS_CPU_RESET_PATCH), check=False)
