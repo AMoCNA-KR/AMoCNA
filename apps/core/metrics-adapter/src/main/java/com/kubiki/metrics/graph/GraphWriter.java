@@ -48,11 +48,11 @@ public class GraphWriter {
     }
 
     @LogLoopStep(
-        phase = LoopPhase.MONITOR,
-        step = "Anomaly Instantiated",
-        resource = "#targetResourceIri",
-        details = "'anomalyType=' + #anomalyTypeIri",
-        debugOnly = true
+            phase = LoopPhase.MONITOR,
+            step = "Anomaly Instantiated",
+            resource = "#targetResourceIri",
+            details = "'anomalyType=' + #anomalyTypeIri",
+            debugOnly = true
     )
     public void instantiateAnomaly(String targetResourceIri, String anomalyTypeIri) {
         if (repository == null) {
@@ -75,11 +75,11 @@ public class GraphWriter {
     }
 
     @LogLoopStep(
-        phase = LoopPhase.MONITOR,
-        step = "Anomaly Cleared",
-        resource = "#targetResourceIri",
-        details = "'anomalyType=' + #anomalyTypeIri",
-        debugOnly = true
+            phase = LoopPhase.MONITOR,
+            step = "Anomaly Cleared",
+            resource = "#targetResourceIri",
+            details = "'anomalyType=' + #anomalyTypeIri",
+            debugOnly = true
     )
     public void clearAnomalies(String targetResourceIri, String anomalyTypeIri) {
         if (repository == null) {

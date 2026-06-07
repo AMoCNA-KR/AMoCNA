@@ -36,10 +36,9 @@ public class ValidationAspect {
                 Object arg = args[i];
                 if (arg instanceof SensorBatch request) {
                     validateBatch(request, validateSchema.schemaNamespace(), validateSchema.failOnInvalid());
-                } else if (arg instanceof String && parameterAnnotations != null && i < parameterAnnotations.length) {
+                } else if (arg instanceof String value && parameterAnnotations != null && i < parameterAnnotations.length) {
                     for (Annotation ann : parameterAnnotations[i]) {
                         if (ann instanceof ValidateIri) {
-                            String value = (String) arg;
                             checkIri(value, validateSchema.schemaNamespace(), validateSchema.failOnInvalid());
                         }
                     }

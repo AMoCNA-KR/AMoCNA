@@ -2,16 +2,9 @@ package com.kubiki.palamedes.knowledge;
 
 import com.kubiki.common.ontology.OntologyRegistry;
 import com.kubiki.daedalus.knowledge.SparqlClient;
-import com.kubiki.palamedes.config.PalamedesProperties;
 import com.kubiki.palamedes.analyzer.ImageRemediationPlanner;
-import com.kubiki.palamedes.model.ActionData;
-import com.kubiki.palamedes.model.ActiveActionSummary;
-import com.kubiki.palamedes.model.AnomalyTarget;
-import com.kubiki.palamedes.model.ImageInTopology;
-import com.kubiki.palamedes.model.ImageUpdateTarget;
-import com.kubiki.palamedes.model.RegistryAuthTarget;
-import com.kubiki.palamedes.model.WorkflowState;
-import com.kubiki.palamedes.model.WorkflowStateMapper;
+import com.kubiki.palamedes.config.PalamedesProperties;
+import com.kubiki.palamedes.model.*;
 import io.micrometer.core.annotation.Timed;
 import lombok.RequiredArgsConstructor;
 import org.eclipse.rdf4j.model.IRI;
@@ -204,13 +197,13 @@ public class GraphDBGateway {
 
         List<BindingSet> results = sparqlRepository.checkIdempotencyBatch(joinedIds);
         Map<IRI, Boolean> states = new LinkedHashMap<>();
-        
+
         OffsetDateTime now = OffsetDateTime.now();
 
         for (BindingSet bs : results) {
             IRI action = (IRI) bs.getValue(ACTION_IRI);
             int window = ((Literal) bs.getValue(WINDOW_IRI)).intValue();
-            
+
             if (bs.getValue(LAST_TRANSITION_IRI) != null) {
                 OffsetDateTime lastTransition = OffsetDateTime.parse(bs.getValue(LAST_TRANSITION_IRI).stringValue());
                 states.put(action, now.isAfter(lastTransition.plusSeconds(window)));
@@ -218,12 +211,12 @@ public class GraphDBGateway {
                 states.put(action, true);
             }
         }
-        
+
         // Actions not in results are considered to have open window (no previous execution recorded)
         for (IRI id : actionIds) {
             states.putIfAbsent(id, true);
         }
-        
+
         return states;
     }
 
@@ -269,7 +262,7 @@ public class GraphDBGateway {
     public Optional<ImageUpdateTarget> findWorkloadDetails(IRI workloadIri) {
         List<BindingSet> results = sparqlRepository.fetchWorkloadDetails(workloadIri.stringValue());
         if (results.isEmpty()) return Optional.empty();
-        
+
         BindingSet bs = results.getFirst();
         return Optional.of(new ImageUpdateTarget(
                 workloadIri,
@@ -339,7 +332,7 @@ public class GraphDBGateway {
 
     public Map<IRI, Map<String, String>> fetchActionHydrations(List<IRI> actionIds) {
         if (actionIds.isEmpty()) return Map.of();
-        
+
         String joinedIds = actionIds.stream()
                 .map(iri -> "<" + iri.stringValue() + ">")
                 .collect(Collectors.joining(" "));

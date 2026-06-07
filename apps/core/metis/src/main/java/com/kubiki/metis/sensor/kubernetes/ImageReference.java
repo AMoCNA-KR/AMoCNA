@@ -25,6 +25,10 @@ public record ImageReference(String repository, String tag) {
         return new ImageReference(trimmed, DEFAULT_TAG);
     }
 
+    private static boolean isRegistryHost(String segment) {
+        return segment.contains(".") || segment.contains(":") || "localhost".equals(segment);
+    }
+
     public String fullReference() {
         return repositoryPath() + ":" + tag;
     }
@@ -49,9 +53,5 @@ public record ImageReference(String repository, String tag) {
             }
         }
         return repository;
-    }
-
-    private static boolean isRegistryHost(String segment) {
-        return segment.contains(".") || segment.contains(":") || "localhost".equals(segment);
     }
 }

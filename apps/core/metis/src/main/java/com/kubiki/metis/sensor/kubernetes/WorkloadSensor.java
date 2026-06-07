@@ -39,6 +39,27 @@ public class WorkloadSensor extends AbstractNamespacedSensor {
                 publisher, iriFactory, properties.ontology().cneeNamespace());
     }
 
+    private static boolean templateImagesChanged(Deployment oldDep, Deployment newDep) {
+        return !java.util.Objects.equals(
+                containerImages(oldDep.getSpec() != null ? oldDep.getSpec().getTemplate() : null),
+                containerImages(newDep.getSpec() != null ? newDep.getSpec().getTemplate() : null));
+    }
+
+    private static boolean templateImagesChanged(StatefulSet oldSs, StatefulSet newSs) {
+        return !java.util.Objects.equals(
+                containerImages(oldSs.getSpec() != null ? oldSs.getSpec().getTemplate() : null),
+                containerImages(newSs.getSpec() != null ? newSs.getSpec().getTemplate() : null));
+    }
+
+    private static java.util.List<String> containerImages(io.fabric8.kubernetes.api.model.PodTemplateSpec template) {
+        if (template == null || template.getSpec() == null || template.getSpec().getContainers() == null) {
+            return java.util.List.of();
+        }
+        return template.getSpec().getContainers().stream()
+                .map(c -> c.getName() + "=" + c.getImage())
+                .toList();
+    }
+
     @Override
     public String name() {
         return "WorkloadSensor";
@@ -147,27 +168,6 @@ public class WorkloadSensor extends AbstractNamespacedSensor {
         for (io.fabric8.kubernetes.api.model.Container container : containers) {
             imageEmitter.emitTemplateContainer(ns, CneeOntology.KIND_STATEFULSET, name, container);
         }
-    }
-
-    private static boolean templateImagesChanged(Deployment oldDep, Deployment newDep) {
-        return !java.util.Objects.equals(
-                containerImages(oldDep.getSpec() != null ? oldDep.getSpec().getTemplate() : null),
-                containerImages(newDep.getSpec() != null ? newDep.getSpec().getTemplate() : null));
-    }
-
-    private static boolean templateImagesChanged(StatefulSet oldSs, StatefulSet newSs) {
-        return !java.util.Objects.equals(
-                containerImages(oldSs.getSpec() != null ? oldSs.getSpec().getTemplate() : null),
-                containerImages(newSs.getSpec() != null ? newSs.getSpec().getTemplate() : null));
-    }
-
-    private static java.util.List<String> containerImages(io.fabric8.kubernetes.api.model.PodTemplateSpec template) {
-        if (template == null || template.getSpec() == null || template.getSpec().getContainers() == null) {
-            return java.util.List.of();
-        }
-        return template.getSpec().getContainers().stream()
-                .map(c -> c.getName() + "=" + c.getImage())
-                .toList();
     }
 
     private void onDeploymentDeleted(Deployment dep) {

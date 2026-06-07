@@ -15,12 +15,12 @@ public class AnomalyActionHandler {
     private final GraphDBGateway gateway;
 
     @IdempotentAction(
-        targetExpression = "#resourceIri",
-        intentExpression = "#intentIri",
-        cooldownSeconds = 300
+            targetExpression = "#resourceIri",
+            intentExpression = "#intentIri",
+            cooldownSeconds = 300
     )
     public boolean createActionWorkflow(IRI resourceIri, IRI intentIri, String actionId) {
-        log.info("AnomalyActionHandler: Creating action workflow {} for resource {} with intent {}", 
+        log.info("AnomalyActionHandler: Creating action workflow {} for resource {} with intent {}",
                 actionId, resourceIri, intentIri);
         gateway.createActionWorkflow(resourceIri, intentIri, actionId);
         return true;

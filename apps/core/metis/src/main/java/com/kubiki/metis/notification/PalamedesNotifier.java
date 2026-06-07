@@ -1,15 +1,15 @@
 package com.kubiki.metis.notification;
 
+import com.kubiki.common.logging.LogLoopStep;
+import com.kubiki.common.logging.LoopPhase;
+import com.kubiki.common.logging.MdcContext;
+import com.kubiki.common.logging.MdcParam;
 import com.kubiki.common.model.GraphUpdateMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Component;
 
-import com.kubiki.common.logging.MdcContext;
-import com.kubiki.common.logging.MdcParam;
-import com.kubiki.common.logging.LogLoopStep;
-import com.kubiki.common.logging.LoopPhase;
 import java.util.concurrent.TimeUnit;
 
 /**

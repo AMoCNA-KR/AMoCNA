@@ -36,11 +36,11 @@ public class SafetyValidatorPipe implements MapePipe {
 
     @Override
     @LogLoopStep(
-        phase = LoopPhase.PLAN,
-        step = "Safety Validation",
-        actionId = "#context.actionId().stringValue()",
-        resource = "#context.metadata().get('resourceName') != null ? #context.metadata().get('resourceName').toString() : null",
-        details = "'currentState=' + #context.metadata().get('currentState') + ', idempotencyOpen=' + #context.metadata().get('idempotencyOpen')"
+            phase = LoopPhase.PLAN,
+            step = "Safety Validation",
+            actionId = "#context.actionId().stringValue()",
+            resource = "#context.metadata().get('resourceName') != null ? #context.metadata().get('resourceName').toString() : null",
+            details = "'currentState=' + #context.metadata().get('currentState') + ', idempotencyOpen=' + #context.metadata().get('idempotencyOpen')"
     )
     public boolean process(WorkflowContext context) {
         if (!mapper.getFragment(WorkflowState.PLANNED).equals(context.metadata().get("currentState"))) {
@@ -82,7 +82,7 @@ public class SafetyValidatorPipe implements MapePipe {
     }
 
     private boolean evaluatePreConditions(WorkflowContext context) {
-        log.debug("SafetyValidatorPipe: Evaluating {} pre-conditions", 
+        log.debug("SafetyValidatorPipe: Evaluating {} pre-conditions",
                 context.actionData().preConditions().size());
         for (ActionData.Condition cond : context.actionData().preConditions()) {
             Optional<ConditionStrategy> strategy = conditionFactory.getStrategy(cond.type());

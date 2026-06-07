@@ -27,14 +27,14 @@ public class SagaTransitionHandler {
     private final WorkflowStateMapper mapper;
 
     @StateTransition(
-        from = "IN_PROGRESS",
-        to = "SUCCEEDED",
-        targetExpression = "#actionIri"
+            from = "IN_PROGRESS",
+            to = "SUCCEEDED",
+            targetExpression = "#actionIri"
     )
     @LogLoopStep(
-        phase = LoopPhase.FEEDBACK,
-        step = "Saga State Transition: IN_PROGRESS -> SUCCEEDED",
-        actionId = "#actionIri.stringValue()"
+            phase = LoopPhase.FEEDBACK,
+            step = "Saga State Transition: IN_PROGRESS -> SUCCEEDED",
+            actionId = "#actionIri.stringValue()"
     )
     public void processSuccessTransition(IRI actionIri) {
         // 2. DEFENSE IN DEPTH: Clear the anomaly state from the targeted resource
@@ -48,14 +48,14 @@ public class SagaTransitionHandler {
     }
 
     @StateTransition(
-        from = "IN_PROGRESS",
-        to = "FAILED",
-        targetExpression = "#actionIri"
+            from = "IN_PROGRESS",
+            to = "FAILED",
+            targetExpression = "#actionIri"
     )
     @LogLoopStep(
-        phase = LoopPhase.FEEDBACK,
-        step = "Saga State Transition: IN_PROGRESS -> FAILED",
-        actionId = "#actionIri.stringValue()"
+            phase = LoopPhase.FEEDBACK,
+            step = "Saga State Transition: IN_PROGRESS -> FAILED",
+            actionId = "#actionIri.stringValue()"
     )
     public void processFailureTransition(IRI actionIri) {
         // 1. Mark parent as COMPENSATING

@@ -109,6 +109,7 @@ public final class CneeOntology {
     // -------------------------------------------------------------------------
     public static final String PROP_RESOURCE_NAME = "resourceName";
     public static final String PROP_METRICS_ENDPOINT = "metricsEndpoint";
+
     private CneeOntology() {
     }
 }

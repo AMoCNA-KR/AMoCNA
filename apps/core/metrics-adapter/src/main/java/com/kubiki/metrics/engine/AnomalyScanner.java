@@ -9,16 +9,15 @@ import io.micrometer.core.annotation.Timed;
 import io.micrometer.core.instrument.MeterRegistry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.MDC;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
-import org.slf4j.MDC;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -86,9 +85,7 @@ public class AnomalyScanner {
                                     violationCounter.put(key, count);
                                 }
                             } else {
-                                if (violationCounter.containsKey(key)) {
-                                    violationCounter.remove(key);
-                                }
+                                violationCounter.remove(key);
                                 return Mono.just(new AnomalyBatchItem(targetResourceIri, threshold.anomalyState(), false));
                             }
                             return Mono.empty();
@@ -136,8 +133,6 @@ public class AnomalyScanner {
             log.info("AnomalyScanner: Completed anomaly batch execution. Triggered {} anomalies, cleared {}.", triggers, clears);
         }
     }
-
-    private record AnomalyBatchItem(String resourceIri, String anomalyState, boolean isTrigger) {}
 
     @Timed(value = "amocna.monitor.trigger", description = "Time taken to trigger anomaly in GraphDB")
     private Mono<Void> triggerAnomaly(String targetResourceIri, String anomalyState) {
@@ -219,5 +214,8 @@ public class AnomalyScanner {
             return properties.ontology().resourcesNamespace() + kind + "_" + namespace + "_" + name;
         }
         return properties.ontology().resourcesNamespace() + kind + "_" + name;
+    }
+
+    private record AnomalyBatchItem(String resourceIri, String anomalyState, boolean isTrigger) {
     }
 }

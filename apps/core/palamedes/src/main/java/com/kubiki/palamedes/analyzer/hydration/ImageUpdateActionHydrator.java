@@ -48,13 +48,13 @@ public class ImageUpdateActionHydrator extends BaseActionHydrator {
         details.ifPresent(d -> {
             params.put("containerName", d.containerName());
             params.put("imageRepository", d.imageRepository());
-            log.info("ImageUpdateActionHydrator: Hydrating details for container {} in repository {}", 
+            log.info("ImageUpdateActionHydrator: Hydrating details for container {} in repository {}",
                     d.containerName(), d.imageRepository());
 
             vulnerabilityCatalog.selectFixVersion(d.imageRepository(), d.currentVersion(), upgradePolicy)
                     .ifPresent(v -> {
                         params.put("targetVersion", v);
-                        log.info("ImageUpdateActionHydrator: Selected fix version {} for repository {} (current version: {})", 
+                        log.info("ImageUpdateActionHydrator: Selected fix version {} for repository {} (current version: {})",
                                 v, d.imageRepository(), d.currentVersion());
                     });
         });

@@ -28,7 +28,9 @@ public class ActionDispatcherPipe implements MapePipe {
 
     private static final Logger log = LoggerFactory.getLogger(ActionDispatcherPipe.class);
 
-    /** Pipeline control keys — not passed to instruction template hydration. */
+    /**
+     * Pipeline control keys — not passed to instruction template hydration.
+     */
     private static final Set<String> PIPELINE_METADATA_KEYS = Set.of("currentState");
 
     private final StateRepository stateRepository;
@@ -36,13 +38,26 @@ public class ActionDispatcherPipe implements MapePipe {
     private final PlannerService plannerService;
     private final WorkflowStateMapper mapper;
 
+    static Map<String, String> hydrationFromContext(WorkflowContext context) {
+        Map<String, String> hydration = new HashMap<>();
+        for (Map.Entry<String, Object> entry : context.metadata().entrySet()) {
+            if (PIPELINE_METADATA_KEYS.contains(entry.getKey())) {
+                continue;
+            }
+            if (entry.getValue() != null) {
+                hydration.put(entry.getKey(), entry.getValue().toString());
+            }
+        }
+        return hydration;
+    }
+
     @Override
     @LogLoopStep(
-        phase = LoopPhase.PLAN,
-        step = "Action Dispatching Pipeline Trigger",
-        actionId = "#context.actionId().stringValue()",
-        resource = "#context.metadata().get('resourceName') != null ? #context.metadata().get('resourceName').toString() : null",
-        details = "'currentState=' + #context.metadata().get('currentState')"
+            phase = LoopPhase.PLAN,
+            step = "Action Dispatching Pipeline Trigger",
+            actionId = "#context.actionId().stringValue()",
+            resource = "#context.metadata().get('resourceName') != null ? #context.metadata().get('resourceName').toString() : null",
+            details = "'currentState=' + #context.metadata().get('currentState')"
     )
     public boolean process(WorkflowContext context) {
         if (!mapper.getFragment(WorkflowState.VALIDATED).equals(context.metadata().get("currentState"))) {
@@ -75,18 +90,5 @@ public class ActionDispatcherPipe implements MapePipe {
                 yield true;
             }
         };
-    }
-
-    static Map<String, String> hydrationFromContext(WorkflowContext context) {
-        Map<String, String> hydration = new HashMap<>();
-        for (Map.Entry<String, Object> entry : context.metadata().entrySet()) {
-            if (PIPELINE_METADATA_KEYS.contains(entry.getKey())) {
-                continue;
-            }
-            if (entry.getValue() != null) {
-                hydration.put(entry.getKey(), entry.getValue().toString());
-            }
-        }
-        return hydration;
     }
 }

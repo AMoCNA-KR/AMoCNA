@@ -15,12 +15,6 @@ public record PalamedesProperties(
         @NestedConfigurationProperty Vulnerability vulnerability
 ) {
 
-    public PalamedesProperties {
-        if (vulnerability == null) {
-            vulnerability = new Vulnerability(true, 30_000, "PATCH", "classpath:vulnerabilities/demo-catalog.yaml");
-        }
-    }
-
     private final static List<String> AVAILABLE_STATE_KEYS = List.of(
             "initial",
             "planned",
@@ -31,6 +25,11 @@ public record PalamedesProperties(
             "compensating"
     );
 
+    public PalamedesProperties {
+        if (vulnerability == null) {
+            vulnerability = new Vulnerability(true, 30_000, "PATCH", "classpath:vulnerabilities/demo-catalog.yaml");
+        }
+    }
 
     public record States(Map<String, String> actionStates) {
         public States {

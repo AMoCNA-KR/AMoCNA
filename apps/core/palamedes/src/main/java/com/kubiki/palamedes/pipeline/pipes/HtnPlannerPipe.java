@@ -33,11 +33,11 @@ public class HtnPlannerPipe implements MapePipe {
 
     @Override
     @LogLoopStep(
-        phase = LoopPhase.PLAN,
-        step = "HTN Action Decomposition",
-        actionId = "#context.actionId().stringValue()",
-        resource = "#context.metadata().get('resourceName') != null ? #context.metadata().get('resourceName').toString() : null",
-        details = "'currentState=' + #context.metadata().get('currentState')"
+            phase = LoopPhase.PLAN,
+            step = "HTN Action Decomposition",
+            actionId = "#context.actionId().stringValue()",
+            resource = "#context.metadata().get('resourceName') != null ? #context.metadata().get('resourceName').toString() : null",
+            details = "'currentState=' + #context.metadata().get('currentState')"
     )
     public boolean process(WorkflowContext context) {
         if (!mapper.getFragment(WorkflowState.INITIAL).equals(context.metadata().get("currentState"))) {

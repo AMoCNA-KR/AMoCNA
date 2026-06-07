@@ -1,5 +1,9 @@
 package com.kubiki.palamedes.listener;
 
+import com.kubiki.common.logging.LogLoopStep;
+import com.kubiki.common.logging.LoopPhase;
+import com.kubiki.common.logging.MdcContext;
+import com.kubiki.common.logging.MdcParam;
 import com.kubiki.common.model.GraphUpdateMessage;
 import com.kubiki.palamedes.analyzer.AnomalyAgent;
 import com.kubiki.palamedes.analyzer.RegistryCredentialPlanner;
@@ -7,17 +11,11 @@ import com.kubiki.palamedes.config.RabbitMQConfig;
 import com.kubiki.palamedes.pipeline.EngineWakeupEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import com.kubiki.common.logging.MdcContext;
-import com.kubiki.common.logging.MdcParam;
-import com.kubiki.common.logging.LogLoopStep;
-import com.kubiki.common.logging.LoopPhase;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.amqp.support.AmqpHeaders;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.stereotype.Component;
-
-import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * Listens for graph-update notifications from Metis on the
@@ -59,7 +57,7 @@ public class GraphUpdateListener {
             @MdcParam(value = "changeKind", property = "changeKind")
             @MdcParam(value = "ontologyType", property = "ontologyType") GraphUpdateMessage message,
             @MdcParam("routingKey") @Header(AmqpHeaders.RECEIVED_ROUTING_KEY) String routingKey) {
-        
+
         anomalyAgent.analyze();
 
         if (registryCredentialPlanner.scanAndPlan()) {

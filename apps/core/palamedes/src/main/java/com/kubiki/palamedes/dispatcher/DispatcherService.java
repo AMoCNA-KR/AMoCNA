@@ -23,11 +23,11 @@ public class DispatcherService {
     }
 
     @LogLoopStep(
-        phase = LoopPhase.DISPATCH,
-        step = "Dispatched Action to Queue",
-        actionId = "#message.actionId()",
-        resource = "#message.resourceName()",
-        details = "'protocol=' + #message.protocol() + ', maxRetries=' + #message.maxRetries()"
+            phase = LoopPhase.DISPATCH,
+            step = "Dispatched Action to Queue",
+            actionId = "#message.actionId()",
+            resource = "#message.resourceName()",
+            details = "'protocol=' + #message.protocol() + ', maxRetries=' + #message.maxRetries()"
     )
     public void dispatch(ActionMessage message) {
         // Update GraphDB: Set current state to State_InProgress

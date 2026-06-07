@@ -6,7 +6,6 @@ import com.kubiki.metis.ingestion.handler.SensorEventHandler;
 import com.kubiki.metis.ingestion.model.HandlerResult;
 import com.kubiki.metis.ingestion.model.ProcessResult;
 import io.micrometer.core.annotation.Timed;
-import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;

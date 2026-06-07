@@ -16,6 +16,7 @@ public interface ActionHydrator {
 
     /**
      * Performs hydration of parameters for the given target and intent.
+     *
      * @return Map of parameter names to their hydrated values.
      */
     Map<String, String> hydrate(AnomalyTarget target);

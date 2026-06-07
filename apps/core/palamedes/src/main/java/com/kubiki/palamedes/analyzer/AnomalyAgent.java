@@ -18,11 +18,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -51,9 +47,9 @@ public class AnomalyAgent {
      * on each graph-update message from Metis.
      */
     @LogLoopStep(
-        phase = LoopPhase.ANALYZE,
-        step = "Event-Driven Anomaly Scan & Action Creation",
-        details = "'Triggered by graph update'"
+            phase = LoopPhase.ANALYZE,
+            step = "Event-Driven Anomaly Scan & Action Creation",
+            details = "'Triggered by graph update'"
     )
     public void analyze() {
         lastTriggerTime.set(System.currentTimeMillis());
@@ -66,9 +62,9 @@ public class AnomalyAgent {
      */
     @Scheduled(fixedRateString = "${palamedes.engine.fallback-anomaly-scan-rate-ms}")
     @LogLoopStep(
-        phase = LoopPhase.ANALYZE,
-        step = "Scheduled Fallback Anomaly Scan",
-        details = "'Triggered by fallback scheduler'"
+            phase = LoopPhase.ANALYZE,
+            step = "Scheduled Fallback Anomaly Scan",
+            details = "'Triggered by fallback scheduler'"
     )
     public void fallbackAnalyze() {
         long interval = properties.engine().fallbackAnomalyScanRateMs();
@@ -119,7 +115,7 @@ public class AnomalyAgent {
             return false;
         }
 
-        log.info("AnomalyAgent: Triggering {} for resource {}", 
+        log.info("AnomalyAgent: Triggering {} for resource {}",
                 selected.intentIri().getLocalName(), selected.resourceName());
 
         String actionId = utils.generateActionId();
@@ -134,22 +130,22 @@ public class AnomalyAgent {
     private boolean isIntentAllowed(AnomalyTarget target) {
         String intentName = target.intentIri().getLocalName();
         boolean allowed = filterService.isIntentAllowed(intentName);
-        
+
         if (!allowed) {
-            log.debug("AnomalyAgent: Intent {} is NOT ALLOWED for resource {}", 
+            log.debug("AnomalyAgent: Intent {} is NOT ALLOWED for resource {}",
                     intentName, target.resourceName());
         } else {
             log.debug("AnomalyAgent: Intent {} is ALLOWED for resource {}",
                     intentName, target.resourceName());
         }
-        
+
         return allowed;
     }
 
     private void hydrateAndStoreAction(String actionId, AnomalyTarget target) {
         ActionHydrator hydrator = findBestHydrator(target.intentIri());
         Map<String, String> hydration = hydrator.hydrate(target);
-        
+
         log.debug("AnomalyAgent: Storing action hydration for {}: {}", actionId, hydration);
         gateway.storeActionHydration(actionId, hydration);
     }

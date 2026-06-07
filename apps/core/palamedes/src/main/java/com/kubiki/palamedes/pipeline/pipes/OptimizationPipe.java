@@ -20,11 +20,11 @@ public class OptimizationPipe implements MapePipe {
 
     @Override
     @LogLoopStep(
-        phase = LoopPhase.PLAN,
-        step = "Action Optimization",
-        actionId = "#context.actionId().stringValue()",
-        resource = "#context.metadata().get('resourceName') != null ? #context.metadata().get('resourceName').toString() : null",
-        details = "'functionalIntent=' + #context.actionData().functionalIntent() + ', executionCost=' + #context.actionData().executionCost()"
+            phase = LoopPhase.PLAN,
+            step = "Action Optimization",
+            actionId = "#context.actionId().stringValue()",
+            resource = "#context.metadata().get('resourceName') != null ? #context.metadata().get('resourceName').toString() : null",
+            details = "'functionalIntent=' + #context.actionData().functionalIntent() + ', executionCost=' + #context.actionData().executionCost()"
     )
     public boolean process(WorkflowContext context) {
         // This pipe processes all active actions to provide visibility into their classification
