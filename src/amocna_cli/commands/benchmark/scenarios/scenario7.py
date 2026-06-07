@@ -113,6 +113,7 @@ class Scenario7(Scenario):
             if phase == "Running": healed = True
             if patched and healed:
                 remediation_time = time.time() - start_time
+                self.logger.log("REMEDIATION_TIME_SECONDS", f"{remediation_time:.2f}")
                 self.logger.log("REMEDIATION_DETECTED", f"Deployment patched and pod is Running in {remediation_time:.1f}s")
                 return
             console.print(f"    secret={secret or '(none)'}, phase={phase or 'unknown'} ({i*5}s)")

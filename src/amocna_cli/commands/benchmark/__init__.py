@@ -586,6 +586,9 @@ def benchmark_run(
     scenario: Annotated[
         str, typer.Option(help="Scenario to run (1, 2, 3, 4, 5, 6, 7, all)")
     ],
+    load: Annotated[
+        str, typer.Option(help="Background cluster load level: none, medium, high")
+    ] = "none",
     keep_on_failure: Annotated[
         bool,
         typer.Option(
@@ -598,11 +601,11 @@ def benchmark_run(
     cfg: ProjectConfig = ctx.obj
 
     if scenario == "all":
-        header("Running Complete Automated Benchmark Cycle")
+        header(f"Running Complete Automated Benchmark Cycle (Load: {load})")
         for sc_id in ScenarioRegistry.list_ids():
             try:
                 sc = ScenarioRegistry.get(sc_id, cfg)
-                sc.run(keep_on_failure=keep_on_failure)
+                sc.run(load_level=load, keep_on_failure=keep_on_failure)
             except Exception as e:
                 error(f"✖ Scenario {sc_id} failed, continuing with next. Error: {e}")
 
@@ -615,7 +618,7 @@ def benchmark_run(
 
     try:
         sc = ScenarioRegistry.get(scenario, cfg)
-        sc.run(keep_on_failure=keep_on_failure)
+        sc.run(load_level=load, keep_on_failure=keep_on_failure)
     except ValueError as e:
         error(f"✖ {e}")
         sys.exit(1)

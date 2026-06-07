@@ -63,15 +63,16 @@ class Scenario(abc.ABC):
         """List of intents allowed for this scenario in Palamedes."""
         pass
 
-    def run(self, keep_on_failure: bool = False) -> None:
+    def run(self, load_level: str = "none", keep_on_failure: bool = False) -> None:
         """Template method defining the scenario lifecycle."""
+        self.load_level = load_level
         try:
             from amocna_cli.commands.benchmark import set_palamedes_filter
             from amocna_cli.utils.ui import header
 
-            header(f"Scenario {self.id}: {self.name}")
+            header(f"Scenario {self.id}: {self.name} (Load: {load_level})")
             
-            self.logger.log("INIT", "Cleaning up stale resources and states...")
+            self.logger.log("INIT", f"Cleaning up stale resources and states... (Load: {load_level})")
             set_palamedes_filter(self.allowed_intents, logger=self.logger)
             self.initialize()
             time.sleep(15) # Sync wait
@@ -96,6 +97,17 @@ class Scenario(abc.ABC):
             if not keep_on_failure:
                 self.cleanup()
             raise
+
+    def get_baseline_load(self) -> tuple[int, int]:
+        """Returns (locust_users, stress_replicas) based on load_level."""
+        level = getattr(self, "load_level", "none")
+        if level == "none":
+            return 50, 0
+        elif level == "medium":
+            return 200, 1
+        elif level == "high":
+            return 500, 2
+        return 50, 0
 
     @abc.abstractmethod
     def initialize(self) -> None:

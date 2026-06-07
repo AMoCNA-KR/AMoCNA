@@ -24,8 +24,9 @@ class Scenario2(Scenario):
 
     def setup_baseline(self) -> None:
         from amocna_cli.commands.benchmark import set_locust_load
-        set_locust_load(200, 10)
-        run(k8s_scale("default", "cluster-stress", 1), check=False)
+        users, stress_replicas = self.get_baseline_load()
+        set_locust_load(users, 10)
+        run(k8s_scale("default", "cluster-stress", stress_replicas), check=False)
         run(k8s_scale("sock-shop", "orders", 1), check=False)
         run(k8s_patch("sock-shop", "orders", ORDERS_CPU_RESET_PATCH), check=False)
 
@@ -67,6 +68,7 @@ class Scenario2(Scenario):
             )
             if cpu == "1" and not remediation_detected:
                 remediation_time = time.time() - start_obs
+                self.logger.log("REMEDIATION_TIME_SECONDS", f"{remediation_time:.2f}")
                 self.logger.log("REMEDIATION_DETECTED", f"Orders CPU requests patched to 1 in {remediation_time:.2f}s")
                 self.logger.log("TRAFFIC_REBALANCE", "Restarting Locust workers...")
                 run(k8s_rollout_restart("deployment/locust-worker", namespace="sock-shop"), check=False)
@@ -89,10 +91,10 @@ class Scenario2(Scenario):
                 "nodeSelector": {"kubernetes.io/hostname": "kube-worker-3"},
                 "containers": [{
                     "name": "stress",
-                    "args": ["--cpu", "2", "--io", "1", "--vm", "1", "--vm-bytes", "2350M", "--timeout", "600s"],
+                    "args": ["--cpu", "2", "--io", "1", "--vm", "1", "--vm-bytes", "500M", "--timeout", "600s"],
                     "resources": {
-                        "requests": {"cpu": "1200m", "memory": "2400Mi"},
-                        "limits": {"cpu": "1200m", "memory": "2450Mi"},
+                        "requests": {"cpu": "300m", "memory": "600Mi"},
+                        "limits": {"cpu": "300m", "memory": "600Mi"},
                     },
                 }]
             }}}

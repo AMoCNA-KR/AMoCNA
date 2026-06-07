@@ -22,8 +22,9 @@ class Scenario5(Scenario):
 
     def setup_baseline(self) -> None:
         from amocna_cli.commands.benchmark import set_locust_load
-        set_locust_load(50, 10)
-        run(k8s_scale("default", "cluster-stress", 1), check=False)
+        users, stress_replicas = self.get_baseline_load()
+        set_locust_load(users, 10)
+        run(k8s_scale("default", "cluster-stress", stress_replicas), check=False)
 
     def trigger_anomaly(self) -> None:
         self.logger.log("TRIGGER_ANOMALY", f"Resetting front-end to vulnerable image {SOCK_SHOP_FRONTEND_VULNERABLE_TAG}")
@@ -46,6 +47,7 @@ class Scenario5(Scenario):
             )
             if SOCK_SHOP_FRONTEND_PATCHED_TAG in image and not remediation_detected:
                 remediation_time = time.time() - start_obs
+                self.logger.log("REMEDIATION_TIME_SECONDS", f"{remediation_time:.2f}")
                 self.logger.log("REMEDIATION_DETECTED", f"Frontend patched to {SOCK_SHOP_FRONTEND_PATCHED_TAG} in {remediation_time:.2f}s")
                 remediation_detected = True
                 break

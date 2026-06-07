@@ -21,8 +21,9 @@ class Scenario1(Scenario):
 
     def setup_baseline(self) -> None:
         from amocna_cli.commands.benchmark import set_locust_load
-        set_locust_load(200, 10)
-        run(k8s_scale("default", "cluster-stress", 1), check=False)
+        users, stress_replicas = self.get_baseline_load()
+        set_locust_load(users, 10)
+        run(k8s_scale("default", "cluster-stress", stress_replicas), check=False)
         run(k8s_scale("sock-shop", "front-end", 1), check=False)
 
     def trigger_anomaly(self) -> None:
@@ -41,6 +42,7 @@ class Scenario1(Scenario):
             )
             if replicas == "3" and not remediation_detected:
                 remediation_time = time.time() - start_obs
+                self.logger.log("REMEDIATION_TIME_SECONDS", f"{remediation_time:.2f}")
                 self.logger.log("REMEDIATION_DETECTED", f"Frontend successfully scaled to 3 replicas in {remediation_time:.2f}s")
                 self.logger.log("TRAFFIC_REBALANCE", "Restarting Locust workers to balance traffic...")
                 run(k8s_rollout_restart("deployment/locust-worker", namespace="sock-shop"), check=False)
