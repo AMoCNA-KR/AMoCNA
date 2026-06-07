@@ -1,5 +1,7 @@
 package com.kubiki.palamedes.listener;
 
+import com.kubiki.common.logging.LogLoopStep;
+import com.kubiki.common.logging.LoopPhase;
 import com.kubiki.common.model.ActionStatusUpdate;
 import com.kubiki.palamedes.config.RabbitMQConfig;
 import com.kubiki.palamedes.saga.SagaManager;
@@ -21,10 +23,15 @@ public class ActionStatusListener {
 
     @RabbitListener(queues = RabbitMQConfig.STATUS_QUEUE)
     @MdcContext
+    @LogLoopStep(
+        phase = LoopPhase.FEEDBACK,
+        step = "Received Action Status Update",
+        actionId = "#message.actionId()",
+        details = "'status=' + #message.status() + ', observedStatusCode=' + #message.observedStatusCode()"
+    )
     public void receiveStatus(
             @MdcParam(value = "actionId", property = "actionId")
             @MdcParam(value = "status", property = "status") ActionStatusUpdate message) {
-        log.info("Received status update for action {}: {}", message.actionId(), message.status());
-            sagaManager.handleFeedback(message);
+        sagaManager.handleFeedback(message);
     }
 }

@@ -116,16 +116,24 @@ public class AnomalyScanner {
             }
         }
 
+        int triggers = 0;
+        int clears = 0;
         for (var item : lastActionPerState.values()) {
             if (item.isTrigger()) {
+                triggers++;
                 triggerAnomaly(item.resourceIri(), item.anomalyState())
                         .subscribeOn(Schedulers.boundedElastic())
                         .subscribe();
             } else {
+                clears++;
                 clearAnomaly(item.resourceIri(), item.anomalyState())
                         .subscribeOn(Schedulers.boundedElastic())
                         .subscribe();
             }
+        }
+
+        if (triggers > 0 || clears > 0) {
+            log.info("AnomalyScanner: Completed anomaly batch execution. Triggered {} anomalies, cleared {}.", triggers, clears);
         }
     }
 

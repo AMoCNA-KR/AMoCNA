@@ -1,5 +1,7 @@
 package com.kubiki.themis.execution;
 
+import com.kubiki.common.logging.LogLoopStep;
+import com.kubiki.common.logging.LoopPhase;
 import com.kubiki.common.model.ActionMessage;
 import com.kubiki.common.model.ExecutionStatus;
 import com.kubiki.themis.model.ExecutionResult;
@@ -21,6 +23,13 @@ public class ActionExecutionHandler {
 
     @PreVerify
     @PostVerify
+    @LogLoopStep(
+        phase = LoopPhase.EXECUTE,
+        step = "Execute Action & Verify",
+        actionId = "#message.actionId()",
+        resource = "#message.resourceName()",
+        details = "'protocol=' + #message.protocol() + ', isIdempotent=' + #message.isIdempotent() + ', maxRetries=' + #message.maxRetries()"
+    )
     public ExecutionResult executeAndVerify(ActionMessage message) {
         ProtocolExecutor executor = executors.stream()
                 .filter(e -> e.supports(message.protocol()))

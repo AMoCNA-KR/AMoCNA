@@ -72,3 +72,5 @@ spec:
               value: "true"
             - name: METIS_SENSOR_NAMESPACES
               value: "hephaestus-business,sock-shop"
+            - name: SPRING_PROFILES_ACTIVE
+              value: "prod"

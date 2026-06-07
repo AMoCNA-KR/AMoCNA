@@ -8,6 +8,8 @@ import org.springframework.stereotype.Component;
 
 import com.kubiki.common.logging.MdcContext;
 import com.kubiki.common.logging.MdcParam;
+import com.kubiki.common.logging.LogLoopStep;
+import com.kubiki.common.logging.LoopPhase;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -50,6 +52,14 @@ public class PalamedesNotifier {
      * @param correlationId correlation identifier from the originating batch
      */
     @MdcContext
+    @LogLoopStep(
+            phase = LoopPhase.MONITOR,
+            step = "Graph Update Published",
+            correlationId = "#correlationId",
+            resource = "#resourceIri",
+            details = "'ontologyType=' + #ontologyType + ', changeKind=' + #changeKind",
+            debugOnly = true
+    )
     public void notify(
             @MdcParam("resourceIri") String resourceIri,
             @MdcParam("ontologyType") String ontologyType,
@@ -62,8 +72,6 @@ public class PalamedesNotifier {
         for (int attempt = 1; attempt <= MAX_PUBLISH_ATTEMPTS; attempt++) {
             try {
                 rabbitTemplate.convertAndSend(EXCHANGE, ROUTING_KEY, message);
-                log.info("Published graph update to exchange '{}' with routing key '{}' [correlationId={}, resourceIri={}, changeKind={}]",
-                        EXCHANGE, ROUTING_KEY, correlationId, resourceIri, changeKind);
                 return;
             } catch (Exception e) {
                 if (attempt >= MAX_PUBLISH_ATTEMPTS) {

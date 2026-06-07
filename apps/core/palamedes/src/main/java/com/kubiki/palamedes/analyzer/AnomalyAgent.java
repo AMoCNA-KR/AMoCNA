@@ -1,5 +1,7 @@
 package com.kubiki.palamedes.analyzer;
 
+import com.kubiki.common.logging.LogLoopStep;
+import com.kubiki.common.logging.LoopPhase;
 import com.kubiki.palamedes.analyzer.hydration.ActionHydrator;
 import com.kubiki.palamedes.config.PalamedesProperties;
 import com.kubiki.palamedes.knowledge.GraphDBGateway;
@@ -48,8 +50,12 @@ public class AnomalyAgent {
      * Primary entry point — called by {@link com.kubiki.palamedes.listener.GraphUpdateListener}
      * on each graph-update message from Metis.
      */
+    @LogLoopStep(
+        phase = LoopPhase.ANALYZE,
+        step = "Event-Driven Anomaly Scan & Action Creation",
+        details = "'Triggered by graph update'"
+    )
     public void analyze() {
-        log.info("AnomalyAgent.analyze() triggered");
         lastTriggerTime.set(System.currentTimeMillis());
         doAnalyze();
     }
@@ -59,11 +65,15 @@ public class AnomalyAgent {
      * if no event-driven trigger has occurred within the interval.
      */
     @Scheduled(fixedRateString = "${palamedes.engine.fallback-anomaly-scan-rate-ms}")
+    @LogLoopStep(
+        phase = LoopPhase.ANALYZE,
+        step = "Scheduled Fallback Anomaly Scan",
+        details = "'Triggered by fallback scheduler'"
+    )
     public void fallbackAnalyze() {
         long interval = properties.engine().fallbackAnomalyScanRateMs();
         long elapsed = System.currentTimeMillis() - lastTriggerTime.get();
         if (elapsed >= interval) {
-            log.info("AnomalyAgent: No graph-update received for {}ms — running fallback anomaly scan", elapsed);
             doAnalyze();
         } else {
             log.debug("Fallback scan skipped — last trigger was {}s ago", elapsed / 1000);
@@ -71,15 +81,15 @@ public class AnomalyAgent {
     }
 
     private void doAnalyze() {
-        log.info("AnomalyAgent: Starting cluster anomaly scan...");
+        log.debug("AnomalyAgent: Starting cluster anomaly scan...");
 
         List<AnomalyTarget> anomalies = gateway.findAnomalies();
         if (anomalies.isEmpty()) {
-            log.info("AnomalyAgent: No anomalies found in GraphDB.");
+            log.debug("AnomalyAgent: No anomalies found in GraphDB.");
             return;
         }
 
-        log.info("AnomalyAgent: Discovered {} anomaly targets", anomalies.size());
+        log.debug("AnomalyAgent: Discovered {} anomaly targets", anomalies.size());
 
         Map<IRI, Set<AnomalyTarget>> groupedRemediations = groupAnomaliesByRootCause(anomalies);
         boolean stateChanged = false;
@@ -140,7 +150,7 @@ public class AnomalyAgent {
         ActionHydrator hydrator = findBestHydrator(target.intentIri());
         Map<String, String> hydration = hydrator.hydrate(target);
         
-        log.info("AnomalyAgent: Storing action hydration for {}: {}", actionId, hydration);
+        log.debug("AnomalyAgent: Storing action hydration for {}: {}", actionId, hydration);
         gateway.storeActionHydration(actionId, hydration);
     }
 
@@ -168,7 +178,7 @@ public class AnomalyAgent {
             log.info("AnomalyAgent: New remediations planned, waking up MAPE engine.");
             publisher.publishEvent(new EngineWakeupEvent("New anomaly actions created"));
         } else {
-            log.info("AnomalyAgent: Analysis completed. No new actions created.");
+            log.debug("AnomalyAgent: Analysis completed. No new actions created.");
         }
     }
 }

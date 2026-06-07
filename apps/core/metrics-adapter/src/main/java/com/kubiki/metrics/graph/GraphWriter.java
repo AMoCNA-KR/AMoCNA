@@ -1,6 +1,8 @@
 package com.kubiki.metrics.graph;
 
 import com.kubiki.common.config.AmocnaCommonProperties;
+import com.kubiki.common.logging.LogLoopStep;
+import com.kubiki.common.logging.LoopPhase;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
@@ -45,6 +47,13 @@ public class GraphWriter {
         }
     }
 
+    @LogLoopStep(
+        phase = LoopPhase.MONITOR,
+        step = "Anomaly Instantiated",
+        resource = "#targetResourceIri",
+        details = "'anomalyType=' + #anomalyTypeIri",
+        debugOnly = true
+    )
     public void instantiateAnomaly(String targetResourceIri, String anomalyTypeIri) {
         if (repository == null) {
             log.error("Cannot instantiate anomaly: repository is not initialized");
@@ -57,7 +66,6 @@ public class GraphWriter {
         try (RepositoryConnection conn = repository.getConnection()) {
             String updateQuery = sparqlRepository.instantiateAnomaly(targetResourceIri, anomalyIri, anomalyTypeIri, timestamp);
             conn.prepareUpdate(updateQuery).execute();
-            log.info("Instantiated anomaly {} for resource {}", anomalyIri, targetResourceIri);
         } catch (Exception e) {
             log.error("Failed to instantiate anomaly in GraphDB for resource {}", targetResourceIri, e);
             if (e instanceof InterruptedException || (e.getCause() != null && e.getCause() instanceof InterruptedException)) {
@@ -66,6 +74,13 @@ public class GraphWriter {
         }
     }
 
+    @LogLoopStep(
+        phase = LoopPhase.MONITOR,
+        step = "Anomaly Cleared",
+        resource = "#targetResourceIri",
+        details = "'anomalyType=' + #anomalyTypeIri",
+        debugOnly = true
+    )
     public void clearAnomalies(String targetResourceIri, String anomalyTypeIri) {
         if (repository == null) {
             log.error("Cannot clear anomalies: repository is not initialized");
@@ -75,7 +90,6 @@ public class GraphWriter {
         try (RepositoryConnection conn = repository.getConnection()) {
             String updateQuery = sparqlRepository.clearAnomalies(targetResourceIri, anomalyTypeIri);
             conn.prepareUpdate(updateQuery).execute();
-            log.info("Cleared state type {} for resource {}", anomalyTypeIri, targetResourceIri);
         } catch (Exception e) {
             log.error("Failed to clear anomalies of type {} in GraphDB for resource {}", anomalyTypeIri, targetResourceIri, e);
             if (e instanceof InterruptedException || (e.getCause() != null && e.getCause() instanceof InterruptedException)) {

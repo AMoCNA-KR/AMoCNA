@@ -1,5 +1,7 @@
 package com.kubiki.palamedes.pipeline.pipes;
 
+import com.kubiki.common.logging.LogLoopStep;
+import com.kubiki.common.logging.LoopPhase;
 import com.kubiki.palamedes.knowledge.StateRepository;
 import com.kubiki.palamedes.model.ActionData;
 import com.kubiki.palamedes.model.WorkflowState;
@@ -30,27 +32,34 @@ public class HtnPlannerPipe implements MapePipe {
 
 
     @Override
+    @LogLoopStep(
+        phase = LoopPhase.PLAN,
+        step = "HTN Action Decomposition",
+        actionId = "#context.actionId().stringValue()",
+        resource = "#context.metadata().get('resourceName') != null ? #context.metadata().get('resourceName').toString() : null",
+        details = "'currentState=' + #context.metadata().get('currentState')"
+    )
     public boolean process(WorkflowContext context) {
         if (!mapper.getFragment(WorkflowState.INITIAL).equals(context.metadata().get("currentState"))) {
-            log.info("HtnPlannerPipe: Action is not in State_Initial, skipping");
+            log.debug("HtnPlannerPipe: Action is not in State_Initial, skipping");
             return true;
         }
 
-        log.info("HtnPlannerPipe: Starting HTN Planning");
+        log.debug("HtnPlannerPipe: Starting HTN Planning");
 
         ActionData data = context.actionData();
         if (data instanceof ActionData.ComplexWorkflow cw) {
             log.info("HtnPlannerPipe: Decomposing ComplexWorkflow");
             workflowPlanner.planWorkflow(cw, context.actionId());
         } else if (data instanceof ActionData.SimpleAction sa) {
-            log.info("HtnPlannerPipe: No decomposition needed for SimpleAction");
+            log.debug("HtnPlannerPipe: No decomposition needed for SimpleAction");
         }
 
-        log.info("HtnPlannerPipe: Transitioning action from State_Initial to State_Planned");
+        log.debug("HtnPlannerPipe: Transitioning action from State_Initial to State_Planned");
         boolean success = stateRepository.transition(context.actionId(), WorkflowState.INITIAL, WorkflowState.PLANNED);
         if (success) {
             context.metadata().put("currentState", mapper.getFragment(WorkflowState.PLANNED));
-            log.info("HtnPlannerPipe: Successfully transitioned action to State_Planned");
+            log.debug("HtnPlannerPipe: Successfully transitioned action to State_Planned");
         } else {
             log.error("HtnPlannerPipe: Failed to transition action to State_Planned");
         }
