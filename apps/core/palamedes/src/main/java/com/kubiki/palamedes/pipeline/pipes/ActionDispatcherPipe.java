@@ -1,5 +1,7 @@
 package com.kubiki.palamedes.pipeline.pipes;
 
+import com.kubiki.common.logging.LogLoopStep;
+import com.kubiki.common.logging.LoopPhase;
 import com.kubiki.common.model.ActionMessage;
 import com.kubiki.palamedes.dispatcher.DispatcherService;
 import com.kubiki.palamedes.knowledge.StateRepository;
@@ -26,47 +28,15 @@ public class ActionDispatcherPipe implements MapePipe {
 
     private static final Logger log = LoggerFactory.getLogger(ActionDispatcherPipe.class);
 
-    /** Pipeline control keys — not passed to instruction template hydration. */
+    /**
+     * Pipeline control keys — not passed to instruction template hydration.
+     */
     private static final Set<String> PIPELINE_METADATA_KEYS = Set.of("currentState");
 
     private final StateRepository stateRepository;
     private final DispatcherService dispatcherService;
     private final PlannerService plannerService;
     private final WorkflowStateMapper mapper;
-
-    @Override
-    public boolean process(WorkflowContext context) {
-        if (!mapper.getFragment(WorkflowState.VALIDATED).equals(context.metadata().get("currentState"))) {
-            log.info("ActionDispatcherPipe: Action is not in State_Validated, skipping dispatch");
-            return true;
-        }
-
-        log.info("ActionDispatcherPipe: Evaluating dispatch strategies");
-
-        return switch (context.actionData()) {
-            case ActionData.SimpleAction simpleAction -> {
-                Map<String, String> hydrationData = hydrationFromContext(context);
-                log.info("ActionDispatcherPipe: Building ActionMessage for SimpleAction with hydrationData={}", hydrationData);
-                ActionMessage message = plannerService.buildActionMessage(simpleAction, hydrationData);
-
-                log.info("ActionDispatcherPipe: Dispatching ActionMessage via DispatcherService");
-                dispatcherService.dispatch(message);
-
-                log.info("ActionDispatcherPipe: Transitioning action from State_Validated to State_InProgress");
-                boolean success = stateRepository.transition(context.actionId(), WorkflowState.VALIDATED, WorkflowState.IN_PROGRESS);
-                if (success) {
-                    log.info("ActionDispatcherPipe: Successfully transitioned action to State_InProgress");
-                } else {
-                    log.error("ActionDispatcherPipe: Failed to transition action to State_InProgress");
-                }
-                yield success;
-            }
-            case ActionData.ComplexWorkflow _ -> {
-                log.info("ActionDispatcherPipe: ComplexWorkflow node bypasses direct broker routing (HTN pipeline handles children)");
-                yield true;
-            }
-        };
-    }
 
     static Map<String, String> hydrationFromContext(WorkflowContext context) {
         Map<String, String> hydration = new HashMap<>();
@@ -79,5 +49,46 @@ public class ActionDispatcherPipe implements MapePipe {
             }
         }
         return hydration;
+    }
+
+    @Override
+    @LogLoopStep(
+            phase = LoopPhase.PLAN,
+            step = "Action Dispatching Pipeline Trigger",
+            actionId = "#context.actionId().stringValue()",
+            resource = "#context.metadata().get('resourceName') != null ? #context.metadata().get('resourceName').toString() : null",
+            details = "'currentState=' + #context.metadata().get('currentState')"
+    )
+    public boolean process(WorkflowContext context) {
+        if (!mapper.getFragment(WorkflowState.VALIDATED).equals(context.metadata().get("currentState"))) {
+            log.debug("ActionDispatcherPipe: Action is not in State_Validated, skipping dispatch");
+            return true;
+        }
+
+        log.debug("ActionDispatcherPipe: Evaluating dispatch strategies");
+
+        return switch (context.actionData()) {
+            case ActionData.SimpleAction simpleAction -> {
+                Map<String, String> hydrationData = hydrationFromContext(context);
+                log.debug("ActionDispatcherPipe: Building ActionMessage for SimpleAction");
+                ActionMessage message = plannerService.buildActionMessage(simpleAction, hydrationData);
+
+                log.debug("ActionDispatcherPipe: Dispatching ActionMessage via DispatcherService");
+                dispatcherService.dispatch(message);
+
+                log.debug("ActionDispatcherPipe: Transitioning action from State_Validated to State_InProgress");
+                boolean success = stateRepository.transition(context.actionId(), WorkflowState.VALIDATED, WorkflowState.IN_PROGRESS);
+                if (success) {
+                    log.debug("ActionDispatcherPipe: Successfully transitioned action to State_InProgress");
+                } else {
+                    log.error("ActionDispatcherPipe: Failed to transition action to State_InProgress");
+                }
+                yield success;
+            }
+            case ActionData.ComplexWorkflow _ -> {
+                log.debug("ActionDispatcherPipe: ComplexWorkflow node bypasses direct broker routing (HTN pipeline handles children)");
+                yield true;
+            }
+        };
     }
 }

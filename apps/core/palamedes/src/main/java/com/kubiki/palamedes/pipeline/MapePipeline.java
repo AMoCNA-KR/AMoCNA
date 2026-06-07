@@ -1,5 +1,6 @@
 package com.kubiki.palamedes.pipeline;
 
+import com.kubiki.common.logging.MdcPropagatingExecutor;
 import com.kubiki.palamedes.config.PalamedesProperties;
 import com.kubiki.palamedes.knowledge.GraphDBGateway;
 import com.kubiki.palamedes.model.ActionData;
@@ -16,8 +17,6 @@ import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import com.kubiki.common.logging.MdcPropagatingExecutor;
-import java.util.concurrent.Executors;
 import java.util.concurrent.locks.ReentrantLock;
 
 @Service
@@ -66,13 +65,13 @@ public class MapePipeline {
     private void processBatch(List<ActiveActionSummary> batch) {
         log.info("MapePipeline: Processing batch of size {}", batch.size());
         List<IRI> iris = batch.stream().map(ActiveActionSummary::actionIri).toList();
-        
+
         // 1. Batch fetch all ActionData structures
         Map<IRI, ActionData> structures = graphDBGateway.fetchActionStructures(iris);
-        
+
         // 2. Batch fetch all action hydrations
         Map<IRI, Map<String, String>> hydrations = graphDBGateway.fetchActionHydrations(iris);
-        
+
         // 3. Batch fetch all idempotency states
         Map<IRI, Boolean> idempotencyStates = graphDBGateway.fetchIdempotencyStates(iris);
 
@@ -92,7 +91,7 @@ public class MapePipeline {
                 context.metadata().put("resourceName", action.resourceName());
                 context.metadata().put("currentState", action.stateFragment());
                 context.metadata().put("idempotencyOpen", idempotencyStates.getOrDefault(action.actionIri(), true));
-                
+
                 Map<String, String> actionHydration = hydrations.getOrDefault(action.actionIri(), Map.of());
                 context.metadata().putAll(actionHydration);
 

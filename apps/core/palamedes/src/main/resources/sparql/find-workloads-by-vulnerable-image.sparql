@@ -9,6 +9,7 @@ WHERE {
   ?deployment cnee:contains ?container .
   ?deployment cnee:resourceName ?deploymentName .
   ?deployment a cnee:StatelessWorkloadController .
+  FILTER NOT EXISTS { ?deployment cnee:isPartOf ?higher . }
   OPTIONAL {
     ?service cnee:contains ?deployment .
     ?service cnee:resourceName ?serviceName .

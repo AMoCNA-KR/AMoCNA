@@ -1,5 +1,9 @@
 package com.kubiki.palamedes.listener;
 
+import com.kubiki.common.logging.LogLoopStep;
+import com.kubiki.common.logging.LoopPhase;
+import com.kubiki.common.logging.MdcContext;
+import com.kubiki.common.logging.MdcParam;
 import com.kubiki.common.model.GraphUpdateMessage;
 import com.kubiki.palamedes.analyzer.AnomalyAgent;
 import com.kubiki.palamedes.analyzer.RegistryCredentialPlanner;
@@ -7,15 +11,11 @@ import com.kubiki.palamedes.config.RabbitMQConfig;
 import com.kubiki.palamedes.pipeline.EngineWakeupEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import com.kubiki.common.logging.MdcContext;
-import com.kubiki.common.logging.MdcParam;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.amqp.support.AmqpHeaders;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.stereotype.Component;
-
-import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * Listens for graph-update notifications from Metis on the
@@ -44,27 +44,24 @@ public class GraphUpdateListener {
 
     @RabbitListener(queues = RabbitMQConfig.GRAPH_UPDATES_QUEUE)
     @MdcContext
+    @LogLoopStep(
+            phase = LoopPhase.ANALYZE,
+            step = "Received Graph Update",
+            correlationId = "#message.correlationId()",
+            resource = "#message.resourceIri()",
+            details = "'routingKey=' + #routingKey + ', changeKind=' + #message.changeKind()"
+    )
     public void onGraphUpdate(
             @MdcParam(value = "correlationId", property = "correlationId")
             @MdcParam(value = "resourceIri", property = "resourceIri")
             @MdcParam(value = "changeKind", property = "changeKind")
             @MdcParam(value = "ontologyType", property = "ontologyType") GraphUpdateMessage message,
             @MdcParam("routingKey") @Header(AmqpHeaders.RECEIVED_ROUTING_KEY) String routingKey) {
-        if (ThreadLocalRandom.current().nextDouble() < 0.10) {
-            log.info("GraphUpdateListener.onGraphUpdate received message from routing key {} [correlationId={}, resource={}, change={}]",
-                    routingKey, message.correlationId(), message.resourceIri(), message.changeKind());
-        } else {
-            log.debug("GraphUpdateListener.onGraphUpdate received message from routing key {} [correlationId={}, resource={}, change={}]",
-                    routingKey, message.correlationId(), message.resourceIri(), message.changeKind());
-        }
 
-        log.info("GraphUpdateListener: Routing update, triggering AnomalyAgent.analyze()");
         anomalyAgent.analyze();
 
         if (registryCredentialPlanner.scanAndPlan()) {
             publisher.publishEvent(new EngineWakeupEvent("Registry credential remediation planned"));
         }
-
-        log.info("GraphUpdateListener: Execution finished for correlationId={}", message.correlationId());
     }
 }

@@ -45,7 +45,7 @@ public class PalamedesAspects {
 
         try {
             Object result = joinPoint.proceed();
-            
+
             // On success, transition to the target state
             WorkflowState toState = resolveWorkflowState(stateTransition.to());
             if (toState != null) {
@@ -93,7 +93,7 @@ public class PalamedesAspects {
             if (!gateway.isIdempotencyWindowOpen(targetIri, intentIri)) {
                 log.info("Aspect: Action for target {} and intent {} is blocked by idempotency cooldown, skipping execution",
                         targetIri, intentIri);
-                
+
                 // Return default/void/empty depending on method signature
                 MethodSignature signature = (MethodSignature) joinPoint.getSignature();
                 Class<?> returnType = signature.getReturnType();

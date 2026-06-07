@@ -38,6 +38,7 @@ COPY --from=builder /app/apps/core/metis/target/*.jar app.jar
 
 EXPOSE 50052
 
-ENV SPRING_PROFILES_ACTIVE=dev
+ARG SPRING_PROFILES_ACTIVE=prod
+ENV SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE}
 
 ENTRYPOINT ["java", "-jar", "app.jar"]

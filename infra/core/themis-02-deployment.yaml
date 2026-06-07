@@ -39,7 +39,7 @@ spec:
               echo "RabbitMQ is reachable."
       containers:
         - name: themis
-          image: ghcr.io/amocna-kr/themis:1.12.7-SNAPSHOT
+          image: ghcr.io/amocna-kr/themis:1.12.10-SNAPSHOT
           imagePullPolicy: Always
           ports:
             - containerPort: 8080
@@ -63,3 +63,5 @@ spec:
               value: "guest"
             - name: THEMIS_EXECUTION_POST_CONDITION_DELAY_MS
               value: "5000"
+            - name: SPRING_PROFILES_ACTIVE
+              value: "prod"

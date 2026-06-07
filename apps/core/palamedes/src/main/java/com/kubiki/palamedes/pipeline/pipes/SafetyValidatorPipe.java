@@ -1,5 +1,7 @@
 package com.kubiki.palamedes.pipeline.pipes;
 
+import com.kubiki.common.logging.LogLoopStep;
+import com.kubiki.common.logging.LoopPhase;
 import com.kubiki.palamedes.condition.ConditionFactory;
 import com.kubiki.palamedes.condition.ConditionStrategy;
 import com.kubiki.palamedes.knowledge.GraphDBGateway;
@@ -33,13 +35,20 @@ public class SafetyValidatorPipe implements MapePipe {
 
 
     @Override
+    @LogLoopStep(
+            phase = LoopPhase.PLAN,
+            step = "Safety Validation",
+            actionId = "#context.actionId().stringValue()",
+            resource = "#context.metadata().get('resourceName') != null ? #context.metadata().get('resourceName').toString() : null",
+            details = "'currentState=' + #context.metadata().get('currentState') + ', idempotencyOpen=' + #context.metadata().get('idempotencyOpen')"
+    )
     public boolean process(WorkflowContext context) {
         if (!mapper.getFragment(WorkflowState.PLANNED).equals(context.metadata().get("currentState"))) {
-            log.info("SafetyValidatorPipe: Action is not in State_Planned, skipping safety validation");
+            log.debug("SafetyValidatorPipe: Action is not in State_Planned, skipping safety validation");
             return true;
         }
 
-        log.info("SafetyValidatorPipe: Starting Safety Validation");
+        log.debug("SafetyValidatorPipe: Starting Safety Validation");
 
         // 1. Idempotency Gate (Temporal safety)
         Object val = context.metadata().get("idempotencyOpen");
@@ -52,20 +61,20 @@ public class SafetyValidatorPipe implements MapePipe {
             }
             return false;
         }
-        log.info("SafetyValidatorPipe: Idempotency gate check passed");
+        log.debug("SafetyValidatorPipe: Idempotency gate check passed");
 
         // 2. Pre-condition Gate (Semantic safety)
         if (!evaluatePreConditions(context)) {
             log.warn("SafetyValidatorPipe: Pre-condition gate FAILED");
             return false;
         }
-        log.info("SafetyValidatorPipe: Pre-condition gate check passed");
+        log.debug("SafetyValidatorPipe: Pre-condition gate check passed");
 
-        log.info("SafetyValidatorPipe: Transitioning action from State_Planned to State_Validated");
+        log.debug("SafetyValidatorPipe: Transitioning action from State_Planned to State_Validated");
         boolean success = stateRepository.transition(context.actionId(), WorkflowState.PLANNED, WorkflowState.VALIDATED);
         if (success) {
             context.metadata().put("currentState", mapper.getFragment(WorkflowState.VALIDATED));
-            log.info("SafetyValidatorPipe: Successfully transitioned action to State_Validated");
+            log.debug("SafetyValidatorPipe: Successfully transitioned action to State_Validated");
         } else {
             log.error("SafetyValidatorPipe: Failed to transition action to State_Validated");
         }
@@ -73,13 +82,13 @@ public class SafetyValidatorPipe implements MapePipe {
     }
 
     private boolean evaluatePreConditions(WorkflowContext context) {
-        log.info("SafetyValidatorPipe: Evaluating {} pre-conditions", 
+        log.debug("SafetyValidatorPipe: Evaluating {} pre-conditions",
                 context.actionData().preConditions().size());
         for (ActionData.Condition cond : context.actionData().preConditions()) {
             Optional<ConditionStrategy> strategy = conditionFactory.getStrategy(cond.type());
             if (strategy.isPresent()) {
                 try {
-                    log.info("SafetyValidatorPipe: Evaluating pre-condition {} of type {}", cond.id(), cond.type());
+                    log.debug("SafetyValidatorPipe: Evaluating pre-condition {} of type {}", cond.id(), cond.type());
                     if (!strategy.get().evaluate(cond)) {
                         log.warn("SafetyValidatorPipe: Pre-condition {} NOT MET", cond.id());
                         return false;

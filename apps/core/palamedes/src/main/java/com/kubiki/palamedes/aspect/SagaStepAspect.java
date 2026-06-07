@@ -20,15 +20,15 @@ public class SagaStepAspect {
     @Around("@annotation(sagaStep)")
     public Object manageSagaStep(ProceedingJoinPoint joinPoint, SagaStep sagaStep) throws Throwable {
         log.info("SagaStep Aspect: Intercepting step: '{}'", sagaStep.name());
-        
+
         int maxAttempts = Math.max(1, sagaStep.maxRetries() + 1);
         long backoffMs = sagaStep.backoffMs();
-        
+
         Object result = null;
-        
+
         for (int attempt = 1; attempt <= maxAttempts; attempt++) {
             if (attempt > 1) {
-                log.info("SagaStep Aspect: Retrying step '{}' (attempt {}/{}) after backoff of {}ms", 
+                log.info("SagaStep Aspect: Retrying step '{}' (attempt {}/{}) after backoff of {}ms",
                         sagaStep.name(), attempt, maxAttempts, backoffMs);
                 try {
                     Thread.sleep(backoffMs);
@@ -37,21 +37,21 @@ public class SagaStepAspect {
                     throw ie;
                 }
             }
-            
+
             try {
                 result = joinPoint.proceed();
-                
+
                 if (result != null) {
                     try {
                         Method successMethod = result.getClass().getMethod("success");
                         boolean success = (boolean) successMethod.invoke(result);
                         if (!success) {
                             if (attempt < maxAttempts) {
-                                log.warn("SagaStep Aspect: Step '{}' returned a failure result on attempt {}/{}. Retrying...", 
+                                log.warn("SagaStep Aspect: Step '{}' returned a failure result on attempt {}/{}. Retrying...",
                                         sagaStep.name(), attempt, maxAttempts);
                                 continue; // Trigger retry
                             } else {
-                                log.warn("SagaStep Aspect: Step '{}' returned a failure result after all attempts ({}). Triggering compensation: '{}'", 
+                                log.warn("SagaStep Aspect: Step '{}' returned a failure result after all attempts ({}). Triggering compensation: '{}'",
                                         sagaStep.name(), maxAttempts, sagaStep.compensationMethod());
                                 invokeCompensation(joinPoint, sagaStep.compensationMethod());
                             }
@@ -63,19 +63,19 @@ public class SagaStepAspect {
                 return result;
             } catch (Throwable t) {
                 boolean shouldRetry = isRetryableException(t, sagaStep.retryOn());
-                
+
                 if (shouldRetry && attempt < maxAttempts) {
-                    log.warn("SagaStep Aspect: Step '{}' failed with exception: {} on attempt {}/{}. Retrying...", 
+                    log.warn("SagaStep Aspect: Step '{}' failed with exception: {} on attempt {}/{}. Retrying...",
                             sagaStep.name(), t.getMessage(), attempt, maxAttempts);
                 } else {
-                    log.error("SagaStep Aspect: Step '{}' failed permanently after all attempts ({}) due to: {}. Triggering compensation: '{}'", 
+                    log.error("SagaStep Aspect: Step '{}' failed permanently after all attempts ({}) due to: {}. Triggering compensation: '{}'",
                             sagaStep.name(), maxAttempts, t.getMessage(), sagaStep.compensationMethod());
                     invokeCompensation(joinPoint, sagaStep.compensationMethod());
                     throw t;
                 }
             }
         }
-        
+
         return result;
     }
 

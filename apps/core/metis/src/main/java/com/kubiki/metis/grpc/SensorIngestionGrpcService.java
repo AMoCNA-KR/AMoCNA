@@ -1,5 +1,8 @@
 package com.kubiki.metis.grpc;
 
+import com.kubiki.common.logging.MdcContext;
+import com.kubiki.common.logging.MdcParam;
+import com.kubiki.common.logging.ValidateSchema;
 import com.kubiki.metis.ingestion.SensorEventProcessor;
 import com.kubiki.metis.ingestion.model.HandlerResult;
 import com.kubiki.metis.ingestion.model.ProcessResult;
@@ -9,11 +12,6 @@ import io.grpc.stub.StreamObserver;
 import net.devh.boot.grpc.server.service.GrpcService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import com.kubiki.common.logging.MdcContext;
-import com.kubiki.common.logging.MdcParam;
-import com.kubiki.common.logging.ValidateSchema;
-
-import java.util.stream.Collectors;
 
 /**
  * gRPC service implementation for the {@code SensorIngestionService} contract.

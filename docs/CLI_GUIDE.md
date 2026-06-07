@@ -248,6 +248,7 @@ The `benchmark` subcommand provides automated control loops to run evaluation sc
 - **Upgrade policy** (`palamedes.vulnerability.upgrade-policy`): `PATCH` | `MINOR` | `MAJOR` controls which fix version Palamedes selects from the catalog.
 - **Scan interval** (`palamedes.vulnerability.scan-interval-ms`, default 30s): how often Palamedes re-checks GraphDB images against the catalog.
 - **Execution**:
+
   ```bash
   ./amocna.py benchmark run --scenario 5
   ```

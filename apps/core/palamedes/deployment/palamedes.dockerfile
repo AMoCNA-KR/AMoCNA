@@ -36,6 +36,7 @@ COPY --from=builder /app/apps/core/palamedes/target/*.jar app.jar
 
 EXPOSE 8081
 
-ENV SPRING_PROFILES_ACTIVE=dev
+ARG SPRING_PROFILES_ACTIVE=prod
+ENV SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE}
 
 ENTRYPOINT ["java", "-jar", "app.jar"]

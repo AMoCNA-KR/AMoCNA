@@ -59,6 +59,12 @@ def run_sparql(cfg: ProjectConfig, update_query: str) -> None:
         "curl -s -X POST http://graphdb.graphdb.svc.cluster.local:7200/repositories/amocna/statements "
         "-H 'Content-Type: application/sparql-update' --data-binary @-",
     ]
+    # Clean up any stale trigger pod if it exists from a previous failed run
+    subprocess.run(
+        ["kubectl", "delete", "pod", "amocna-sparql-trigger", "--ignore-not-found", "--grace-period=0", "--force"],
+        capture_output=True,
+        text=True,
+    )
     # We use subprocess.run directly here to manage the input stream
     console.print(f"  [dim]$ (sparql-update via pod) [/dim]")
     pod_cmd = k8s_run_pod("amocna-sparql-trigger", "curlimages/curl:8.12.1", curl_cmd)
@@ -74,22 +80,29 @@ def set_locust_load(users: int, rate: int) -> None:
     )
 
 
-def set_palamedes_filter(intents: list[str]) -> None:
+def set_palamedes_filter(intents: list[str], logger: Optional[Any] = None) -> None:
     """Update Palamedes REST filter for allowed intents."""
+    from typing import Optional, Any
+    
     if not intents:
-        console.print(
-            "  [bold yellow]⚠[/bold yellow] Clearing Palamedes intent filter (Allow ALL)"
-        )
+        msg = "Clearing Palamedes intent filter (Allow ALL)"
+        if logger:
+            logger.log("CLEAR_PALAMEDES_FILTER", msg)
+        else:
+            console.print(f"  [bold yellow]⚠[/bold yellow] {msg}")
         # Use sh -c for consistency and to ensure internal DNS resolution works reliably in the pod
         cmd = [
             "sh",
             "-c",
-            "curl -s -X DELETE http://palamedes.palamedes.svc.cluster.local:8080/api/filters/intents",
+            "curl -s -X DELETE http://palamedes.palamedes.svc.cluster.local:8081/api/filters/intents",
         ]
     else:
-        console.print(
-            f"  [bold blue]✔[/bold blue] Setting Palamedes intent filter: {intents}"
-        )
+        msg = f"Setting Palamedes intent filter: {intents}"
+        if logger:
+            logger.log("SET_PALAMEDES_FILTER", msg)
+        else:
+            console.print(f"  [bold blue]✔[/bold blue] {msg}")
+            
         import json
 
         payload = json.dumps(list(intents))
@@ -98,24 +111,44 @@ def set_palamedes_filter(intents: list[str]) -> None:
             "sh",
             "-c",
             f"curl -s -X POST -H 'Content-Type: application/json' -d '{payload}' "
-            "http://palamedes.palamedes.svc.cluster.local:8080/api/filters/intents",
+            "http://palamedes.palamedes.svc.cluster.local:8081/api/filters/intents",
         ]
 
-    # We execute via a temporary pod to reach the internal service
-    run(
-        [
-            "kubectl",
-            "run",
-            "palamedes-filter-trigger",
-            "--image=curlimages/curl:8.12.1",
-            "--restart=Never",
-            "--rm",
-            "-i",
-            "--",
-        ]
-        + cmd,
-        check=False,
+    # Clean up any stale trigger pod if it exists from a previous failed run
+    subprocess.run(
+        ["kubectl", "delete", "pod", "palamedes-filter-trigger", "--ignore-not-found", "--grace-period=0", "--force"],
+        capture_output=True,
+        text=True,
     )
+    # We execute via a temporary pod to reach the internal service
+    kubectl_cmd = [
+        "kubectl",
+        "run",
+        "palamedes-filter-trigger",
+        "--image=curlimages/curl:8.12.1",
+        "--restart=Never",
+        "--rm",
+        "-i",
+        "--",
+    ] + cmd
+
+    if logger:
+        logger.log("TRIGGER_COMMAND", f"Executing: {' '.join(kubectl_cmd)}")
+
+    res = run(
+        kubectl_cmd,
+        check=False,
+        capture=True if logger else False,
+    )
+    
+    if logger:
+        stdout_str = res.stdout.strip() if res.stdout else ""
+        stderr_str = res.stderr.strip() if res.stderr else ""
+        output = stdout_str or stderr_str
+        if res.returncode == 0:
+            logger.log("SET_PALAMEDES_FILTER_SUCCESS", f"Trigger pod output: {output}")
+        else:
+            logger.log("SET_PALAMEDES_FILTER_FAILURE", f"Trigger pod failed with exit code {res.returncode}. Output: {output}")
 
 
 def stop_locust() -> None:

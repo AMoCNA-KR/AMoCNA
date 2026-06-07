@@ -72,8 +72,8 @@ public final class ContainerImageEmitter {
      * relationship for each {@code imagePullSecrets} reference declared by an
      * ExecutionUnit (Pod) or Workload (Deployment).
      *
-     * @param namespace  Kubernetes namespace the secret lives in
-     * @param subjectIri IRI of the referencing entity (Pod or Workload)
+     * @param namespace   Kubernetes namespace the secret lives in
+     * @param subjectIri  IRI of the referencing entity (Pod or Workload)
      * @param pullSecrets {@code spec.imagePullSecrets} (or template equivalent)
      */
     public void emitPodPullSecrets(String namespace, String podName, List<LocalObjectReference> pullSecrets) {

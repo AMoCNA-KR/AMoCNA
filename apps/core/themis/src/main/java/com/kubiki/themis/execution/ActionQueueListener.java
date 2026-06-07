@@ -25,7 +25,6 @@ public class ActionQueueListener {
     public void receiveAction(
             @MdcParam(value = "actionId", property = "actionId")
             @MdcParam(value = "protocol", property = "protocol") ActionMessage message) {
-        log.info("Received action from queue: {}", message.actionId());
         executionHandler.executeAndVerify(message);
     }
 }

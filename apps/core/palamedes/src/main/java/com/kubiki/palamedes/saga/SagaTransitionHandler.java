@@ -1,5 +1,7 @@
 package com.kubiki.palamedes.saga;
 
+import com.kubiki.common.logging.LogLoopStep;
+import com.kubiki.common.logging.LoopPhase;
 import com.kubiki.common.logging.StateTransition;
 import com.kubiki.palamedes.knowledge.GraphDBGateway;
 import com.kubiki.palamedes.knowledge.StateRepository;
@@ -25,26 +27,35 @@ public class SagaTransitionHandler {
     private final WorkflowStateMapper mapper;
 
     @StateTransition(
-        from = "IN_PROGRESS",
-        to = "SUCCEEDED",
-        targetExpression = "#actionIri"
+            from = "IN_PROGRESS",
+            to = "SUCCEEDED",
+            targetExpression = "#actionIri"
+    )
+    @LogLoopStep(
+            phase = LoopPhase.FEEDBACK,
+            step = "Saga State Transition: IN_PROGRESS -> SUCCEEDED",
+            actionId = "#actionIri.stringValue()"
     )
     public void processSuccessTransition(IRI actionIri) {
         // 2. DEFENSE IN DEPTH: Clear the anomaly state from the targeted resource
         ActionData data = gateway.fetchActionStructure(actionIri);
         if (data != null && data.target() != null) {
-            log.info("SagaTransitionHandler: Clearing anomaly state from resource target: {}", data.target());
+            log.debug("SagaTransitionHandler: Clearing anomaly state from resource target: {}", data.target());
             gateway.clearResourceState(data.target());
         }
 
-        log.info("SagaTransitionHandler: Successfully transitioned action to State_Succeeded. Processing success cascades.");
         processSuccess(actionIri);
     }
 
     @StateTransition(
-        from = "IN_PROGRESS",
-        to = "FAILED",
-        targetExpression = "#actionIri"
+            from = "IN_PROGRESS",
+            to = "FAILED",
+            targetExpression = "#actionIri"
+    )
+    @LogLoopStep(
+            phase = LoopPhase.FEEDBACK,
+            step = "Saga State Transition: IN_PROGRESS -> FAILED",
+            actionId = "#actionIri.stringValue()"
     )
     public void processFailureTransition(IRI actionIri) {
         // 1. Mark parent as COMPENSATING
@@ -68,19 +79,19 @@ public class SagaTransitionHandler {
 
     private void processSuccess(IRI actionIri) {
         // A. Unlock next sibling in the sequence
-        log.info("Looking for steps dependent on {}", actionIri);
+        log.debug("Looking for steps dependent on {}", actionIri);
         List<IRI> dependents = gateway.findDependents(actionIri);
 
         if (!dependents.isEmpty()) {
             for (IRI dependent : dependents) {
-                log.info("Unlocking dependent step {}", dependent);
+                log.debug("Unlocking dependent step {}", dependent);
                 gateway.transitionState(dependent, mapper.getFragment(WorkflowState.INITIAL));
             }
         } else {
             // B. If no siblings, check if we need to complete the parent (Join Logic)
             IRI parentIri = gateway.findParent(actionIri);
             if (parentIri != null) {
-                log.info("No more siblings. Checking parent workflow {}", parentIri);
+                log.debug("No more siblings. Checking parent workflow {}", parentIri);
                 checkParentCompletion(parentIri);
             }
         }
@@ -94,7 +105,7 @@ public class SagaTransitionHandler {
             ActionData originalAction = gateway.fetchActionStructure(actionIri);
             if (originalAction != null) {
                 gateway.createActionWorkflow(originalAction.target(), compensationIri, compId);
-                log.info("Compensation workflow {} created in State_Initial", compId);
+                log.debug("Compensation workflow {} created in State_Initial", compId);
             }
         }
     }
@@ -117,7 +128,7 @@ public class SagaTransitionHandler {
         }
 
         if (allSucceeded) {
-            log.info("All children finished. Marking parent workflow {} as SUCCEEDED", parentIri);
+            log.debug("All children finished. Marking parent workflow {} as SUCCEEDED", parentIri);
             boolean transitioned = stateRepository.transition(parentIri, WorkflowState.PLANNED, WorkflowState.SUCCEEDED);
 
             if (transitioned) {

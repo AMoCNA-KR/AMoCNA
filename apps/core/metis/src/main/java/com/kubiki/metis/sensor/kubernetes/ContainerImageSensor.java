@@ -25,12 +25,35 @@ public class ContainerImageSensor extends AbstractNamespacedSensor {
     private final ContainerImageEmitter emitter;
 
     public ContainerImageSensor(KubernetesClient client,
-                                 MetisProperties properties,
-                                 SensorEventPublisher publisher,
-                                 IriFactory iriFactory) {
+                                MetisProperties properties,
+                                SensorEventPublisher publisher,
+                                IriFactory iriFactory) {
         super(client, properties);
         this.emitter = new ContainerImageEmitter(
                 publisher, iriFactory, properties.ontology().cneeNamespace());
+    }
+
+    private static boolean containerImagesChanged(Pod oldPod, Pod newPod) {
+        if (oldPod.getSpec() == null || newPod.getSpec() == null) {
+            return true;
+        }
+        List<Container> oldContainers = oldPod.getSpec().getContainers();
+        List<Container> newContainers = newPod.getSpec().getContainers();
+        if (oldContainers == null || newContainers == null) {
+            return !Objects.equals(oldContainers, newContainers);
+        }
+        if (oldContainers.size() != newContainers.size()) {
+            return true;
+        }
+        for (int i = 0; i < oldContainers.size(); i++) {
+            Container oldC = oldContainers.get(i);
+            Container newC = newContainers.get(i);
+            if (!Objects.equals(oldC.getName(), newC.getName())
+                    || !Objects.equals(oldC.getImage(), newC.getImage())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @Override
@@ -78,28 +101,5 @@ public class ContainerImageSensor extends AbstractNamespacedSensor {
             emitter.emitPodContainer(ns, name, container);
         }
         emitter.emitPodPullSecrets(ns, name, pod.getSpec().getImagePullSecrets());
-    }
-
-    private static boolean containerImagesChanged(Pod oldPod, Pod newPod) {
-        if (oldPod.getSpec() == null || newPod.getSpec() == null) {
-            return true;
-        }
-        List<Container> oldContainers = oldPod.getSpec().getContainers();
-        List<Container> newContainers = newPod.getSpec().getContainers();
-        if (oldContainers == null || newContainers == null) {
-            return !Objects.equals(oldContainers, newContainers);
-        }
-        if (oldContainers.size() != newContainers.size()) {
-            return true;
-        }
-        for (int i = 0; i < oldContainers.size(); i++) {
-            Container oldC = oldContainers.get(i);
-            Container newC = newContainers.get(i);
-            if (!Objects.equals(oldC.getName(), newC.getName())
-                    || !Objects.equals(oldC.getImage(), newC.getImage())) {
-                return true;
-            }
-        }
-        return false;
     }
 }

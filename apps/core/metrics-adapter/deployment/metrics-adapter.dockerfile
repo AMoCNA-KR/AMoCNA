@@ -34,6 +34,7 @@ FROM eclipse-temurin:25-jre as runtime
 WORKDIR /app
 COPY --from=builder /app/apps/core/metrics-adapter/target/*.jar app.jar
 
-ENV SPRING_PROFILES_ACTIVE=dev
+ARG SPRING_PROFILES_ACTIVE=prod
+ENV SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE}
 
 ENTRYPOINT ["java", "-jar", "app.jar"]

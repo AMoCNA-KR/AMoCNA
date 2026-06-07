@@ -1,5 +1,7 @@
 package com.kubiki.palamedes.dispatcher;
 
+import com.kubiki.common.logging.LogLoopStep;
+import com.kubiki.common.logging.LoopPhase;
 import com.kubiki.common.model.ActionMessage;
 import com.kubiki.palamedes.config.RabbitMQConfig;
 import com.kubiki.palamedes.knowledge.GraphDBGateway;
@@ -20,8 +22,14 @@ public class DispatcherService {
         this.graphDBGateway = graphDBGateway;
     }
 
+    @LogLoopStep(
+            phase = LoopPhase.DISPATCH,
+            step = "Dispatched Action to Queue",
+            actionId = "#message.actionId()",
+            resource = "#message.resourceName()",
+            details = "'protocol=' + #message.protocol() + ', maxRetries=' + #message.maxRetries()"
+    )
     public void dispatch(ActionMessage message) {
-        log.info("[BENCHMARK] Dispatching action {} to Themis at {}", message.actionId(), System.currentTimeMillis());
         // Update GraphDB: Set current state to State_InProgress
         // graphDBGateway.updateActionStatus(message.actionId(), "State_InProgress"); 
 

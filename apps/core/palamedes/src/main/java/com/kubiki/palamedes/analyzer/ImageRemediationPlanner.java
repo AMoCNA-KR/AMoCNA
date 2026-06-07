@@ -36,6 +36,20 @@ public class ImageRemediationPlanner {
     private final OntologyRegistry ontologyRegistry;
     private final RemediationFilterService filterService;
 
+    public static String parseNamespaceFromDeploymentIri(IRI deploymentIri) {
+        String local = URLDecoder.decode(deploymentIri.getLocalName(), StandardCharsets.UTF_8);
+        int kindSep = local.indexOf('_');
+        if (kindSep < 0) {
+            return "default";
+        }
+        String rest = local.substring(kindSep + 1);
+        int nsSep = rest.indexOf('_');
+        if (nsSep < 0) {
+            return "default";
+        }
+        return rest.substring(0, nsSep);
+    }
+
     /**
      * Matches sensed {@code Image} entities in GraphDB against the CVE catalog and plans
      * {@code ImageUpdateIntent} workflows for affected deployments. No anomaly state is written to GraphDB.
@@ -63,7 +77,7 @@ public class ImageRemediationPlanner {
                 continue;
             }
 
-            log.warn("ImageRemediationPlanner: Detected vulnerable image {}:{} with {} active CVEs in catalog!", 
+            log.warn("ImageRemediationPlanner: Detected vulnerable image {}:{} with {} active CVEs in catalog!",
                     image.imageRepository(), image.version(), cves.size());
 
             if (planForImage(image.imageIri(), intentIri, upgradePolicy)) {
@@ -126,19 +140,5 @@ public class ImageRemediationPlanner {
                     target.imageRepository(), target.targetVersion());
         }
         return true;
-    }
-
-    public static String parseNamespaceFromDeploymentIri(IRI deploymentIri) {
-        String local = URLDecoder.decode(deploymentIri.getLocalName(), StandardCharsets.UTF_8);
-        int kindSep = local.indexOf('_');
-        if (kindSep < 0) {
-            return "default";
-        }
-        String rest = local.substring(kindSep + 1);
-        int nsSep = rest.indexOf('_');
-        if (nsSep < 0) {
-            return "default";
-        }
-        return rest.substring(0, nsSep);
     }
 }

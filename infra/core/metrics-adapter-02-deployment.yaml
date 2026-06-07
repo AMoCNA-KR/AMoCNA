@@ -38,7 +38,7 @@ spec:
               echo "RabbitMQ is reachable."
       containers:
         - name: metrics-adapter
-          image: ghcr.io/amocna-kr/metrics-adapter:1.12.7-SNAPSHOT
+          image: ghcr.io/amocna-kr/metrics-adapter:1.12.10-SNAPSHOT
           imagePullPolicy: Always
           ports:
             - containerPort: 8080
@@ -60,3 +60,5 @@ spec:
               value: "guest"
             - name: PROMETHEUS_URL
               value: "http://prometheus-kube-prometheus-prometheus.monitoring.svc.cluster.local:9090"
+            - name: SPRING_PROFILES_ACTIVE
+              value: "prod"

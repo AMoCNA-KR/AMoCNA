@@ -85,4 +85,122 @@ class SparqlRepositoryTest {
 
         assertThat(result).isNotNull();
     }
+
+    @Test
+    void shouldFetchActionHydrationsInheritedFromParent() throws Exception {
+        org.eclipse.rdf4j.model.IRI parentAction = vf.createIRI("http://example.org/action/parent");
+        org.eclipse.rdf4j.model.IRI childAction = vf.createIRI("http://example.org/action/child");
+
+        org.eclipse.rdf4j.model.IRI isDecomposedInto = vf.createIRI("http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#isDecomposedInto");
+        org.eclipse.rdf4j.model.IRI hydrationPayload = vf.createIRI("http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#hydrationPayload");
+
+        try (RepositoryConnection conn = inMemoryRepo.getConnection()) {
+            conn.begin();
+            conn.add(parentAction, isDecomposedInto, childAction);
+            conn.add(parentAction, hydrationPayload, vf.createLiteral("{\"namespace\":\"sock-shop\"}"));
+            conn.commit();
+        }
+
+        List<BindingSet> result = sparqlRepository.fetchActionHydrations("<" + childAction.stringValue() + ">");
+
+        assertThat(result).hasSize(1);
+        BindingSet bs = result.get(0);
+        assertThat(bs.getValue("action")).isEqualTo(childAction);
+        assertThat(bs.getValue("payload").stringValue()).isEqualTo("{\"namespace\":\"sock-shop\"}");
+    }
+
+    @Test
+    void shouldFetchActionHydrationsInheritedFromDeepAncestor() throws Exception {
+        org.eclipse.rdf4j.model.IRI grandparentAction = vf.createIRI("http://example.org/action/grandparent");
+        org.eclipse.rdf4j.model.IRI parentAction = vf.createIRI("http://example.org/action/parent");
+        org.eclipse.rdf4j.model.IRI childAction = vf.createIRI("http://example.org/action/child");
+
+        org.eclipse.rdf4j.model.IRI isDecomposedInto = vf.createIRI("http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#isDecomposedInto");
+        org.eclipse.rdf4j.model.IRI hydrationPayload = vf.createIRI("http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#hydrationPayload");
+
+        try (RepositoryConnection conn = inMemoryRepo.getConnection()) {
+            conn.begin();
+            conn.add(grandparentAction, isDecomposedInto, parentAction);
+            conn.add(parentAction, isDecomposedInto, childAction);
+            conn.add(grandparentAction, hydrationPayload, vf.createLiteral("{\"namespace\":\"sock-shop\",\"depth\":\"deep\"}"));
+            conn.commit();
+        }
+
+        List<BindingSet> result = sparqlRepository.fetchActionHydrations("<" + childAction.stringValue() + ">");
+
+        assertThat(result).hasSize(1);
+        BindingSet bs = result.get(0);
+        assertThat(bs.getValue("action")).isEqualTo(childAction);
+        assertThat(bs.getValue("payload").stringValue()).isEqualTo("{\"namespace\":\"sock-shop\",\"depth\":\"deep\"}");
+    }
+
+    @Test
+    void shouldFetchActionHydrationsInheritedFromCompensation() throws Exception {
+        org.eclipse.rdf4j.model.IRI parentAction = vf.createIRI("http://example.org/action/parent");
+        org.eclipse.rdf4j.model.IRI stepAction = vf.createIRI("http://example.org/action/step");
+        org.eclipse.rdf4j.model.IRI compensationAction = vf.createIRI("http://example.org/action/compensation");
+
+        org.eclipse.rdf4j.model.IRI isDecomposedInto = vf.createIRI("http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#isDecomposedInto");
+        org.eclipse.rdf4j.model.IRI hasCompensation = vf.createIRI("http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#hasCompensation");
+        org.eclipse.rdf4j.model.IRI hydrationPayload = vf.createIRI("http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#hydrationPayload");
+
+        try (RepositoryConnection conn = inMemoryRepo.getConnection()) {
+            conn.begin();
+            conn.add(parentAction, isDecomposedInto, stepAction);
+            conn.add(stepAction, hasCompensation, compensationAction);
+            conn.add(parentAction, hydrationPayload, vf.createLiteral("{\"namespace\":\"sock-shop\"}"));
+            conn.commit();
+        }
+
+        List<BindingSet> result = sparqlRepository.fetchActionHydrations("<" + compensationAction.stringValue() + ">");
+
+        assertThat(result).hasSize(1);
+        BindingSet bs = result.get(0);
+        assertThat(bs.getValue("action")).isEqualTo(compensationAction);
+        assertThat(bs.getValue("payload").stringValue()).isEqualTo("{\"namespace\":\"sock-shop\"}");
+    }
+
+    @Test
+    void shouldFetchActionHydrationsInheritedFromCompensationCaseB() throws Exception {
+        org.eclipse.rdf4j.model.IRI parentAction = vf.createIRI("http://example.org/action/parent");
+        org.eclipse.rdf4j.model.IRI stepAction = vf.createIRI("http://example.org/action/step");
+        org.eclipse.rdf4j.model.IRI compensationAction = vf.createIRI("http://example.org/action/compensation");
+        org.eclipse.rdf4j.model.IRI resource = vf.createIRI("http://example.org/resource");
+
+        org.eclipse.rdf4j.model.IRI stepIntent = vf.createIRI("http://example.org/intent/step");
+        org.eclipse.rdf4j.model.IRI compIntent = vf.createIRI("http://example.org/intent/compensation");
+
+        org.eclipse.rdf4j.model.IRI isDecomposedInto = vf.createIRI("http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#isDecomposedInto");
+        org.eclipse.rdf4j.model.IRI hasCompensation = vf.createIRI("http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#hasCompensation");
+        org.eclipse.rdf4j.model.IRI targetsEntity = vf.createIRI("http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#targetsEntity");
+        org.eclipse.rdf4j.model.IRI hydrationPayload = vf.createIRI("http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#hydrationPayload");
+
+        try (RepositoryConnection conn = inMemoryRepo.getConnection()) {
+            conn.begin();
+            // Decomposition hierarchy
+            conn.add(parentAction, isDecomposedInto, stepAction);
+            
+            // Types
+            conn.add(stepAction, org.eclipse.rdf4j.model.vocabulary.RDF.TYPE, stepIntent);
+            conn.add(compensationAction, org.eclipse.rdf4j.model.vocabulary.RDF.TYPE, compIntent);
+            
+            // Ontology connection
+            conn.add(stepIntent, hasCompensation, compIntent);
+            
+            // Targets resource
+            conn.add(stepAction, targetsEntity, resource);
+            conn.add(compensationAction, targetsEntity, resource);
+            
+            // Hydration on parent
+            conn.add(parentAction, hydrationPayload, vf.createLiteral("{\"namespace\":\"sock-shop\"}"));
+            conn.commit();
+        }
+
+        List<BindingSet> result = sparqlRepository.fetchActionHydrations("<" + compensationAction.stringValue() + ">");
+
+        assertThat(result).hasSize(1);
+        BindingSet bs = result.get(0);
+        assertThat(bs.getValue("action")).isEqualTo(compensationAction);
+        assertThat(bs.getValue("payload").stringValue()).isEqualTo("{\"namespace\":\"sock-shop\"}");
+    }
 }
