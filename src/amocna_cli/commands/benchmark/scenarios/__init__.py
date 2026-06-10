@@ -5,3 +5,4 @@ from .scenario4 import Scenario4
 from .scenario5 import Scenario5
 from .scenario6 import Scenario6
 from .scenario7 import Scenario7
+from .scenario8 import Scenario8

@@ -624,4 +624,37 @@ def benchmark_run(
 
     console.print()
 
-    console.print()
+
+@app.command("remove")
+def benchmark_remove(
+    ctx: typer.Context,
+    pods: Annotated[bool, typer.Option("--pods", help="Remove kwok virtual pods")] = False,
+    nodes: Annotated[bool, typer.Option("--nodes", help="Remove kwok virtual nodes")] = False,
+):
+    """Remove kwok virtual pods and/or nodes."""
+    cfg: ProjectConfig = ctx.obj
+    
+    if not pods and not nodes:
+        pods = True
+        nodes = True
+
+    if pods:
+        info("Removing kwok virtual pods...")
+        run(["kubectl", "delete", "pods", "-n", "amocna-benchmark", "-l", "type=kwok-fake", "--grace-period=0", "--force", "--ignore-not-found"], check=False)
+        info("Kwok virtual pods removed successfully.")
+
+    if nodes:
+        info("Checking for any active kwok virtual pods before deleting nodes...")
+        pods_raw = run_capture(
+            ["kubectl", "get", "pods", "-A", "-l", "type=kwok-fake", "-o", "jsonpath={.items[*].metadata.name}"],
+            check=False
+        )
+        active_pods = pods_raw.strip().split() if pods_raw else []
+        if active_pods:
+            error(f"Error: Cannot remove kwok nodes. There are still {len(active_pods)} active kwok pods in the cluster.")
+            sys.exit(1)
+            
+        info("Removing kwok virtual nodes...")
+        run(["kubectl", "delete", "nodes", "-l", "type=kwok", "--ignore-not-found"], check=False)
+        info("Kwok virtual nodes removed successfully.")
+
