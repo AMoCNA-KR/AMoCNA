@@ -11,13 +11,18 @@ metadata:
   name: {job_name}
   namespace: default
 spec:
-  ttlSecondsAfterFinished: 120
+  ttlSecondsAfterFinished: 300
   backoffLimit: 0
   template:
     spec:
       restartPolicy: Never
       nodeSelector:
         kubernetes.io/hostname: {node}
+      tolerations:
+        - key: amocna
+          operator: Equal
+          value: "true"
+          effect: NoSchedule
       containers:
         - name: wipe
           image: busybox:1.36
@@ -29,7 +34,12 @@ spec:
               echo "Wiping GraphDB data under /mnt/graphdb ..."
               rm -rf /mnt/graphdb/*
               rm -rf /mnt/graphdb/.[!.]* /mnt/graphdb/..?* 2>/dev/null || true
-              echo "Done."
+              if [ -n "$(ls -A /mnt/graphdb 2>/dev/null)" ]; then
+                echo "ERROR: GraphDB hostPath wipe incomplete — remaining entries:"
+                ls -la /mnt/graphdb
+                exit 1
+              fi
+              echo "GraphDB hostPath wipe verified empty."
           volumeMounts:
             - name: graphdb-data
               mountPath: /mnt/graphdb

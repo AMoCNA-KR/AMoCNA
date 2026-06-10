@@ -37,6 +37,11 @@ spec:
             - |
               # Set home directory to the mounted volume
               export GDB_HOME=/opt/graphdb/home
+
+              # Reset repository files (covers failed hostPath wipe or redeploy without undeploy)
+              echo "Resetting GraphDB repository data on PV..."
+              rm -rf "$GDB_HOME/data/repositories/amocna"
+              rm -rf "$GDB_HOME/data/repositories/lock"
               
               # Copy license to the correct location on PV
               mkdir -p $GDB_HOME/work

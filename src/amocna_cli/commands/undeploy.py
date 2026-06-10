@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 import subprocess
+import sys
 from typing_extensions import Annotated
 import typer
 
 from amocna_cli.config import ProjectConfig
-from amocna_cli.utils.ui import console, header, info, warn, run
+from amocna_cli.utils.ui import console, header, info, warn, error, run
 from amocna_cli.utils.shell import (
     GRAPHDB_WIPE_JOB_TEMPLATE,
     k8s_delete_kustomization,
@@ -56,12 +57,12 @@ def _wipe_graphdb_host_data(cfg: ProjectConfig, dry_run: bool = False) -> None:
             run(k8s_delete_resource("job", job_name, namespace="default"), check=False)
 
         if result.returncode != 0:
-            warn(
-                f"Could not wipe GraphDB data at {host_path}. "
-                f"Remove it manually on node {node} if stale triples remain."
+            error(
+                f"GraphDB data wipe failed at {host_path} on node {node}. "
+                f"Check: kubectl logs job/{job_name} -n default"
             )
-        else:
-            info("GraphDB host data wiped.")
+            sys.exit(1)
+        info("GraphDB host data wiped.")
     else:
         with console.status("[bold yellow]Dry Run: Cleaning up wipe Job...[/bold yellow]"):
             run(k8s_delete_resource("job", job_name, namespace="default", dry_run=True), check=False)
@@ -83,6 +84,16 @@ def _undeploy_graphdb(cfg: ProjectConfig, *, keep_data: bool = False, dry_run: b
                 ),
                 check=False,
             )
+        if not dry_run:
+            with console.status("[bold yellow]Waiting for GraphDB pods to terminate...[/bold yellow]"):
+                run(
+                    [
+                        "kubectl", "wait", "--for=delete",
+                        "pod", "-l", "app=graphdb",
+                        "-n", "graphdb", "--timeout=120s",
+                    ],
+                    check=False,
+                )
         _wipe_graphdb_host_data(cfg, dry_run=dry_run)
     else:
         warn("Keeping GraphDB hostPath data (--keep-graphdb-data). Old repository data will remain.")

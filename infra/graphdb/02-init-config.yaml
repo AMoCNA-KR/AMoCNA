@@ -58,16 +58,16 @@ data:
       echo "No license file found. Skipping."
     fi
 
-    # 2. Create repository (if it doesn't exist)
+    # 2. Create repository (init container clears on-disk repo data before GraphDB starts)
     REPO_CHECK=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:7200/repositories/amocna/size)
-    if [ "$REPO_CHECK" != "200" ]; then
-      echo "Creating repository 'amocna'..."
-      curl -X POST http://localhost:7200/rest/repositories \
-        -H "Content-Type: multipart/form-data" \
-        -F "config=@/opt/graphdb/init/repository-config.ttl"
-    else
-      echo "Repository 'amocna' already exists."
+    if [ "$REPO_CHECK" = "200" ]; then
+      echo "Removing existing repository 'amocna' via REST API..."
+      curl -sf -X DELETE http://localhost:7200/rest/repositories/amocna
     fi
+    echo "Creating repository 'amocna'..."
+    curl -sf -X POST http://localhost:7200/rest/repositories \
+      -H "Content-Type: multipart/form-data" \
+      -F "config=@/opt/graphdb/init/repository-config.ttl"
 
     # 3. Upload ontologies
     for f in /opt/graphdb/init/ontologies/*.rdf; do
