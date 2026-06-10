@@ -32,29 +32,23 @@ class Scenario2(Scenario):
 
     def trigger_anomaly(self) -> None:
         from amocna_cli.commands.benchmark import set_locust_load
-        orders_node = run_capture(
-            ["kubectl", "get", "pods", "-n", "sock-shop", "-l", "name=orders", "-o", "jsonpath={.items[0].spec.nodeName}"],
-            check=False
-        ).strip().replace("'", "")
-        info(f"Orders pod is running on node: {orders_node}")
-
-        stress_patch = json.dumps({
+        
+        # We trigger the anomaly by strictly throttling the orders service
+        # instead of using external cluster-stress.
+        throttle_patch = json.dumps({
             "spec": {"template": {"spec": {
-                "nodeSelector": {"kubernetes.io/hostname": orders_node},
                 "containers": [{
-                    "name": "stress",
-                    "args": ["--cpu", "2", "--timeout", "600s"],
+                    "name": "orders",
                     "resources": {
-                        "requests": {"cpu": "100m", "memory": "200Mi"},
-                        "limits": {"cpu": "1800m", "memory": "3000Mi"},
+                        "requests": {"cpu": "100m"},
+                        "limits": {"cpu": "100m"},
                     },
                 }]
             }}}
         })
 
-        self.logger.log("TRIGGER_ANOMALY", f"Patching cluster-stress to node {orders_node}")
-        run(k8s_patch("default", "cluster-stress", stress_patch), check=False)
-        run(k8s_scale("default", "cluster-stress", 3))
+        self.logger.log("TRIGGER_ANOMALY", "Throttling orders service CPU to 100m")
+        run(k8s_patch("sock-shop", "orders", throttle_patch), check=False)
         set_locust_load(1500, 30)
 
     def observe_remediation(self) -> None:
