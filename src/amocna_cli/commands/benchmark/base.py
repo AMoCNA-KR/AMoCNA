@@ -102,12 +102,12 @@ class Scenario(abc.ABC):
         """Returns (locust_users, stress_replicas) based on load_level."""
         level = getattr(self, "load_level", "none")
         if level == "none":
-            return 50, 0
+            return 100, 0
         elif level == "medium":
             return 200, 1
         elif level == "high":
             return 500, 2
-        return 50, 0
+        return 100, 0
 
     @abc.abstractmethod
     def initialize(self) -> None:

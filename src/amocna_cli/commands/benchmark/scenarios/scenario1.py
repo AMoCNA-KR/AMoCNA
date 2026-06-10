@@ -20,10 +20,10 @@ class Scenario1(Scenario):
         run_sparql(self.cfg, _load_sparql_query(self.cfg, "clean-actions.sparql"))
 
     def setup_baseline(self) -> None:
-        from amocna_cli.commands.benchmark import set_locust_load
+        from amocna_cli.commands.benchmark import set_locust_load, setup_cluster_stress
         users, stress_replicas = self.get_baseline_load()
         set_locust_load(users, 10)
-        run(k8s_scale("default", "cluster-stress", stress_replicas), check=False)
+        setup_cluster_stress(self.cfg, stress_replicas)
         run(k8s_scale("sock-shop", "front-end", 1), check=False)
 
     def trigger_anomaly(self) -> None:
@@ -70,7 +70,7 @@ class Scenario1(Scenario):
             time.sleep(10)
 
     def cleanup(self) -> None:
-        from amocna_cli.commands.benchmark import stop_locust
+        from amocna_cli.commands.benchmark import stop_locust, teardown_cluster_stress
         stop_locust()
-        run(k8s_scale("default", "cluster-stress", 0), check=False)
+        teardown_cluster_stress(self.cfg)
         run(k8s_scale("sock-shop", "front-end", 1), check=False)

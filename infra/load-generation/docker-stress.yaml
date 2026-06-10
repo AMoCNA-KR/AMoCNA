@@ -13,28 +13,24 @@ spec:
       labels:
         app: cluster-stress
     spec:
-      nodeSelector:
-        kubernetes.io/hostname: kube-worker-3
       containers:
         - name: stress
           image: progrium/stress
           args:
-            [
-              "--cpu",
-              "2",
-              "--io",
-              "1",
-              "--vm",
-              "1",
-              "--vm-bytes",
-              "500M",
-              "--timeout",
-              "600s",
-            ]
-            resources:
+            - "--cpu"
+            - "1"
+            - "--io"
+            - "1"
+            - "--vm"
+            - "1"
+            - "--vm-bytes"
+            - "256M"
+            - "--timeout"
+            - "600s"
+          resources:
             limits:
-              cpu: "300m"
-              memory: "600Mi"
+              cpu: "500m"
+              memory: "512Mi"
             requests:
-              cpu: "300m"
-              memory: "600Mi"
+              cpu: "100m"
+              memory: "256Mi"

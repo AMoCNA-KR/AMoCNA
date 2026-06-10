@@ -25,8 +25,9 @@ class Scenario6(Scenario):
 
     def setup_baseline(self) -> None:
         from amocna_cli.commands.benchmark import set_locust_load
+        from amocna_cli.commands.benchmark import setup_cluster_stress
         set_locust_load(200, 10)
-        run(k8s_scale("default", "cluster-stress", 1), check=False)
+        setup_cluster_stress(self.cfg, 1)
         
         # Deploy dummy ConfigMap
         create_cm = subprocess.run(
@@ -64,5 +65,6 @@ class Scenario6(Scenario):
     def cleanup(self) -> None:
         from amocna_cli.commands.benchmark import stop_locust
         stop_locust()
-        run(k8s_scale("default", "cluster-stress", 0), check=False)
+        from amocna_cli.commands.benchmark import teardown_cluster_stress
+        teardown_cluster_stress(self.cfg)
         run(k8s_delete_resource("configmap", "orders-config", namespace="sock-shop"), check=False)

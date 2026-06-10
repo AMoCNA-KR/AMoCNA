@@ -1,81 +1,158 @@
 #!/bin/bash
+#
+# Run thesis benchmark experiments and collect:
+#   - remediation latency (§4.3.3)
+#   - MRE-K and sock-shop resource usage (§4.3.4)
+#
+# Outputs:
+#   experiment_results.csv  — combined latency + resource metrics per iteration
+#
+# Quick trial (1 scenario, 1 iteration):
+#   TRIAL=1 ./run_experiments.sh
 
-# Exit on any error
-set -e
+set -euo pipefail
 
-# Scenarios to run
 SCENARIOS=("1" "2" "5" "7")
-# Number of times to repeat each scenario
 ITERATIONS=10
-# Load levels to test
 LOAD_LEVELS=("none" "medium" "high")
 
-# Output CSV file
-OUTPUT_FILE="remediation_results.csv"
+if [ "${TRIAL:-0}" = "1" ]; then
+    SCENARIOS=("1")
+    ITERATIONS=1
+    LOAD_LEVELS=("medium")
+    echo ">> TRIAL mode: scenario 1, load medium, 1 iteration"
+fi
 
-# Print CSV header
-echo "Scenario,LoadLevel,Iteration,RemediationTimeSeconds,TotalDurationSeconds" > "$OUTPUT_FILE"
+if ! [[ "$ITERATIONS" =~ ^[0-9]+$ ]] || [ "$ITERATIONS" -lt 1 ]; then
+    echo "[!] ITERATIONS must be a positive integer (got: '$ITERATIONS')"
+    echo "    Use ITERATIONS=10 or TRIAL=1. In bash, '1#10' is invalid — # starts a comment."
+    exit 1
+fi
+
+OUTPUT_FILE="experiment_results.csv"
+EXTRACT_SCRIPT="scripts/extract_experiment_results.py"
+
+CSV_HEADER="Scenario,LoadLevel,Iteration,Status,RemediationTimeSeconds,TotalDurationSeconds,MrekCpuAvgCores,MrekCpuMaxCores,MrekMemoryAvgMiB,MrekMemoryMaxMiB,SockShopCpuAvgCores,SockShopCpuMaxCores,SockShopMemoryAvgMiB,SockShopMemoryMaxMiB,LogFile"
+
+# Must not fail when no logs exist yet (pipefail + set -e would otherwise exit the script).
+find_latest_log() {
+    local scenario="$1"
+    shopt -s nullglob
+    local files=(benchmark_log_${scenario}_*.json)
+    shopt -u nullglob
+    if [ ${#files[@]} -eq 0 ]; then
+        echo ""
+        return 0
+    fi
+    ls -t "${files[@]}" | head -n 1
+}
+
+safe_benchmark_stop() {
+    set +e
+    ./amocna.py benchmark stop
+    local code=$?
+    set -e
+    if [ "$code" -ne 0 ]; then
+        echo "      [!] benchmark stop failed (exit $code) — check: kubectl cluster-info"
+    fi
+}
+
+record_iteration() {
+    local scenario="$1"
+    local load="$2"
+    local iteration="$3"
+    local exit_code="$4"
+    local log_file="${5:-}"
+
+    if [ -z "$log_file" ] || [ ! -f "$log_file" ]; then
+        log_file="$(find_latest_log "$scenario")"
+    fi
+
+    if [ -z "$log_file" ] || [ ! -f "$log_file" ]; then
+        echo "      [!] No benchmark log found for scenario $scenario"
+        echo "$scenario,$load,$iteration,FAILED,N/A,N/A,N/A,N/A,N/A,N/A,N/A,N/A,N/A,N/A,N/A" >> "$OUTPUT_FILE"
+        return
+    fi
+
+    local row=""
+    set +e
+    row=$(uv run python "$EXTRACT_SCRIPT" \
+        --scenario "$scenario" \
+        --load "$load" \
+        --iteration "$iteration" \
+        --exit-code "$exit_code" \
+        --log-file "$log_file")
+    local extract_code=$?
+    set -e
+
+    if [ "$extract_code" -ne 0 ] || [ -z "$row" ]; then
+        echo "      [!] Metric extraction failed for $log_file"
+        echo "$scenario,$load,$iteration,FAILED,N/A,N/A,N/A,N/A,N/A,N/A,N/A,N/A,N/A,N/A,$log_file" >> "$OUTPUT_FILE"
+        return
+    fi
+
+    echo "$row" >> "$OUTPUT_FILE"
+    echo "      [✓] $row"
+}
 
 echo "======================================================"
 echo " Starting AMoCNA Thesis Experiments Automation"
 echo "======================================================"
 
-# Loop through load levels
+if [ ! -f "$EXTRACT_SCRIPT" ]; then
+    echo "[!] Missing $EXTRACT_SCRIPT"
+    exit 1
+fi
+
+if ! kubectl cluster-info &>/dev/null; then
+    echo "[!] kubectl cannot reach the cluster — fix connectivity before running experiments"
+    exit 1
+fi
+
+echo "$CSV_HEADER" > "$OUTPUT_FILE"
+
+echo ">> Resetting cluster to baseline before experiments..."
+safe_benchmark_stop
+
+TOTAL_RUNS=$(( ${#LOAD_LEVELS[@]} * ${#SCENARIOS[@]} * ITERATIONS ))
+echo ">> Planned runs: $TOTAL_RUNS (${#SCENARIOS[@]} scenarios × ${#LOAD_LEVELS[@]} load levels × $ITERATIONS iterations)"
+echo ">> Each benchmark takes ~10–15 min — use tmux/screen for the full batch"
+
 for LOAD in "${LOAD_LEVELS[@]}"; do
     echo ">> Testing Load Level: $LOAD"
-    
-    # Loop through each scenario
+
     for SCENARIO in "${SCENARIOS[@]}"; do
         echo "  -> Running Scenario $SCENARIO ($ITERATIONS iterations)"
-        
+
         for ((i=1; i<=ITERATIONS; i++)); do
-            echo "    -> Iteration $i / $ITERATIONS"
-            
-            # Start timer for the whole iteration run
-            START_TIME=$(date +%s)
-            
-            # Run the scenario using the AMoCNA CLI
-            # We allow it to fail, so we capture the exit code, but we set +e temporarily
+            echo "    -> Iteration $i / $ITERATIONS (expect ~10–15 min)"
+            echo "       $(date '+%H:%M:%S') starting benchmark..."
+
+            LOG_BEFORE="$(find_latest_log "$SCENARIO")"
+
             set +e
-            ./amocna.py benchmark run --scenario "$SCENARIO" --load "$LOAD"
+            PYTHONUNBUFFERED=1 ./amocna.py benchmark run --scenario "$SCENARIO" --load "$LOAD"
             EXIT_CODE=$?
             set -e
-            
-            if [ $EXIT_CODE -ne 0 ]; then
-                echo "      [!] Scenario $SCENARIO (Load: $LOAD) failed on iteration $i. Skipping log extraction."
-                continue
+
+            LOG_AFTER="$(find_latest_log "$SCENARIO")"
+            LOG_FILE="$LOG_AFTER"
+
+            record_iteration "$SCENARIO" "$LOAD" "$i" "$EXIT_CODE" "$LOG_FILE"
+
+            if [ "$EXIT_CODE" -ne 0 ]; then
+                echo "      [!] Scenario $SCENARIO failed on iteration $i — running benchmark stop"
+                safe_benchmark_stop
             fi
-            
-            # Find the latest benchmark log file for this scenario
-            LATEST_LOG=$(ls -t benchmark_log_${SCENARIO}_*.json 2>/dev/null | head -n 1)
-            
-            if [ -z "$LATEST_LOG" ]; then
-                echo "      [!] No log file found for Scenario $SCENARIO. Skipping extraction."
-                continue
-            fi
-            
-            # Extract remediation time using jq
-            # We look for the event type "REMEDIATION_TIME_SECONDS"
-            REMEDIATION_TIME=$(jq -r '.events[] | select(.type == "REMEDIATION_TIME_SECONDS") | .description' "$LATEST_LOG")
-            TOTAL_DURATION=$(jq -r '.total_duration' "$LATEST_LOG")
-            
-            if [ -z "$REMEDIATION_TIME" ] || [ "$REMEDIATION_TIME" == "null" ]; then
-                echo "      [!] REMEDIATION_TIME_SECONDS not found in $LATEST_LOG"
-                REMEDIATION_TIME="N/A"
-            fi
-            
-            echo "      [✓] Remediation Time: $REMEDIATION_TIME s"
-            
-            # Append to CSV
-            echo "$SCENARIO,$LOAD,$i,$REMEDIATION_TIME,$TOTAL_DURATION" >> "$OUTPUT_FILE"
-            
-            # Brief cooldown between iterations
-            sleep 10
+
+            echo "      -> Cooling down 30s before next iteration..."
+            sleep 30
         done
-        
+
         echo "  -> Finished Scenario $SCENARIO under $LOAD load."
-        echo "  -> Cooling down cluster for 30 seconds before next scenario..."
-        sleep 30
+        echo "  -> Running benchmark stop before next scenario..."
+        safe_benchmark_stop
+        sleep 15
     done
 done
 

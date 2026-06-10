@@ -22,9 +22,10 @@ class Scenario5(Scenario):
 
     def setup_baseline(self) -> None:
         from amocna_cli.commands.benchmark import set_locust_load
+        from amocna_cli.commands.benchmark import setup_cluster_stress
         users, stress_replicas = self.get_baseline_load()
         set_locust_load(users, 10)
-        run(k8s_scale("default", "cluster-stress", stress_replicas), check=False)
+        setup_cluster_stress(self.cfg, stress_replicas)
 
     def trigger_anomaly(self) -> None:
         self.logger.log("TRIGGER_ANOMALY", f"Resetting front-end to vulnerable image {SOCK_SHOP_FRONTEND_VULNERABLE_TAG}")
@@ -54,4 +55,5 @@ class Scenario5(Scenario):
             time.sleep(10)
 
     def cleanup(self) -> None:
-        run(k8s_scale("default", "cluster-stress", 0), check=False)
+        from amocna_cli.commands.benchmark import teardown_cluster_stress
+        teardown_cluster_stress(self.cfg)

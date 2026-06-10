@@ -71,6 +71,30 @@ def run_sparql(cfg: ProjectConfig, update_query: str) -> None:
     subprocess.run(pod_cmd, input=update_query, text=True, check=True)
 
 
+def _cluster_stress_manifest(cfg: ProjectConfig):
+    return cfg.project_root / "infra" / "load-generation" / "docker-stress.yaml"
+
+
+def reset_cluster_stress(cfg: ProjectConfig) -> None:
+    """Restore cluster-stress deployment spec to the canonical baseline manifest."""
+    from amocna_cli.utils.shell import k8s_apply_manifest
+
+    run(k8s_apply_manifest(str(_cluster_stress_manifest(cfg))), check=False)
+
+
+def setup_cluster_stress(cfg: ProjectConfig, replicas: int) -> None:
+    """Reset cluster-stress spec (when scaling up) and set replica count."""
+    if replicas > 0:
+        reset_cluster_stress(cfg)
+    run(k8s_scale("default", "cluster-stress", replicas), check=False)
+
+
+def teardown_cluster_stress(cfg: ProjectConfig) -> None:
+    """Restore cluster-stress baseline spec and scale to zero."""
+    reset_cluster_stress(cfg)
+    run(k8s_scale("default", "cluster-stress", 0), check=False)
+
+
 def set_locust_load(users: int, rate: int) -> None:
     """Control Locust swarming programmatically."""
     info(f"Setting Locust traffic to {users} users (spawn rate {rate})...")
@@ -532,8 +556,8 @@ def benchmark_stop(ctx: typer.Context):
     header("Stopping All Benchmark Elements")
     stop_locust()
 
-    info("Scaling down cluster-stress to 0...")
-    run(k8s_scale("default", "cluster-stress", 0), check=False)
+    info("Resetting cluster-stress deployment and scaling to 0...")
+    teardown_cluster_stress(cfg)
 
     info("Scaling down front-end to 1...")
     run(k8s_scale("sock-shop", "front-end", 1), check=False)
