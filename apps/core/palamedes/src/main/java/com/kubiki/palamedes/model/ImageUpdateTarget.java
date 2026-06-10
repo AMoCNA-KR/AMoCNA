@@ -13,4 +13,9 @@ public record ImageUpdateTarget(
         IRI serviceIri,
         String serviceName
 ) {
+    public ImageUpdateTarget withTargetVersion(String targetVersion) {
+        return new ImageUpdateTarget(
+                deploymentIri, deploymentName, namespace, containerName,
+                imageRepository, currentVersion, targetVersion, serviceIri, serviceName);
+    }
 }
