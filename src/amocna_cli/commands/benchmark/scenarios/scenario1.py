@@ -20,10 +20,9 @@ class Scenario1(Scenario):
         run_sparql(self.cfg, _load_sparql_query(self.cfg, "clean-actions.sparql"))
 
     def setup_baseline(self) -> None:
-        from amocna_cli.commands.benchmark import set_locust_load, setup_cluster_stress
-        users, stress_replicas = self.get_baseline_load()
-        set_locust_load(users, 10)
-        setup_cluster_stress(self.cfg, stress_replicas)
+        from amocna_cli.commands.benchmark import set_locust_load
+        set_locust_load(200, 10)
+        run(k8s_scale("default", "cluster-stress", 1), check=False)
         run(k8s_scale("sock-shop", "front-end", 1), check=False)
 
     def trigger_anomaly(self) -> None:
@@ -41,9 +40,7 @@ class Scenario1(Scenario):
                 check=False,
             )
             if replicas == "3" and not remediation_detected:
-                remediation_time = time.time() - start_obs
-                self.logger.log("REMEDIATION_TIME_SECONDS", f"{remediation_time:.2f}")
-                self.logger.log("REMEDIATION_DETECTED", f"Frontend successfully scaled to 3 replicas in {remediation_time:.2f}s")
+                self.logger.log("REMEDIATION_DETECTED", "Frontend successfully scaled to 3 replicas")
                 self.logger.log("TRAFFIC_REBALANCE", "Restarting Locust workers to balance traffic...")
                 run(k8s_rollout_restart("deployment/locust-worker", namespace="sock-shop"), check=False)
                 time.sleep(30)
@@ -70,7 +67,7 @@ class Scenario1(Scenario):
             time.sleep(10)
 
     def cleanup(self) -> None:
-        from amocna_cli.commands.benchmark import stop_locust, teardown_cluster_stress
+        from amocna_cli.commands.benchmark import stop_locust
         stop_locust()
-        teardown_cluster_stress(self.cfg)
+        run(k8s_scale("default", "cluster-stress", 0), check=False)
         run(k8s_scale("sock-shop", "front-end", 1), check=False)

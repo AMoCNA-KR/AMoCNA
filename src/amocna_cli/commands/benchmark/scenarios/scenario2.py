@@ -23,10 +23,8 @@ class Scenario2(Scenario):
         run_sparql(self.cfg, _load_sparql_query(self.cfg, "clean-actions.sparql"))
 
     def setup_baseline(self) -> None:
-        from amocna_cli.commands.benchmark import set_locust_load, setup_cluster_stress
-        users, stress_replicas = self.get_baseline_load()
-        set_locust_load(users, 10)
-        setup_cluster_stress(self.cfg, stress_replicas)
+        from amocna_cli.commands.benchmark import set_locust_load
+        set_locust_load(200, 10)
         run(k8s_scale("sock-shop", "orders", 1), check=False)
         run(k8s_patch("sock-shop", "orders", ORDERS_CPU_RESET_PATCH), check=False)
 
@@ -61,9 +59,7 @@ class Scenario2(Scenario):
                 check=False,
             )
             if cpu == "1" and not remediation_detected:
-                remediation_time = time.time() - start_obs
-                self.logger.log("REMEDIATION_TIME_SECONDS", f"{remediation_time:.2f}")
-                self.logger.log("REMEDIATION_DETECTED", f"Orders CPU requests patched to 1 in {remediation_time:.2f}s")
+                self.logger.log("REMEDIATION_DETECTED", "Orders CPU requests patched to 1")
                 self.logger.log("TRAFFIC_REBALANCE", "Restarting Locust workers...")
                 run(k8s_rollout_restart("deployment/locust-worker", namespace="sock-shop"), check=False)
                 time.sleep(30)
@@ -74,8 +70,7 @@ class Scenario2(Scenario):
             time.sleep(10)
 
     def cleanup(self) -> None:
-        from amocna_cli.commands.benchmark import stop_locust, teardown_cluster_stress
+        from amocna_cli.commands.benchmark import stop_locust
         stop_locust()
-        teardown_cluster_stress(self.cfg)
         run(k8s_scale("sock-shop", "orders", 1), check=False)
         run(k8s_patch("sock-shop", "orders", ORDERS_CPU_RESET_PATCH), check=False)

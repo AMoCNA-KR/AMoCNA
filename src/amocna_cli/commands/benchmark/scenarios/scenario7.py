@@ -21,13 +21,12 @@ class Scenario7(Scenario):
     name = "Registry Credential Remediation (Red Path)"
     allowed_intents = ["AddImagePullSecretIntent"]
 
-    def run(self, load_level: str = "none", keep_on_failure: bool = False) -> None:
+    def run(self, keep_on_failure: bool = False) -> None:
         """Override run for Scenario 7 as it has a very different flow."""
-        self.load_level = load_level
         try:
             from amocna_cli.commands.benchmark import set_palamedes_filter
             from amocna_cli.utils.ui import header
-            header(f"Scenario {self.id}: {self.name} (Load: {load_level})")
+            header(f"Scenario {self.id}: {self.name}")
 
             self.logger.log("PRECHECK", "Checking service versions...")
             if not _s7_check_runtime_prerequisites(self.cfg):
@@ -113,9 +112,7 @@ class Scenario7(Scenario):
             if secret == S6_SECRET_NAME: patched = True
             if phase == "Running": healed = True
             if patched and healed:
-                remediation_time = time.time() - start_time
-                self.logger.log("REMEDIATION_TIME_SECONDS", f"{remediation_time:.2f}")
-                self.logger.log("REMEDIATION_DETECTED", f"Deployment patched and pod is Running in {remediation_time:.1f}s")
+                self.logger.log("REMEDIATION_DETECTED", f"Deployment patched and pod is Running in {time.time()-start_time:.1f}s")
                 return
             console.print(f"    secret={secret or '(none)'}, phase={phase or 'unknown'} ({i*5}s)")
 

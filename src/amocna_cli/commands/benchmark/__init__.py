@@ -71,30 +71,6 @@ def run_sparql(cfg: ProjectConfig, update_query: str) -> None:
     subprocess.run(pod_cmd, input=update_query, text=True, check=True)
 
 
-def _cluster_stress_manifest(cfg: ProjectConfig):
-    return cfg.project_root / "infra" / "load-generation" / "docker-stress.yaml"
-
-
-def reset_cluster_stress(cfg: ProjectConfig) -> None:
-    """Restore cluster-stress deployment spec to the canonical baseline manifest."""
-    from amocna_cli.utils.shell import k8s_apply_manifest
-
-    run(k8s_apply_manifest(str(_cluster_stress_manifest(cfg))), check=False)
-
-
-def setup_cluster_stress(cfg: ProjectConfig, replicas: int) -> None:
-    """Reset cluster-stress spec (when scaling up) and set replica count."""
-    if replicas > 0:
-        reset_cluster_stress(cfg)
-    run(k8s_scale("default", "cluster-stress", replicas), check=False)
-
-
-def teardown_cluster_stress(cfg: ProjectConfig) -> None:
-    """Restore cluster-stress baseline spec and scale to zero."""
-    reset_cluster_stress(cfg)
-    run(k8s_scale("default", "cluster-stress", 0), check=False)
-
-
 def set_locust_load(users: int, rate: int) -> None:
     """Control Locust swarming programmatically."""
     info(f"Setting Locust traffic to {users} users (spawn rate {rate})...")
@@ -556,8 +532,8 @@ def benchmark_stop(ctx: typer.Context):
     header("Stopping All Benchmark Elements")
     stop_locust()
 
-    info("Resetting cluster-stress deployment and scaling to 0...")
-    teardown_cluster_stress(cfg)
+    info("Scaling down cluster-stress to 0...")
+    run(k8s_scale("default", "cluster-stress", 0), check=False)
 
     info("Scaling down front-end to 1...")
     run(k8s_scale("sock-shop", "front-end", 1), check=False)
@@ -610,9 +586,6 @@ def benchmark_run(
     scenario: Annotated[
         str, typer.Option(help="Scenario to run (1, 2, 3, 4, 5, 6, 7, all)")
     ],
-    load: Annotated[
-        str, typer.Option(help="Background cluster load level: none, medium, high")
-    ] = "none",
     keep_on_failure: Annotated[
         bool,
         typer.Option(
@@ -625,11 +598,11 @@ def benchmark_run(
     cfg: ProjectConfig = ctx.obj
 
     if scenario == "all":
-        header(f"Running Complete Automated Benchmark Cycle (Load: {load})")
+        header("Running Complete Automated Benchmark Cycle")
         for sc_id in ScenarioRegistry.list_ids():
             try:
                 sc = ScenarioRegistry.get(sc_id, cfg)
-                sc.run(load_level=load, keep_on_failure=keep_on_failure)
+                sc.run(keep_on_failure=keep_on_failure)
             except Exception as e:
                 error(f"✖ Scenario {sc_id} failed, continuing with next. Error: {e}")
 
@@ -642,7 +615,7 @@ def benchmark_run(
 
     try:
         sc = ScenarioRegistry.get(scenario, cfg)
-        sc.run(load_level=load, keep_on_failure=keep_on_failure)
+        sc.run(keep_on_failure=keep_on_failure)
     except ValueError as e:
         error(f"✖ {e}")
         sys.exit(1)

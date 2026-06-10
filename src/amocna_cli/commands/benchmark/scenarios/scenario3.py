@@ -21,9 +21,9 @@ class Scenario3(Scenario):
         run_sparql(self.cfg, _load_sparql_query(self.cfg, "clean-actions.sparql"))
 
     def setup_baseline(self) -> None:
-        from amocna_cli.commands.benchmark import set_locust_load, setup_cluster_stress
+        from amocna_cli.commands.benchmark import set_locust_load
         set_locust_load(50, 10)
-        setup_cluster_stress(self.cfg, 1)
+        run(k8s_scale("default", "cluster-stress", 1), check=False)
 
     def trigger_anomaly(self) -> None:
         from amocna_cli.commands.benchmark import run_sparql, _load_sparql_query
@@ -52,5 +52,4 @@ class Scenario3(Scenario):
             time.sleep(10)
 
     def cleanup(self) -> None:
-        from amocna_cli.commands.benchmark import teardown_cluster_stress
-        teardown_cluster_stress(self.cfg)
+        run(k8s_scale("default", "cluster-stress", 0), check=False)

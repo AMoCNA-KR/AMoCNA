@@ -27,9 +27,8 @@ class Scenario4(Scenario):
     def setup_baseline(self) -> None:
         from amocna_cli.commands.benchmark import set_locust_load
         self.logger.log("SETUP_BASELINE", "Setting baseline traffic (50 users), scaling stress workloads, and deploying dummy ConfigMap")
-        from amocna_cli.commands.benchmark import setup_cluster_stress
         set_locust_load(50, 5)
-        setup_cluster_stress(self.cfg, 1)
+        run(k8s_scale("default", "cluster-stress", 1), check=False)
         
         # Deploy dummy ConfigMap
         create_cm = subprocess.run(
@@ -81,7 +80,6 @@ class Scenario4(Scenario):
     def cleanup(self) -> None:
         from amocna_cli.commands.benchmark import run_sparql, _load_sparql_query
         self.logger.log("CLEANUP", "Scaling down stress workload, deleting orders-config, and restoring normal restart configuration in GraphDB")
-        from amocna_cli.commands.benchmark import teardown_cluster_stress
-        teardown_cluster_stress(self.cfg)
+        run(k8s_scale("default", "cluster-stress", 0), check=False)
         run(k8s_delete_resource("configmap", "orders-config", namespace="sock-shop"), check=False)
         run_sparql(self.cfg, _load_sparql_query(self.cfg, "restore-restart.sparql"))
