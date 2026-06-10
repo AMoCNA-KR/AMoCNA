@@ -41,7 +41,7 @@ flowchart LR
 | Running | `cnee:ExecutionUnitRunning` |
 | Failed | `cnee:ExecutionUnitFailed` |
 | Succeeded | `cnee:ExecutionUnitSucceeded` |
-| Unknown | `cnee:Unknown` |
+| Unknown | `cnee:ExecutionUnitUnknown` |
 
 ---
 

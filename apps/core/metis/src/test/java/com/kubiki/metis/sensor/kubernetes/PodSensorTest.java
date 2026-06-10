@@ -115,7 +115,7 @@ class PodSensorTest {
         verify(publisher, org.mockito.Mockito.times(2)).publish(captor.capture());
 
         assertThat(captor.getAllValues().get(1).getStateChanged().getNewStateIri())
-                .isEqualTo(CNEE + "Unknown");
+                .isEqualTo(CNEE + "ExecutionUnitUnknown");
     }
 
     @Test
