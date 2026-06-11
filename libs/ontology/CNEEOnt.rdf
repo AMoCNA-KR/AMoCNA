@@ -407,7 +407,15 @@
     <!-- http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/resourceID -->
 
     <owl:DatatypeProperty rdf:about="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/resourceID">
-        <rdfs:domain rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/CloudNativeEntity"/>
+        <rdfs:domain>
+            <owl:Class>
+                <owl:unionOf rdf:parseType="Collection">
+                    <rdf:Description rdf:about="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/CloudNativeEntity"/>
+                    <rdf:Description rdf:about="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/ManagementElement"/>
+                    <rdf:Description rdf:about="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/ObservabilityElement"/>
+                </owl:unionOf>
+            </owl:Class>
+        </rdfs:domain>
         <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
     </owl:DatatypeProperty>
     
@@ -416,7 +424,15 @@
     <!-- http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/resourceName -->
 
     <owl:DatatypeProperty rdf:about="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/resourceName">
-        <rdfs:domain rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/CloudNativeEntity"/>
+        <rdfs:domain>
+            <owl:Class>
+                <owl:unionOf rdf:parseType="Collection">
+                    <rdf:Description rdf:about="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/CloudNativeEntity"/>
+                    <rdf:Description rdf:about="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/ManagementElement"/>
+                    <rdf:Description rdf:about="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/ObservabilityElement"/>
+                </owl:unionOf>
+            </owl:Class>
+        </rdfs:domain>
         <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
     </owl:DatatypeProperty>
     
@@ -845,6 +861,42 @@
     <owl:DatatypeProperty rdf:about="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/vaultAddress">
         <rdfs:domain rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/SecretManagementService"/>
         <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#anyURI"/>
+    </owl:DatatypeProperty>
+    
+
+
+    <!-- http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/branchName -->
+
+    <owl:DatatypeProperty rdf:about="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/branchName">
+        <rdfs:domain rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/CIPipeline"/>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </owl:DatatypeProperty>
+    
+
+
+    <!-- http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/clusterName -->
+
+    <owl:DatatypeProperty rdf:about="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/clusterName">
+        <rdfs:domain rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/Cluster"/>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </owl:DatatypeProperty>
+    
+
+
+    <!-- http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/connectionEndpoint -->
+
+    <owl:DatatypeProperty rdf:about="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/connectionEndpoint">
+        <rdfs:domain rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/DataService"/>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#anyURI"/>
+    </owl:DatatypeProperty>
+    
+
+
+    <!-- http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/isPrivileged -->
+
+    <owl:DatatypeProperty rdf:about="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/isPrivileged">
+        <rdfs:domain rdf:resource="http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/Container"/>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#boolean"/>
     </owl:DatatypeProperty>
     
 
