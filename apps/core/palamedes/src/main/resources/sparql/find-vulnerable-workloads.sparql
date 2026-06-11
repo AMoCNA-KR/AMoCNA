@@ -1,10 +1,14 @@
 ${SPARQL_PREFIXES}
 SELECT DISTINCT ?deployment ?deploymentName ?containerName ?imageRepository ?currentVersion ?service ?serviceName
 WHERE {
-  ${IRI::imageIri} a cnee:Image .
-  ${IRI::imageIri} cnee:resourceName ?imageRepository .
-  ${IRI::imageIri} cnee:version ?currentVersion .
-  ?container cnee:usesImage ${IRI::imageIri} .
+  VALUES (?imageRepository ?currentVersion) {
+    ${PLAIN::vulnerablePairs}
+  }
+
+  ?image a cnee:Image .
+  ?image cnee:resourceName ?imageRepository .
+  ?image cnee:version ?currentVersion .
+  ?container cnee:usesImage ?image .
   ?container cnee:resourceName ?containerName .
   ?deployment cnee:contains ?container .
   ?deployment cnee:resourceName ?deploymentName .

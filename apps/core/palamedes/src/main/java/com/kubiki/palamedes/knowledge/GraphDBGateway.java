@@ -277,8 +277,8 @@ public class GraphDBGateway {
         ));
     }
 
-    public List<ImageUpdateTarget> findWorkloadsByVulnerableImage(IRI imageIri) {
-        return sparqlRepository.findWorkloadsByVulnerableImage(imageIri.stringValue()).stream()
+    public List<ImageUpdateTarget> findVulnerableWorkloads(String vulnerablePairs) {
+        return sparqlRepository.findVulnerableWorkloads(vulnerablePairs).stream()
                 .map(bs -> new ImageUpdateTarget(
                         (IRI) bs.getValue("deployment"),
                         bs.getValue("deploymentName").stringValue(),
@@ -301,15 +301,6 @@ public class GraphDBGateway {
                         bs.getValue("deploymentName").stringValue(),
                         bs.getValue("namespace").stringValue(),
                         bs.getValue("pullSecretName").stringValue()))
-                .toList();
-    }
-
-    public List<ImageInTopology> findImagesInTopology() {
-        return sparqlRepository.findImagesInTopology().stream()
-                .map(bs -> new ImageInTopology(
-                        (IRI) bs.getValue("image"),
-                        bs.getValue("imageRepository").stringValue(),
-                        bs.getValue("version").stringValue()))
                 .toList();
     }
 

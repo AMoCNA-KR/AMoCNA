@@ -18,11 +18,16 @@ SELECT DISTINCT ?action ?intent ?target ?protocol ?instruction ?method ?payload 
   # Action Classification
   OPTIONAL { ?action ${PREFIX::ACTIONS_PREFIX}:hasFunctionalIntent ?f1 } .
   OPTIONAL { ?intent ${PREFIX::ACTIONS_PREFIX}:hasFunctionalIntent ?f2 } .
-  BIND(COALESCE(?f1, ?f2) AS ?functionalIntent) .
+  OPTIONAL {
+    ?action a ?blueprintIntent .
+    ?blueprint ${PREFIX::ACTIONS_PREFIX}:hasFunctionalIntent ?blueprintIntent .
+  } .
+  BIND(COALESCE(?f1, ?f2, ?blueprintIntent) AS ?functionalIntent) .
 
   OPTIONAL { ?action ${PREFIX::ACTIONS_PREFIX}:hasLayerBoundary ?l1 } .
   OPTIONAL { ?intent ${PREFIX::ACTIONS_PREFIX}:hasLayerBoundary ?l2 } .
-  BIND(COALESCE(?l1, ?l2) AS ?layerBoundary) .
+  OPTIONAL { ?blueprint ${PREFIX::ACTIONS_PREFIX}:hasLayerBoundary ?l3 } .
+  BIND(COALESCE(?l1, ?l2, ?l3) AS ?layerBoundary) .
 
   OPTIONAL {
     ?action ${PREFIX::ACTIONS_PREFIX}:hasExecutionCost ?c1 .
@@ -32,29 +37,38 @@ SELECT DISTINCT ?action ?intent ?target ?protocol ?instruction ?method ?payload 
     ?intent ${PREFIX::ACTIONS_PREFIX}:hasExecutionCost ?c2 .
     ?c2 ${PREFIX::ACTIONS_PREFIX}:costValue ?v2 .
   } .
-  BIND(COALESCE(?v1, ?v2) AS ?costValue) .
+  OPTIONAL {
+    ?blueprint ${PREFIX::ACTIONS_PREFIX}:hasExecutionCost ?bc .
+    ?bc ${PREFIX::ACTIONS_PREFIX}:costValue ?bv .
+  } .
+  BIND(COALESCE(?v1, ?v2, ?bv) AS ?costValue) .
 
   # Protocol Details
   OPTIONAL { ?action ${PREFIX::ACTIONS_PREFIX}:hasExecutionProtocol ?p1 } .
   OPTIONAL { ?intent ${PREFIX::ACTIONS_PREFIX}:hasExecutionProtocol ?p2 } .
-  BIND(COALESCE(?p1, ?p2) AS ?protocol) .
+  OPTIONAL { ?blueprint ${PREFIX::ACTIONS_PREFIX}:hasExecutionProtocol ?bp } .
+  BIND(COALESCE(?p1, ?p2, ?bp) AS ?protocol) .
 
   OPTIONAL { ?action ${PREFIX::ACTIONS_PREFIX}:hasExecutionInstruction ?i1 } .
   OPTIONAL { ?intent ${PREFIX::ACTIONS_PREFIX}:hasExecutionInstruction ?i2 } .
-  BIND(COALESCE(?i1, ?i2) AS ?instruction) .
+  OPTIONAL { ?blueprint ${PREFIX::ACTIONS_PREFIX}:hasExecutionInstruction ?bi } .
+  BIND(COALESCE(?i1, ?i2, ?bi) AS ?instruction) .
 
   OPTIONAL { ?action ${PREFIX::ACTIONS_PREFIX}:hasHttpMethod ?m1 } .
   OPTIONAL { ?intent ${PREFIX::ACTIONS_PREFIX}:hasHttpMethod ?m2 } .
-  BIND(COALESCE(?m1, ?m2) AS ?method) .
+  OPTIONAL { ?blueprint ${PREFIX::ACTIONS_PREFIX}:hasHttpMethod ?bm } .
+  BIND(COALESCE(?m1, ?m2, ?bm) AS ?method) .
 
   OPTIONAL { ?action ${PREFIX::ACTIONS_PREFIX}:hasExpectedStatusCode ?s1 } .
   OPTIONAL { ?intent ${PREFIX::ACTIONS_PREFIX}:hasExpectedStatusCode ?s2 } .
-  BIND(COALESCE(?s1, ?s2) AS ?expectedStatusCode) .
+  OPTIONAL { ?blueprint ${PREFIX::ACTIONS_PREFIX}:hasExpectedStatusCode ?bs } .
+  BIND(COALESCE(?s1, ?s2, ?bs) AS ?expectedStatusCode) .
 
   # Idempotency
   OPTIONAL { ?action ${PREFIX::ACTIONS_PREFIX}:idempotencyWindowSeconds ?w1 } .
   OPTIONAL { ?intent ${PREFIX::ACTIONS_PREFIX}:idempotencyWindowSeconds ?w2 } .
-  BIND(COALESCE(?w1, ?w2) AS ?idempotencyWindowSeconds) .
+  OPTIONAL { ?blueprint ${PREFIX::ACTIONS_PREFIX}:idempotencyWindowSeconds ?bw } .
+  BIND(COALESCE(?w1, ?w2, ?bw) AS ?idempotencyWindowSeconds) .
 
   # 4. Conditions
   OPTIONAL {

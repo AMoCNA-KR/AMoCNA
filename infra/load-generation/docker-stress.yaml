@@ -14,7 +14,7 @@ spec:
         app: cluster-stress
     spec:
       nodeSelector:
-        kubernetes.io/hostname: kube-worker-3
+        node-role: cluster-stress
       containers:
         - name: stress
           image: progrium/stress

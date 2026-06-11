@@ -1,6 +1,0 @@
-${SPARQL_PREFIXES}
-SELECT ?image ?imageRepository ?version WHERE {
-  ?image a cnee:Image .
-  ?image cnee:resourceName ?imageRepository .
-  ?image cnee:version ?version .
-}

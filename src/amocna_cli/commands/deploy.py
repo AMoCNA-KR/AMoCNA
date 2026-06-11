@@ -30,6 +30,23 @@ def _kubectl_apply_stdin(manifest_yaml: str, dry_run: bool = False) -> None:
         check=True,
     )
 
+
+def _collect_ontology_rdf_files(graphdb_dir, ontology_dir) -> list:
+    """Collect OWL files from libs/ontology and infra/graphdb/ontology."""
+    candidates = [ontology_dir, graphdb_dir / "ontology"]
+    seen: set[str] = set()
+    files: list = []
+    for directory in candidates:
+        if not directory.is_dir():
+            continue
+        for path in sorted(directory.glob("*.rdf")):
+            key = str(path.resolve())
+            if key not in seen:
+                seen.add(key)
+                files.append(path)
+    return files
+
+
 def _deploy_graphdb(cfg: ProjectConfig, dry_run: bool = False) -> None:
     """Deploy GraphDB to K8s."""
     graphdb_dir = cfg.project_root / "infra" / "graphdb"
@@ -65,7 +82,7 @@ def _deploy_graphdb(cfg: ProjectConfig, dry_run: bool = False) -> None:
         warn(f"No license found. Place graphdb.license in {graphdb_dir}")
 
     info("Creating graphdb-ontologies ConfigMap (OWL + action blueprints)...")
-    ontology_files = sorted(ontology_dir.glob("*.rdf"))
+    ontology_files = _collect_ontology_rdf_files(graphdb_dir, ontology_dir)
     blueprint_files = sorted(graphdb_dir.glob("*.ttl"))
     files_list = [str(path) for path in ontology_files + blueprint_files]
     if not ontology_files:

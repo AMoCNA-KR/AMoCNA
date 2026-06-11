@@ -17,7 +17,7 @@ class SockShopUser(HttpUser):
 
     @task(20)
     def checkout(self):
-        self.client.get("http://orders/orders", name="/orders")
+        self.client.get("/orders", name="/orders")
 
     @task(5)
     def browse_home(self):

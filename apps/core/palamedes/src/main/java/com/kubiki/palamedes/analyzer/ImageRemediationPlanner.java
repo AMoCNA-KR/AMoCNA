@@ -5,7 +5,6 @@ import com.kubiki.common.vulnerability.UpgradePolicy;
 import com.kubiki.common.vulnerability.VulnerabilityCatalog;
 import com.kubiki.palamedes.config.PalamedesProperties;
 import com.kubiki.palamedes.knowledge.GraphDBGateway;
-import com.kubiki.palamedes.model.ImageInTopology;
 import com.kubiki.palamedes.model.ImageUpdateTarget;
 import com.kubiki.palamedes.service.RemediationFilterService;
 import com.kubiki.palamedes.utils.ActionUtils;
@@ -61,43 +60,32 @@ public class ImageRemediationPlanner {
             return false;
         }
 
-        log.info("ImageRemediationPlanner: Starting image vulnerability scan against CVE catalog...");
-        UpgradePolicy upgradePolicy = UpgradePolicy.valueOf(
-                properties.vulnerability().upgradePolicy().toUpperCase());
-
-        List<ImageInTopology> images = gateway.findImagesInTopology();
-        log.info("ImageRemediationPlanner: Found {} images in current topology to evaluate", images.size());
-
-        boolean plannedAny = false;
-        int plannedCount = 0;
-        for (ImageInTopology image : images) {
-            var cves = vulnerabilityCatalog.lookup(image.imageRepository(), image.version());
-            if (cves.isEmpty()) {
-                log.debug("ImageRemediationPlanner: Image {}:{} is clean (no matching CVEs)", image.imageRepository(), image.version());
-                continue;
-            }
-
-            log.warn("ImageRemediationPlanner: Detected vulnerable image {}:{} with {} active CVEs in catalog!",
-                    image.imageRepository(), image.version(), cves.size());
-
-            if (planForImage(image.imageIri(), intentIri, upgradePolicy)) {
-                plannedAny = true;
-                plannedCount++;
-            }
-        }
-        log.info("ImageRemediationPlanner: Completed vulnerability scan. Remediated {} vulnerable images.", plannedCount);
-        return plannedAny;
-    }
-
-    private boolean planForImage(IRI imageIri, IRI intentIri, UpgradePolicy upgradePolicy) {
-        List<ImageUpdateTarget> targets = gateway.findWorkloadsByVulnerableImage(imageIri);
-        if (targets.isEmpty()) {
-            log.info("ImageRemediationPlanner: No active workloads running vulnerable image {}", imageIri);
+        String vulnerablePairs = vulnerabilityCatalog.toSparqlValuesClause();
+        if (vulnerablePairs.isBlank()) {
+            log.debug("ImageRemediationPlanner: Catalog has no affected image versions to scan");
             return false;
         }
 
+        log.info("ImageRemediationPlanner: Querying topology for catalog-vulnerable image versions...");
+        UpgradePolicy upgradePolicy = UpgradePolicy.valueOf(
+                properties.vulnerability().upgradePolicy().toUpperCase());
+
+        List<ImageUpdateTarget> targets = gateway.findVulnerableWorkloads(vulnerablePairs);
+        if (targets.isEmpty()) {
+            log.info("ImageRemediationPlanner: No workloads running catalog-vulnerable images");
+            return false;
+        }
+
+        log.info("ImageRemediationPlanner: Found {} workloads running catalog-vulnerable images", targets.size());
+
         Map<IRI, ImageUpdateTarget> uniqueByDeployment = new LinkedHashMap<>();
         for (ImageUpdateTarget target : targets) {
+            var cves = vulnerabilityCatalog.lookup(target.imageRepository(), target.currentVersion());
+            if (!cves.isEmpty()) {
+                log.warn("ImageRemediationPlanner: Detected vulnerable image {}:{} with {} active CVEs in catalog",
+                        target.imageRepository(), target.currentVersion(), cves.size());
+            }
+
             Optional<String> fixVersion = vulnerabilityCatalog.selectFixVersion(
                     target.imageRepository(), target.currentVersion(), upgradePolicy);
             if (fixVersion.isEmpty()) {
@@ -105,21 +93,11 @@ public class ImageRemediationPlanner {
                         target.imageRepository(), target.currentVersion(), upgradePolicy);
                 continue;
             }
-            ImageUpdateTarget resolved = new ImageUpdateTarget(
-                    target.deploymentIri(),
-                    target.deploymentName(),
-                    target.namespace(),
-                    target.containerName(),
-                    target.imageRepository(),
-                    target.currentVersion(),
-                    fixVersion.get(),
-                    target.serviceIri(),
-                    target.serviceName());
-            uniqueByDeployment.putIfAbsent(resolved.deploymentIri(), resolved);
+            uniqueByDeployment.putIfAbsent(target.deploymentIri(), target.withTargetVersion(fixVersion.get()));
         }
 
         if (uniqueByDeployment.isEmpty()) {
-            log.info("ImageRemediationPlanner: No valid upgrade path found for workloads using image {}", imageIri);
+            log.info("ImageRemediationPlanner: No valid upgrade path found for vulnerable workloads");
             return false;
         }
 
@@ -139,6 +117,8 @@ public class ImageRemediationPlanner {
                     target.serviceName() != null ? target.serviceName() : "n/a",
                     target.imageRepository(), target.targetVersion());
         }
+
+        log.info("ImageRemediationPlanner: Completed vulnerability scan. Planned {} remediations.", uniqueByDeployment.size());
         return true;
     }
 }

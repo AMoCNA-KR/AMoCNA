@@ -12,7 +12,7 @@ from amocna_cli.utils.shell import (
 class Scenario1(Scenario):
     id = "1"
     name = "Horizontal Scaling Remediation (Green Path)"
-    allowed_intents = ["HorizontalScalingAction"]
+    allowed_intents = ["HorizontalScalingAction", "HorizontalScaleDownAction"]
 
     def initialize(self) -> None:
         from amocna_cli.commands.benchmark import run_sparql, _load_sparql_query

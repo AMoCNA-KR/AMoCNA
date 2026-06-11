@@ -61,14 +61,11 @@ public interface SparqlRepository {
     @SparqlQuery(resource = "sparql/find-root-cause.sparql")
     List<BindingSet> findRootCause(@Type(TemplateType.IRI) @Bind("IRI::startResource") String startResource);
 
-    @SparqlQuery(resource = "sparql/find-workloads-by-vulnerable-image.sparql")
-    List<BindingSet> findWorkloadsByVulnerableImage(@Type(TemplateType.IRI) @Bind("IRI::imageIri") String imageIri);
+    @SparqlQuery(resource = "sparql/find-vulnerable-workloads.sparql")
+    List<BindingSet> findVulnerableWorkloads(@Type(TemplateType.PLAIN) @Bind("PLAIN::vulnerablePairs") String vulnerablePairs);
 
     @SparqlQuery(resource = "sparql/fetch-workload-details.sparql")
     List<BindingSet> fetchWorkloadDetails(@Type(TemplateType.IRI) @Bind("IRI::workloadIri") String workloadIri);
-
-    @SparqlQuery(resource = "sparql/find-images-in-topology.sparql")
-    List<BindingSet> findImagesInTopology();
 
     @SparqlQuery(resource = "sparql/find-registry-auth-failures.sparql")
     List<BindingSet> findRegistryAuthFailures();
