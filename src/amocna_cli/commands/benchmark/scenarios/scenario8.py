@@ -255,7 +255,7 @@ class Scenario8(Scenario):
             query = """
             PREFIX cnee: <http://www.semanticweb.org/szymo/ontologies/2026/2/CNEEOnt/>
             SELECT (COUNT(?pod) as ?count) WHERE {
-              ?pod a cnee:Pod .
+              ?pod a cnee:ExecutionUnit .
               ?pod cnee:namespace "amocna-benchmark" .
             }
             """
