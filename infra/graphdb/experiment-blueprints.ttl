@@ -5,7 +5,7 @@
 moam:ScaleUpAction moam:hasExecutionProtocol "SHELL" ;
                    moam:hasExecutionInstruction "kubectl scale deployment ${resourceName} --replicas=3 -n ${namespace}" ;
                    moam:hasExpectedStatusCode "0"^^xsd:integer ;
-                   moam:hasFunctionalIntent moam:HorizontalScalingAction ;
+                   moam:hasFunctionalIntent moam:HorizontalScalingUpIntent ;
                    moam:hasLayerBoundary moam:ContainerizationLayer ;
                    moam:idempotencyWindowSeconds "300"^^xsd:integer .
 
@@ -13,7 +13,7 @@ moam:ScaleUpAction moam:hasExecutionProtocol "SHELL" ;
 moam:ScaleDownAction moam:hasExecutionProtocol "SHELL" ;
                      moam:hasExecutionInstruction "kubectl scale deployment ${resourceName} --replicas=1 -n ${namespace}" ;
                      moam:hasExpectedStatusCode "0"^^xsd:integer ;
-                     moam:hasFunctionalIntent moam:HorizontalScaleDownAction ;
+                     moam:hasFunctionalIntent moam:HorizontalScalingDownIntent ;
                      moam:hasLayerBoundary moam:ContainerizationLayer ;
                      moam:idempotencyWindowSeconds "300"^^xsd:integer .
 
@@ -21,7 +21,7 @@ moam:ScaleDownAction moam:hasExecutionProtocol "SHELL" ;
 moam:ScaleVerticallyAction moam:hasExecutionProtocol "SHELL" ;
                             moam:hasExecutionInstruction "kubectl patch deployment ${resourceName} -n ${namespace} --patch '{\"spec\": {\"template\": {\"spec\": {\"containers\": [{\"name\": \"${resourceName}\", \"resources\": {\"requests\": {\"cpu\": \"1\"}, \"limits\": {\"cpu\": \"1\"}}}]}}}}'" ;
                             moam:hasExpectedStatusCode "0"^^xsd:integer ;
-                            moam:hasFunctionalIntent moam:VerticalScalingAction ;
+                            moam:hasFunctionalIntent moam:VerticalScalingUpIntent ;
                             moam:hasLayerBoundary moam:ContainerizationLayer ;
                             moam:idempotencyWindowSeconds "300"^^xsd:integer .
 
@@ -34,9 +34,10 @@ moam:ImageUpdateAction moam:hasExecutionProtocol "SHELL" ;
                         moam:idempotencyWindowSeconds "300"^^xsd:integer .
 
 # Scenario 4
-moam:ConfigRemediationWorkflow moam:hasFunctionalIntent moam:SagaRemediationIntent ;
-                               moam:isDecomposedInto moam:PatchConfigAction ,
-                                                    moam:RestartPodAction .
+moam:ConfigRemediationWorkflow a moam:ComplexWorkflow ; 
+     moam:hasFunctionalIntent moam:SagaRemediationIntent ;
+     moam:isDecomposedInto moam:PatchConfigAction ,
+                           moam:RestartPodAction .
 
 moam:PatchConfigAction moam:hasExecutionProtocol "SHELL" ;
                        moam:hasExecutionInstruction "kubectl patch configmap ${resourceName}-config -n ${namespace} --type merge -p '{\"data\":{\"updated\":\"true\"}}'" ;

@@ -59,7 +59,7 @@
         <rdfs:subClassOf>
             <owl:Restriction>
                 <owl:onProperty rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/BridgeOnt#isResolvedByIntent"/>
-                <owl:someValuesFrom rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#VerticalScalingAction"/>
+                <owl:someValuesFrom rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#VerticalScalingUpIntent"/>
             </owl:Restriction>
         </rdfs:subClassOf>
     </rdf:Description>
@@ -72,7 +72,7 @@
         <rdfs:subClassOf>
             <owl:Restriction>
                 <owl:onProperty rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/BridgeOnt#isResolvedByIntent"/>
-                <owl:someValuesFrom rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#RollbackAction"/>
+                <owl:someValuesFrom rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#RollbackIntent"/>
             </owl:Restriction>
         </rdfs:subClassOf>
     </rdf:Description>
@@ -85,7 +85,7 @@
         <rdfs:subClassOf>
             <owl:Restriction>
                 <owl:onProperty rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/BridgeOnt#isResolvedByIntent"/>
-                <owl:someValuesFrom rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#RestartAction"/>
+                <owl:someValuesFrom rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#RestartIntent"/>
             </owl:Restriction>
         </rdfs:subClassOf>
     </rdf:Description>
@@ -98,7 +98,7 @@
         <rdfs:subClassOf>
             <owl:Restriction>
                 <owl:onProperty rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/BridgeOnt#isResolvedByIntent"/>
-                <owl:someValuesFrom rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#RestartAction"/>
+                <owl:someValuesFrom rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#RestartIntent"/>
             </owl:Restriction>
         </rdfs:subClassOf>
     </rdf:Description>
@@ -111,7 +111,7 @@
         <rdfs:subClassOf>
             <owl:Restriction>
                 <owl:onProperty rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/BridgeOnt#isResolvedByIntent"/>
-                <owl:someValuesFrom rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#VerticalScalingAction"/>
+                <owl:someValuesFrom rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#VerticalScalingUpIntent"/>
             </owl:Restriction>
         </rdfs:subClassOf>
     </rdf:Description>
@@ -137,7 +137,7 @@
         <rdfs:subClassOf>
             <owl:Restriction>
                 <owl:onProperty rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/BridgeOnt#isResolvedByIntent"/>
-                <owl:someValuesFrom rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#HorizontalScalingAction"/>
+                <owl:someValuesFrom rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#HorizontalScalingUpIntent"/>
             </owl:Restriction>
         </rdfs:subClassOf>
     </rdf:Description>
@@ -150,7 +150,7 @@
         <rdfs:subClassOf>
             <owl:Restriction>
                 <owl:onProperty rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/BridgeOnt#isResolvedByIntent"/>
-                <owl:someValuesFrom rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#RestartAction"/>
+                <owl:someValuesFrom rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#RestartIntent"/>
             </owl:Restriction>
         </rdfs:subClassOf>
     </rdf:Description>
@@ -176,7 +176,7 @@
         <rdfs:subClassOf>
             <owl:Restriction>
                 <owl:onProperty rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/BridgeOnt#isResolvedByIntent"/>
-                <owl:someValuesFrom rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#CircuitBreakAction"/>
+                <owl:someValuesFrom rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#CircuitBreakIntent"/>
             </owl:Restriction>
         </rdfs:subClassOf>
     </rdf:Description>
@@ -189,7 +189,7 @@
         <rdfs:subClassOf>
             <owl:Restriction>
                 <owl:onProperty rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/BridgeOnt#isResolvedByIntent"/>
-                <owl:someValuesFrom rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#HorizontalScalingAction"/>
+                <owl:someValuesFrom rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#HorizontalScalingUpIntent"/>
             </owl:Restriction>
         </rdfs:subClassOf>
     </rdf:Description>
@@ -215,7 +215,7 @@
         <rdfs:subClassOf>
             <owl:Restriction>
                 <owl:onProperty rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/BridgeOnt#isResolvedByIntent"/>
-                <owl:someValuesFrom rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#HorizontalScalingAction"/>
+                <owl:someValuesFrom rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#HorizontalScalingUpIntent"/>
             </owl:Restriction>
         </rdfs:subClassOf>
     </rdf:Description>
@@ -228,7 +228,7 @@
         <rdfs:subClassOf>
             <owl:Restriction>
                 <owl:onProperty rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/BridgeOnt#isResolvedByIntent"/>
-                <owl:someValuesFrom rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#HorizontalScalingAction"/>
+                <owl:someValuesFrom rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#HorizontalScalingUpIntent"/>
             </owl:Restriction>
         </rdfs:subClassOf>
     </rdf:Description>
@@ -241,7 +241,7 @@
         <rdfs:subClassOf>
             <owl:Restriction>
                 <owl:onProperty rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/BridgeOnt#isResolvedByIntent"/>
-                <owl:someValuesFrom rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#EvacuateAction"/>
+                <owl:someValuesFrom rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#EvacuateIntent"/>
             </owl:Restriction>
         </rdfs:subClassOf>
     </rdf:Description>
@@ -254,7 +254,7 @@
         <rdfs:subClassOf>
             <owl:Restriction>
                 <owl:onProperty rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/BridgeOnt#isResolvedByIntent"/>
-                <owl:someValuesFrom rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#PatchAction"/>
+                <owl:someValuesFrom rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#PatchIntent"/>
             </owl:Restriction>
         </rdfs:subClassOf>
     </rdf:Description>
@@ -267,7 +267,7 @@
         <rdfs:subClassOf>
             <owl:Restriction>
                 <owl:onProperty rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/BridgeOnt#isResolvedByIntent"/>
-                <owl:someValuesFrom rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#MigrateAction"/>
+                <owl:someValuesFrom rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#MigrateIntent"/>
             </owl:Restriction>
         </rdfs:subClassOf>
     </rdf:Description>
@@ -280,7 +280,7 @@
         <rdfs:subClassOf>
             <owl:Restriction>
                 <owl:onProperty rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/BridgeOnt#isResolvedByIntent"/>
-                <owl:someValuesFrom rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#RestartAction"/>
+                <owl:someValuesFrom rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#RestartIntent"/>
             </owl:Restriction>
         </rdfs:subClassOf>
     </rdf:Description>
@@ -289,7 +289,7 @@
         <rdfs:subClassOf>
             <owl:Restriction>
                 <owl:onProperty rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/BridgeOnt#isResolvedByIntent"/>
-                <owl:someValuesFrom rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#RestartAction"/>
+                <owl:someValuesFrom rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#RestartIntent"/>
             </owl:Restriction>
         </rdfs:subClassOf>
     </rdf:Description>
@@ -298,7 +298,7 @@
         <rdfs:subClassOf>
             <owl:Restriction>
                 <owl:onProperty rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/BridgeOnt#isResolvedByIntent"/>
-                <owl:someValuesFrom rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#VerticalScalingAction"/>
+                <owl:someValuesFrom rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#VerticalScalingUpIntent"/>
             </owl:Restriction>
         </rdfs:subClassOf>
     </rdf:Description>
@@ -307,7 +307,7 @@
         <rdfs:subClassOf>
             <owl:Restriction>
                 <owl:onProperty rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/BridgeOnt#isResolvedByIntent"/>
-                <owl:someValuesFrom rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#HorizontalScalingAction"/>
+                <owl:someValuesFrom rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#HorizontalScalingUpIntent"/>
             </owl:Restriction>
         </rdfs:subClassOf>
     </rdf:Description>
@@ -316,7 +316,7 @@
         <rdfs:subClassOf>
             <owl:Restriction>
                 <owl:onProperty rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/BridgeOnt#isResolvedByIntent"/>
-                <owl:someValuesFrom rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#CircuitBreakAction"/>
+                <owl:someValuesFrom rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#CircuitBreakIntent"/>
             </owl:Restriction>
         </rdfs:subClassOf>
     </rdf:Description>
@@ -347,7 +347,7 @@
         <rdfs:subClassOf>
             <owl:Restriction>
                 <owl:onProperty rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/BridgeOnt#isResolvedByIntent"/>
-                <owl:someValuesFrom rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#HorizontalScalingAction"/>
+                <owl:someValuesFrom rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#HorizontalScalingUpIntent"/>
             </owl:Restriction>
         </rdfs:subClassOf>
     </rdf:Description>
@@ -356,7 +356,7 @@
         <rdfs:subClassOf>
             <owl:Restriction>
                 <owl:onProperty rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/BridgeOnt#isResolvedByIntent"/>
-                <owl:someValuesFrom rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#HorizontalScaleDownAction"/>
+                <owl:someValuesFrom rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#HorizontalScalingDownIntent"/>
             </owl:Restriction>
         </rdfs:subClassOf>
     </rdf:Description>
