@@ -52,6 +52,7 @@ moam:RestartPodAction moam:hasExecutionProtocol "SHELL" ;
                       moam:hasExpectedStatusCode "0"^^xsd:integer ;
                       moam:hasFunctionalIntent moam:RestartPodIntent ;
                       moam:hasLayerBoundary moam:ContainerizationLayer ;
+                      moam:dependsOn moam:PatchConfigAction ; 
                       moam:idempotencyWindowSeconds "300"^^xsd:integer .
 
 moam:RollbackConfigAction moam:hasExecutionProtocol "SHELL" ;
