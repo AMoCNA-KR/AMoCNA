@@ -34,8 +34,7 @@ moam:ImageUpdateAction moam:hasExecutionProtocol "SHELL" ;
                         moam:idempotencyWindowSeconds "300"^^xsd:integer .
 
 # Scenario 4
-moam:ConfigRemediationWorkflow a moam:ComplexWorkflow ; 
-     moam:hasFunctionalIntent moam:SagaRemediationIntent ;
+moam:ConfigRemediationBlueprint moam:hasFunctionalIntent moam:SagaRemediationIntent ;
      moam:isDecomposedInto moam:PatchConfigAction ,
                            moam:RestartPodAction .
 

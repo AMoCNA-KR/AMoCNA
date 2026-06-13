@@ -27,7 +27,6 @@ public class ActionExecutionHandler {
         phase = LoopPhase.EXECUTE,
         step = "Execute Action & Verify",
         actionId = "#message.actionId()",
-        resource = "#message.resourceName()",
         details = "'protocol=' + #message.protocol() + ', isIdempotent=' + #message.isIdempotent() + ', maxRetries=' + #message.maxRetries()"
     )
     public ExecutionResult executeAndVerify(ActionMessage message) {

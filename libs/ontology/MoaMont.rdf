@@ -775,6 +775,12 @@
 
     <owl:Class rdf:about="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#RestartPodAction">
         <rdfs:subClassOf rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#SimpleAction"/>
+        <rdfs:subClassOf>
+            <owl:Restriction>
+                <owl:onProperty rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#dependsOn"/>
+                <owl:someValuesFrom rdf:resource="http://www.semanticweb.org/patryk/ontologies/2026/4/MoaMont#PatchConfigAction"/>
+            </owl:Restriction>
+        </rdfs:subClassOf>
         <rdfs:comment>Structural class (HOW axis): command to delete and recreate a pod or trigger a rollout restart.</rdfs:comment>
         <rdfs:label>RestartPodAction</rdfs:label>
     </owl:Class>
