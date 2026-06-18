@@ -6,3 +6,5 @@ from .scenario5 import Scenario5
 from .scenario6 import Scenario6
 from .scenario7 import Scenario7
 from .scenario8 import Scenario8
+from .scenario9 import Scenario9
+

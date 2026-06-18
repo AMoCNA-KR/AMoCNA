@@ -584,7 +584,7 @@ import amocna_cli.commands.benchmark.scenarios  # Trigger registration
 def benchmark_run(
     ctx: typer.Context,
     scenario: Annotated[
-        str, typer.Option(help="Scenario to run (1, 2, 3, 4, 5, 6, 7, all)")
+        str, typer.Option(help="Scenario to run (1, 2, 3, 4, 5, 6, 7, 8, 9, all)")
     ],
     keep_on_failure: Annotated[
         bool,
