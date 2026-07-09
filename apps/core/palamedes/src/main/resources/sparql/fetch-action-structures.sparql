@@ -3,7 +3,8 @@ SELECT DISTINCT ?action ?intent ?target ?protocol ?instruction ?method ?payload 
     ?preId ?preType ?prePolicy
     ?postId ?postType ?postPolicy
     ?step ?compensation
-    ?functionalIntent ?layerBoundary ?costValue ?idempotencyWindowSeconds WHERE {
+    ?functionalIntent ?layerBoundary ?costValue ?idempotencyWindowSeconds
+    ?authMechanism ?timeoutSeconds ?isIdempotent ?maxRetries ?priority ?executionDelay ?idempotencyKey WHERE {
   VALUES ?root { ${IRI::actionIds} }
 
   # 1. Discover all action nodes in the hierarchy.
@@ -42,6 +43,14 @@ SELECT DISTINCT ?action ?intent ?target ?protocol ?instruction ?method ?payload 
     OPTIONAL { ?blueprint ${PREFIX::ACTIONS_PREFIX}:hasExpectedStatusCode ?bs }
     OPTIONAL { ?blueprint ${PREFIX::ACTIONS_PREFIX}:idempotencyWindowSeconds ?bw }
     OPTIONAL { ?blueprint ${PREFIX::ACTIONS_PREFIX}:isDecomposedInto ?s3 }
+    OPTIONAL { ?blueprint ${PREFIX::ACTIONS_PREFIX}:hasAuthMechanism ?bAuth }
+    OPTIONAL { ?blueprint ${PREFIX::ACTIONS_PREFIX}:timeoutSeconds ?bTimeout }
+    OPTIONAL { ?blueprint ${PREFIX::ACTIONS_PREFIX}:isIdempotent ?bIdempotent }
+    OPTIONAL { ?blueprint ${PREFIX::ACTIONS_PREFIX}:maxRetries ?bRetries }
+    OPTIONAL { ?blueprint ${PREFIX::ACTIONS_PREFIX}:hasExecutionPayload ?bPayload }
+    OPTIONAL { ?blueprint ${PREFIX::ACTIONS_PREFIX}:hasPriority ?bPriority }
+    OPTIONAL { ?blueprint ${PREFIX::ACTIONS_PREFIX}:hasExecutionDelay ?bDelay }
+    OPTIONAL { ?blueprint ${PREFIX::ACTIONS_PREFIX}:hasIdempotencyKey ?bIdempotencyKey }
   } .
 
   BIND(COALESCE(?f1, ?f2, ?blueprintIntent) AS ?functionalIntent) .
@@ -81,6 +90,46 @@ SELECT DISTINCT ?action ?intent ?target ?protocol ?instruction ?method ?payload 
   OPTIONAL { ?action ${PREFIX::ACTIONS_PREFIX}:idempotencyWindowSeconds ?w1 } .
   OPTIONAL { ?intent ${PREFIX::ACTIONS_PREFIX}:idempotencyWindowSeconds ?w2 } .
   BIND(COALESCE(?w1, ?w2, ?bw) AS ?idempotencyWindowSeconds) .
+
+  # Auth Mechanism
+  OPTIONAL { ?action ${PREFIX::ACTIONS_PREFIX}:hasAuthMechanism ?auth1 } .
+  OPTIONAL { ?intent ${PREFIX::ACTIONS_PREFIX}:hasAuthMechanism ?auth2 } .
+  BIND(COALESCE(?auth1, ?auth2, ?bAuth) AS ?authMechanism) .
+
+  # Timeout Seconds
+  OPTIONAL { ?action ${PREFIX::ACTIONS_PREFIX}:timeoutSeconds ?timeout1 } .
+  OPTIONAL { ?intent ${PREFIX::ACTIONS_PREFIX}:timeoutSeconds ?timeout2 } .
+  BIND(COALESCE(?timeout1, ?timeout2, ?bTimeout) AS ?timeoutSeconds) .
+
+  # Is Idempotent
+  OPTIONAL { ?action ${PREFIX::ACTIONS_PREFIX}:isIdempotent ?idemp1 } .
+  OPTIONAL { ?intent ${PREFIX::ACTIONS_PREFIX}:isIdempotent ?idemp2 } .
+  BIND(COALESCE(?idemp1, ?idemp2, ?bIdempotent) AS ?isIdempotent) .
+
+  # Max Retries
+  OPTIONAL { ?action ${PREFIX::ACTIONS_PREFIX}:maxRetries ?retries1 } .
+  OPTIONAL { ?intent ${PREFIX::ACTIONS_PREFIX}:maxRetries ?retries2 } .
+  BIND(COALESCE(?retries1, ?retries2, ?bRetries) AS ?maxRetries) .
+
+  # Execution Payload
+  OPTIONAL { ?action ${PREFIX::ACTIONS_PREFIX}:hasExecutionPayload ?pay1 } .
+  OPTIONAL { ?intent ${PREFIX::ACTIONS_PREFIX}:hasExecutionPayload ?pay2 } .
+  BIND(COALESCE(?pay1, ?pay2, ?bPayload) AS ?payload) .
+
+  # Priority
+  OPTIONAL { ?action ${PREFIX::ACTIONS_PREFIX}:hasPriority ?priority1 } .
+  OPTIONAL { ?intent ${PREFIX::ACTIONS_PREFIX}:hasPriority ?priority2 } .
+  BIND(COALESCE(?priority1, ?priority2, ?bPriority) AS ?priority) .
+
+  # Execution Delay
+  OPTIONAL { ?action ${PREFIX::ACTIONS_PREFIX}:hasExecutionDelay ?delay1 } .
+  OPTIONAL { ?intent ${PREFIX::ACTIONS_PREFIX}:hasExecutionDelay ?delay2 } .
+  BIND(COALESCE(?delay1, ?delay2, ?bDelay) AS ?executionDelay) .
+
+  # Idempotency Key
+  OPTIONAL { ?action ${PREFIX::ACTIONS_PREFIX}:hasIdempotencyKey ?idempKey1 } .
+  OPTIONAL { ?intent ${PREFIX::ACTIONS_PREFIX}:hasIdempotencyKey ?idempKey2 } .
+  BIND(COALESCE(?idempKey1, ?idempKey2, ?bIdempotencyKey) AS ?idempotencyKey) .
 
   # 4. Conditions
   OPTIONAL {

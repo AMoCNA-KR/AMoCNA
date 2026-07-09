@@ -1,7 +1,9 @@
 package com.kubiki.palamedes.analyzer;
 
 import com.kubiki.common.ontology.OntologyRegistry;
-import com.kubiki.palamedes.knowledge.GraphDBGateway;
+import com.kubiki.palamedes.knowledge.ActionHydrationService;
+import com.kubiki.palamedes.knowledge.ActionRepository;
+import com.kubiki.palamedes.knowledge.WorkloadDiscoveryService;
 import com.kubiki.palamedes.model.RegistryAuthTarget;
 import com.kubiki.palamedes.service.RemediationFilterService;
 import com.kubiki.palamedes.utils.ActionUtils;
@@ -31,7 +33,9 @@ public class RegistryCredentialPlanner {
     private static final Logger log = LoggerFactory.getLogger(RegistryCredentialPlanner.class);
     private static final String ADD_IMAGE_PULL_SECRET_INTENT = "AddImagePullSecretIntent";
 
-    private final GraphDBGateway gateway;
+    private final WorkloadDiscoveryService workloadDiscoveryService;
+    private final ActionRepository actionRepository;
+    private final ActionHydrationService actionHydrationService;
     private final ActionUtils utils;
     private final OntologyRegistry ontologyRegistry;
     private final RemediationFilterService filterService;
@@ -50,7 +54,7 @@ public class RegistryCredentialPlanner {
         }
 
         Map<IRI, RegistryAuthTarget> uniqueByDeployment = new LinkedHashMap<>();
-        for (RegistryAuthTarget target : gateway.findRegistryAuthFailures()) {
+        for (RegistryAuthTarget target : workloadDiscoveryService.findRegistryAuthFailures()) {
             uniqueByDeployment.putIfAbsent(target.deploymentIri(), target);
         }
         if (uniqueByDeployment.isEmpty()) {
@@ -59,8 +63,8 @@ public class RegistryCredentialPlanner {
 
         for (RegistryAuthTarget target : uniqueByDeployment.values()) {
             String actionId = utils.generateActionId();
-            gateway.createActionWorkflow(target.deploymentIri(), intentIri, actionId);
-            gateway.storeActionHydration(actionId, Map.of(
+            actionRepository.createActionWorkflow(target.deploymentIri(), intentIri, actionId);
+            actionHydrationService.storeActionHydration(actionId, Map.of(
                     "namespace", target.namespace(),
                     "pullSecretName", target.pullSecretName()));
             log.info("Planned imagePullSecret patch for deployment {}/{} -> secret {}",

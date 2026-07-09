@@ -51,6 +51,8 @@ class PalamedesMapeLoopIT {
     private GraphDBGateway gateway;
     @Autowired
     private OntologyRegistry registry;
+    @Autowired
+    private com.kubiki.palamedes.dispatcher.OutboxService outboxService;
     @MockitoBean
     private RabbitTemplate rabbitTemplate;
     @MockitoBean
@@ -115,6 +117,8 @@ class PalamedesMapeLoopIT {
         assertEquals("State_InProgress", active.get(0).stateFragment());
         IRI actionIri = active.get(0).actionIri();
 
+        outboxService.processOutbox();
+
         verify(rabbitTemplate, atLeastOnce()).convertAndSend(anyString(), anyString(), any(ActionMessage.class));
 
         sagaManager.handleFeedback(new ActionStatusUpdate(actionIri.getLocalName(), ExecutionStatus.COMPLETED, null, 200));
@@ -175,6 +179,8 @@ class PalamedesMapeLoopIT {
                 .filter(a -> a.stateFragment().equals("State_InProgress"))
                 .findFirst()
                 .orElseThrow(() -> new RuntimeException("Child 1 not found in IN_PROGRESS state"));
+
+        outboxService.processOutbox();
 
         verify(rabbitTemplate, atLeastOnce()).convertAndSend(anyString(), anyString(), any(ActionMessage.class));
 

@@ -13,15 +13,28 @@ WHERE {
   # 2. Get the window for this intent
   ?intent ${PREFIX::ACTIONS_PREFIX}:idempotencyWindowSeconds ?window .
 
-  # 3. Find any OTHER action with same target and intent that SUCCEEDED
+  OPTIONAL { ${IRI::actionId} ${PREFIX::ACTIONS_PREFIX}:hasIdempotencyKey ?key } .
+
+  # 3. Find any OTHER action with same key or same target/intent that SUCCEEDED
   OPTIONAL {
-    ?prevAction a ?intent ;
-                ${PREFIX::ACTIONS_PREFIX}:targetsEntity ?target ;
-                ${PREFIX::ACTIONS_PREFIX}:hasCurrentState ${PREFIX::ACTIONS_PREFIX}:${INDIVIDUAL::STATE_SUCCEEDED} ;
-                ${PREFIX::ACTIONS_PREFIX}:hasLastTransitionTimestamp ?lastTransition .
-    
-    FILTER(?prevAction != ${IRI::actionId})
+    {
+      FILTER(bound(?key))
+      ?prevAction ${PREFIX::ACTIONS_PREFIX}:hasIdempotencyKey ?key ;
+                  ${PREFIX::ACTIONS_PREFIX}:hasCurrentState ${PREFIX::ACTIONS_PREFIX}:${INDIVIDUAL::STATE_SUCCEEDED} ;
+                  ${PREFIX::ACTIONS_PREFIX}:hasLastTransitionTimestamp ?lastTransition .
+      FILTER(?prevAction != ${IRI::actionId})
+    }
+    UNION
+    {
+      FILTER(!bound(?key))
+      ?prevAction a ?intent ;
+                  ${PREFIX::ACTIONS_PREFIX}:targetsEntity ?target ;
+                  ${PREFIX::ACTIONS_PREFIX}:hasCurrentState ${PREFIX::ACTIONS_PREFIX}:${INDIVIDUAL::STATE_SUCCEEDED} ;
+                  ${PREFIX::ACTIONS_PREFIX}:hasLastTransitionTimestamp ?lastTransition .
+      FILTER(?prevAction != ${IRI::actionId})
+    }
   }
 }
 ORDER BY DESC(?lastTransition)
 LIMIT 1
+

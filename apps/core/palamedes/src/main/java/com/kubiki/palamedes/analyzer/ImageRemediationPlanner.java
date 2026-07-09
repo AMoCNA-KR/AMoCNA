@@ -4,7 +4,9 @@ import com.kubiki.common.ontology.OntologyRegistry;
 import com.kubiki.common.vulnerability.UpgradePolicy;
 import com.kubiki.common.vulnerability.VulnerabilityCatalog;
 import com.kubiki.palamedes.config.PalamedesProperties;
-import com.kubiki.palamedes.knowledge.GraphDBGateway;
+import com.kubiki.palamedes.knowledge.ActionHydrationService;
+import com.kubiki.palamedes.knowledge.ActionRepository;
+import com.kubiki.palamedes.knowledge.WorkloadDiscoveryService;
 import com.kubiki.palamedes.model.ImageUpdateTarget;
 import com.kubiki.palamedes.service.RemediationFilterService;
 import com.kubiki.palamedes.utils.ActionUtils;
@@ -28,7 +30,9 @@ public class ImageRemediationPlanner {
     private static final Logger log = LoggerFactory.getLogger(ImageRemediationPlanner.class);
     private static final String IMAGE_UPDATE_INTENT = "ImageUpdateIntent";
 
-    private final GraphDBGateway gateway;
+    private final WorkloadDiscoveryService workloadDiscoveryService;
+    private final ActionRepository actionRepository;
+    private final ActionHydrationService actionHydrationService;
     private final ActionUtils utils;
     private final VulnerabilityCatalog vulnerabilityCatalog;
     private final PalamedesProperties properties;
@@ -70,7 +74,7 @@ public class ImageRemediationPlanner {
         UpgradePolicy upgradePolicy = UpgradePolicy.valueOf(
                 properties.vulnerability().upgradePolicy().toUpperCase());
 
-        List<ImageUpdateTarget> targets = gateway.findVulnerableWorkloads(vulnerablePairs);
+        List<ImageUpdateTarget> targets = workloadDiscoveryService.findVulnerableWorkloads(vulnerablePairs);
         if (targets.isEmpty()) {
             log.info("ImageRemediationPlanner: No workloads running catalog-vulnerable images");
             return false;
@@ -106,8 +110,8 @@ public class ImageRemediationPlanner {
             log.info("ImageRemediationPlanner: Planning image update action {} for deployment {}/{} (current: {}:{}, target: {})",
                     actionId, target.namespace(), target.deploymentName(),
                     target.imageRepository(), target.currentVersion(), target.targetVersion());
-            gateway.createActionWorkflow(target.deploymentIri(), intentIri, actionId);
-            gateway.storeActionHydration(actionId, Map.of(
+            actionRepository.createActionWorkflow(target.deploymentIri(), intentIri, actionId);
+            actionHydrationService.storeActionHydration(actionId, Map.of(
                     "containerName", target.containerName(),
                     "imageRepository", target.imageRepository(),
                     "targetVersion", target.targetVersion(),

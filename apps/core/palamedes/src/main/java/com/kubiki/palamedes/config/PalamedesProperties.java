@@ -12,8 +12,21 @@ public record PalamedesProperties(
         @NestedConfigurationProperty Engine engine,
         @NestedConfigurationProperty States states,
         @NestedConfigurationProperty Utilities utilities,
-        @NestedConfigurationProperty Vulnerability vulnerability
+        @NestedConfigurationProperty Vulnerability vulnerability,
+        @NestedConfigurationProperty Scheduler scheduler
 ) {
+
+    public static final long DEFAULT_VULNERABILITY_SCAN_INTERVAL_MS = 30_000L;
+    public static final boolean DEFAULT_VULNERABILITY_ENABLED = true;
+    public static final String DEFAULT_VULNERABILITY_UPGRADE_POLICY = "PATCH";
+    public static final String DEFAULT_VULNERABILITY_CATALOG_LOCATION = "classpath:vulnerabilities/demo-catalog.yaml";
+    public static final double DEFAULT_INFRASTRUCTURE_CAPACITY = 2.0;
+    public static final double DEFAULT_CONTAINERIZATION_CAPACITY = 1.5;
+    public static final double DEFAULT_APPLICATION_CAPACITY = 1.0;
+    public static final double DEFAULT_ALPHA = 0.5;
+    public static final double DEFAULT_BETA = 0.5;
+    public static final double DEFAULT_UTILIZATION = 0.5;
+    public static final double DEFAULT_MIN_DYNAMIC_COST = 0.01;
 
     private final static List<String> AVAILABLE_STATE_KEYS = List.of(
             "initial",
@@ -27,7 +40,10 @@ public record PalamedesProperties(
 
     public PalamedesProperties {
         if (vulnerability == null) {
-            vulnerability = new Vulnerability(true, 30_000, "PATCH", "classpath:vulnerabilities/demo-catalog.yaml");
+            vulnerability = new Vulnerability(DEFAULT_VULNERABILITY_ENABLED, DEFAULT_VULNERABILITY_SCAN_INTERVAL_MS, DEFAULT_VULNERABILITY_UPGRADE_POLICY, DEFAULT_VULNERABILITY_CATALOG_LOCATION);
+        }
+        if (scheduler == null) {
+            scheduler = new Scheduler();
         }
     }
 
@@ -66,14 +82,78 @@ public record PalamedesProperties(
     ) {
         public Vulnerability {
             if (scanIntervalMs <= 0) {
-                scanIntervalMs = 30_000;
+                scanIntervalMs = DEFAULT_VULNERABILITY_SCAN_INTERVAL_MS;
             }
             if (upgradePolicy == null || upgradePolicy.isBlank()) {
-                upgradePolicy = "PATCH";
+                upgradePolicy = DEFAULT_VULNERABILITY_UPGRADE_POLICY;
             }
             if (catalogLocation == null || catalogLocation.isBlank()) {
-                catalogLocation = "classpath:vulnerabilities/demo-catalog.yaml";
+                catalogLocation = DEFAULT_VULNERABILITY_CATALOG_LOCATION;
             }
+        }
+    }
+
+    public record OpposingPair(String first, String second) {}
+
+    public static final List<OpposingPair> DEFAULT_OPPOSING_INTENTS = List.of(
+            new OpposingPair("ScaleUp", "ScaleDown"),
+            new OpposingPair("ScalingUp", "ScalingDown"),
+            new OpposingPair("Start", "Stop")
+    );
+
+    public record Scheduler(
+            double infrastructureCapacity,
+            double containerizationCapacity,
+            double applicationCapacity,
+            double alpha,
+            double beta,
+            double defaultUtilization,
+            double minDynamicCost,
+            List<OpposingPair> opposingIntents,
+            Map<String, Double> layerCapacities
+    ) {
+        public Scheduler {
+            if (infrastructureCapacity <= 0) {
+                infrastructureCapacity = DEFAULT_INFRASTRUCTURE_CAPACITY;
+            }
+            if (containerizationCapacity <= 0) {
+                containerizationCapacity = DEFAULT_CONTAINERIZATION_CAPACITY;
+            }
+            if (applicationCapacity <= 0) {
+                applicationCapacity = DEFAULT_APPLICATION_CAPACITY;
+            }
+            if (alpha < 0) {
+                alpha = DEFAULT_ALPHA;
+            }
+            if (beta < 0) {
+                beta = DEFAULT_BETA;
+            }
+            if (defaultUtilization < 0) {
+                defaultUtilization = DEFAULT_UTILIZATION;
+            }
+            if (minDynamicCost <= 0) {
+                minDynamicCost = DEFAULT_MIN_DYNAMIC_COST;
+            }
+            if (opposingIntents == null) {
+                opposingIntents = DEFAULT_OPPOSING_INTENTS;
+            }
+            if (layerCapacities == null) {
+                layerCapacities = Map.of(
+                        "Infrastructure", infrastructureCapacity,
+                        "Containerization", containerizationCapacity,
+                        "Application", applicationCapacity
+                );
+            }
+        }
+
+        public Scheduler() {
+            this(DEFAULT_INFRASTRUCTURE_CAPACITY, DEFAULT_CONTAINERIZATION_CAPACITY, DEFAULT_APPLICATION_CAPACITY,
+                 DEFAULT_ALPHA, DEFAULT_BETA, DEFAULT_UTILIZATION, DEFAULT_MIN_DYNAMIC_COST,
+                 DEFAULT_OPPOSING_INTENTS, Map.of(
+                         "Infrastructure", DEFAULT_INFRASTRUCTURE_CAPACITY,
+                         "Containerization", DEFAULT_CONTAINERIZATION_CAPACITY,
+                         "Application", DEFAULT_APPLICATION_CAPACITY
+                 ));
         }
     }
 }

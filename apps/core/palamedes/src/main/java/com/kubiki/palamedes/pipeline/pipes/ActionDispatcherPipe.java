@@ -69,6 +69,18 @@ public class ActionDispatcherPipe implements MapePipe {
 
         return switch (context.actionData()) {
             case ActionData.SimpleAction simpleAction -> {
+                int delay = simpleAction.executionDelay();
+                if (delay > 0) {
+                    log.info("ActionDispatcherPipe: Delaying execution of action {} by {} seconds", simpleAction.id(), delay);
+                    try {
+                        Thread.sleep(delay * 1000L);
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        log.error("ActionDispatcherPipe: Execution delay interrupted for action {}", simpleAction.id());
+                        yield false;
+                    }
+                }
+
                 Map<String, String> hydrationData = hydrationFromContext(context);
                 log.debug("ActionDispatcherPipe: Building ActionMessage for SimpleAction");
                 ActionMessage message = plannerService.buildActionMessage(simpleAction, hydrationData);

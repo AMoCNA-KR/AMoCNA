@@ -6,7 +6,9 @@ import com.kubiki.palamedes.config.PalamedesProperties;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
+@EnableScheduling
 @EnableDaedalusRepositories(basePackages = "com.kubiki.palamedes.knowledge")
 @SpringBootApplication(scanBasePackages = {"com.kubiki.palamedes", "com.kubiki.common"})
 @EnableConfigurationProperties({PalamedesProperties.class, AmocnaCommonProperties.class})

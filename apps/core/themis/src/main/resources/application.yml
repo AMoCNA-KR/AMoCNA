@@ -55,3 +55,10 @@ themis:
     bearer-token: ${THEMIS_BEARER_TOKEN:}
   execution:
     post-condition-delay-ms: ${THEMIS_POST_CONDITION_DELAY_MS:5000}
+    default-timeout-seconds: ${THEMIS_DEFAULT_TIMEOUT_SECONDS:30}
+    default-shell-path: ${THEMIS_DEFAULT_SHELL_PATH:/bin/sh}
+    circuit-breaker:
+      failure-rate-threshold: ${THEMIS_CB_FAILURE_RATE_THRESHOLD:50}
+      wait-duration-in-open-state-seconds: ${THEMIS_CB_WAIT_DURATION_SECONDS:10}
+      permitted-number-of-calls-in-half-open-state: ${THEMIS_CB_PERMITTED_CALLS_HALF_OPEN:2}
+      sliding-window-size: ${THEMIS_CB_SLIDING_WINDOW_SIZE:10}

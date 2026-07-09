@@ -49,6 +49,14 @@ palamedes:
     scan-interval-ms: ${PALAMEDES_VULNERABILITY_SCAN_INTERVAL_MS:30000}
     upgrade-policy: ${PALAMEDES_VULNERABILITY_UPGRADE_POLICY:PATCH}
     catalog-location: ${PALAMEDES_VULNERABILITY_CATALOG_LOCATION:classpath:vulnerabilities/demo-catalog.yaml}
+  scheduler:
+    infrastructure-capacity: ${PALAMEDES_SCHEDULER_INFRASTRUCTURE_CAPACITY:2.0}
+    containerization-capacity: ${PALAMEDES_SCHEDULER_CONTAINERIZATION_CAPACITY:1.5}
+    application-capacity: ${PALAMEDES_SCHEDULER_APPLICATION_CAPACITY:1.0}
+    alpha: ${PALAMEDES_SCHEDULER_ALPHA:0.5}
+    beta: ${PALAMEDES_SCHEDULER_BETA:0.5}
+    default-utilization: ${PALAMEDES_SCHEDULER_DEFAULT_UTILIZATION:0.5}
+    min-dynamic-cost: ${PALAMEDES_SCHEDULER_MIN_DYNAMIC_COST:0.01}
 
 management:
   endpoints:

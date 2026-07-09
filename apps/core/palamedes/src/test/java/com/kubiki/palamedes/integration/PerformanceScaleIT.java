@@ -53,6 +53,9 @@ class PerformanceScaleIT {
     @MockitoBean
     private Repository realRepository;
 
+    @Autowired
+    private com.kubiki.palamedes.dispatcher.OutboxService outboxService;
+
     @BeforeEach
     void setUp() {
         if (inMemoryRepo == null) {
@@ -119,6 +122,9 @@ class PerformanceScaleIT {
         long end = System.currentTimeMillis();
 
         System.out.println("Processed " + actionCount + " actions in " + (end - start) + "ms");
+
+        // Manually trigger outbox processing to dispatch actions to mock rabbitTemplate
+        outboxService.processOutbox();
 
         // Verification:
         // 1. Check if messages were sent (sampling)

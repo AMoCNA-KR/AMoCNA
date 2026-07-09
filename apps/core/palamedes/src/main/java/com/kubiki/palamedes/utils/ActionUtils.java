@@ -28,6 +28,10 @@ public final class ActionUtils {
         return properties.utilities().compensationPrefix() + generateUUID();
     }
 
+    public String generateOutboxEventId(String namespace) {
+        return namespace + "OutboxEvent-" + generateUUID();
+    }
+
     private @NonNull String generateUUID() {
         return UUID.randomUUID().toString().substring(0, properties.utilities().sizeOfGeneratedUuid());
     }

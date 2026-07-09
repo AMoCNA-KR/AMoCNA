@@ -23,7 +23,9 @@ public class RabbitMQConfig {
 
     @Bean
     public Queue actionQueue() {
-        return new Queue(ACTION_QUEUE);
+        return QueueBuilder.durable(ACTION_QUEUE)
+                .maxPriority(10)
+                .build();
     }
 
     @Bean
@@ -74,5 +76,18 @@ public class RabbitMQConfig {
     @Bean
     public MessageConverter jsonMessageConverter(ObjectMapper objectMapper) {
         return new Jackson2JsonMessageConverter(objectMapper);
+    }
+
+    @Bean
+    public org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory rabbitListenerContainerFactory(
+            org.springframework.amqp.rabbit.connection.ConnectionFactory connectionFactory,
+            MessageConverter messageConverter) {
+        org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory factory = new org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory();
+        factory.setConnectionFactory(connectionFactory);
+        factory.setMessageConverter(messageConverter);
+        factory.setPrefetchCount(10);
+        factory.setConcurrentConsumers(3);
+        factory.setMaxConcurrentConsumers(5);
+        return factory;
     }
 }

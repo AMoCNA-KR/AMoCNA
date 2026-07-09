@@ -52,7 +52,7 @@ class ImageRemediationPlannerTest {
     @BeforeEach
     void setUp() {
         planner = new ImageRemediationPlanner(
-                gateway, utils, vulnerabilityCatalog, properties, ontologyRegistry, filterService);
+                gateway, gateway, gateway, utils, vulnerabilityCatalog, properties, ontologyRegistry, filterService);
     }
 
     @Test

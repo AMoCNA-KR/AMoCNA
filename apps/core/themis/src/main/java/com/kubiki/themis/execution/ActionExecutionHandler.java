@@ -19,7 +19,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class ActionExecutionHandler {
     private static final Logger log = LoggerFactory.getLogger(ActionExecutionHandler.class);
-    private final List<ProtocolExecutor> executors;
+    private final ExecutorFactory executorFactory;
 
     @PreVerify
     @PostVerify
@@ -30,9 +30,7 @@ public class ActionExecutionHandler {
         details = "'protocol=' + #message.protocol() + ', isIdempotent=' + #message.isIdempotent() + ', maxRetries=' + #message.maxRetries()"
     )
     public ExecutionResult executeAndVerify(ActionMessage message) {
-        ProtocolExecutor executor = executors.stream()
-                .filter(e -> e.supports(message.protocol()))
-                .findFirst()
+        ProtocolExecutor executor = executorFactory.getExecutor(message.protocol())
                 .orElse(null);
 
         if (executor == null) {

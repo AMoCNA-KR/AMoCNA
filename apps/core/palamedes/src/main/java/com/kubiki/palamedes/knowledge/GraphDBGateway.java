@@ -18,6 +18,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.time.OffsetDateTime;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -26,7 +28,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-public class GraphDBGateway {
+public class GraphDBGateway implements ActionRepository, ResourceDependencyService, IdempotencyAndCompensationService, WorkloadDiscoveryService, ActionHydrationService, IntentMetadataService, ConditionEvaluator {
     private static final Logger log = LoggerFactory.getLogger(GraphDBGateway.class);
     private static final String RESOURCE_IRI = "resource";
     private static final String ACTION_IRI = "action";
@@ -52,6 +54,47 @@ public class GraphDBGateway {
     private static final String ROOT_RESOURCE_NAME_IRI = "rootResourceName";
     private static final String DEPENDENT_IRI = "dependent";
 
+    private static final String HAS_EXECUTION_STATUS_IRI = "hasExecutionStatus";
+    private static final String AUTONOMIC_ACTION_IRI = "AutonomicAction";
+    private static final String HYDRATION_PAYLOAD_IRI = "hydrationPayload";
+
+    private static final String STATE_KEY_INITIAL = "initial";
+
+    private static final String STATUS_PENDING = "PENDING";
+    private static final String STATUS_IN_PROGRESS = "IN_PROGRESS";
+    private static final String STATUS_COMPLETED = "COMPLETED";
+    private static final String STATUS_FAILED = "FAILED";
+    private static final String STATUS_COMPENSATING = "COMPENSATING";
+
+    private static final String HAS_PRIORITY = "hasPriority";
+    private static final String HAS_EXECUTION_DELAY = "hasExecutionDelay";
+    private static final String HAS_IDEMPOTENCY_KEY = "hasIdempotencyKey";
+    private static final String HAS_EXECUTION_PAYLOAD = "hasExecutionPayload";
+    private static final String HAS_AUTH_MECHANISM = "hasAuthMechanism";
+    private static final String TIMEOUT_SECONDS = "timeoutSeconds";
+    private static final String IS_IDEMPOTENT = "isIdempotent";
+    private static final String MAX_RETRIES = "maxRetries";
+
+    private static final String BINDING_CONTAINER_NAME = "containerName";
+    private static final String BINDING_IMAGE_REPOSITORY = "imageRepository";
+    private static final String BINDING_CURRENT_VERSION = "currentVersion";
+    private static final String BINDING_DEPLOYMENT = "deployment";
+    private static final String BINDING_DEPLOYMENT_NAME = "deploymentName";
+    private static final String BINDING_SERVICE = "service";
+    private static final String BINDING_SERVICE_NAME = "serviceName";
+    private static final String BINDING_NAMESPACE = "namespace";
+    private static final String BINDING_PULL_SECRET_NAME = "pullSecretName";
+    private static final String BINDING_INTENT_VAR = "intent";
+    private static final String BINDING_RISK_MULTIPLIER = "riskMultiplier";
+    private static final String BINDING_CARDINALITY_CAP = "cardinalityCap";
+    private static final String BINDING_IS_HEALING = "isHealing";
+    private static final String BINDING_PAYLOAD_VAR = "payload";
+
+    private static final float DEFAULT_RISK_MULTIPLIER = 1.0f;
+    private static final int MIN_PRIORITY = 0;
+    private static final int MIN_DELAY = 0;
+    private static final int MIN_RETRIES = 0;
+
     private final SparqlClient sparqlClient;
     private final SparqlRepository sparqlRepository;
     private final ModelMapper modelMapper;
@@ -59,19 +102,34 @@ public class GraphDBGateway {
     private final OntologyRegistry ontologyRegistry;
     private final PalamedesProperties properties;
 
+    private String mapStateToStatus(String stateFragment) {
+        if (stateFragment == null) return STATUS_PENDING;
+        return switch (stateFragment) {
+            case "State_Initial", "State_Planned", "State_Validated" -> STATUS_PENDING;
+            case "State_InProgress" -> STATUS_IN_PROGRESS;
+            case "State_Succeeded" -> STATUS_COMPLETED;
+            case "State_Failed" -> STATUS_FAILED;
+            case "State_Compensating" -> STATUS_COMPENSATING;
+            default -> STATUS_PENDING;
+        };
+    }
+
     @Timed(value = "palamedes.graphdb.transition", description = "Time taken to transition action state")
     public void transitionState(IRI actionId, String stateFragment) {
         IRI hasCurrentState = ontologyRegistry.actionsOntology(HAS_CURRENT_STATE_IRI);
         IRI newState = ontologyRegistry.actionsOntology(stateFragment);
         IRI hasLastTransitionTimestamp = ontologyRegistry.actionsOntology(HAS_LAST_TRANSITION_TIMESTAMP_IRI);
+        IRI hasExecutionStatus = ontologyRegistry.actionsOntology(HAS_EXECUTION_STATUS_IRI);
 
         sparqlClient.executeWithConnection(conn -> {
             ValueFactory vf = conn.getValueFactory();
             conn.begin();
             conn.remove(actionId, hasCurrentState, null);
             conn.remove(actionId, hasLastTransitionTimestamp, null);
+            conn.remove(actionId, hasExecutionStatus, null);
             conn.add(actionId, hasCurrentState, newState);
             conn.add(actionId, hasLastTransitionTimestamp, vf.createLiteral(OffsetDateTime.now().toString(), XSD.DATETIME));
+            conn.add(actionId, hasExecutionStatus, vf.createLiteral(mapStateToStatus(stateFragment)));
             conn.commit();
             log.info("Transitioned action {} to {}", actionId, stateFragment);
         });
@@ -80,20 +138,22 @@ public class GraphDBGateway {
     public void createActionWorkflow(IRI resourceIri, IRI intentIri, String actionId) {
         IRI actionIri = ontologyRegistry.actionsOntology(actionId);
         IRI hasCurrentState = ontologyRegistry.actionsOntology(HAS_CURRENT_STATE_IRI);
-        IRI stateInitial = ontologyRegistry.actionsOntology(properties.states().actionStates().get("initial"));
+        IRI stateInitial = ontologyRegistry.actionsOntology(properties.states().actionStates().get(STATE_KEY_INITIAL));
         IRI targetsEntity = ontologyRegistry.actionsOntology(TARGETS_ENTITY_IRI);
         IRI hasActionID = ontologyRegistry.actionsOntology(HAS_ACTION_ID_IRI);
         IRI hasLastTransitionTimestamp = ontologyRegistry.actionsOntology(HAS_LAST_TRANSITION_TIMESTAMP_IRI);
+        IRI hasExecutionStatus = ontologyRegistry.actionsOntology(HAS_EXECUTION_STATUS_IRI);
 
         sparqlClient.executeWithConnection(conn -> {
             ValueFactory vf = conn.getValueFactory();
             conn.begin();
             conn.add(actionIri, RDF.TYPE, intentIri);
-            conn.add(actionIri, RDF.TYPE, ontologyRegistry.actionsOntology("AutonomicAction"));
+            conn.add(actionIri, RDF.TYPE, ontologyRegistry.actionsOntology(AUTONOMIC_ACTION_IRI));
             conn.add(actionIri, hasCurrentState, stateInitial);
             conn.add(actionIri, targetsEntity, resourceIri);
             conn.add(actionIri, hasActionID, vf.createLiteral(actionId));
             conn.add(actionIri, hasLastTransitionTimestamp, vf.createLiteral(OffsetDateTime.now().toString(), XSD.DATETIME));
+            conn.add(actionIri, hasExecutionStatus, vf.createLiteral(STATUS_PENDING));
             conn.commit();
             log.info("Created new action workflow {} for resource {} with intent {}", actionIri, resourceIri, intentIri);
         });
@@ -103,6 +163,7 @@ public class GraphDBGateway {
         IRI targetsEntity = ontologyRegistry.actionsOntology(TARGETS_ENTITY_IRI);
         IRI hasActionID = ontologyRegistry.actionsOntology(HAS_ACTION_ID_IRI);
         IRI isDecomposedInto = ontologyRegistry.actionsOntology(IS_DECOMPOSED_INTO_IRI);
+        IRI hasExecutionStatus = ontologyRegistry.actionsOntology(HAS_EXECUTION_STATUS_IRI);
 
         sparqlClient.executeWithConnection(conn -> {
             ValueFactory vf = conn.getValueFactory();
@@ -113,6 +174,21 @@ public class GraphDBGateway {
                     .actionsOntology(template instanceof ActionData.ComplexWorkflow ? COMPLEX_WORKFLOW_IRI : SIMPLE_ACTION_IRI));
             conn.add(actionIri, targetsEntity, target);
             conn.add(actionIri, hasActionID, vf.createLiteral(actionIri.getLocalName()));
+            conn.add(actionIri, hasExecutionStatus, vf.createLiteral(STATUS_PENDING));
+
+            // Add the new optional data properties for any action template
+            if (template.priority() > MIN_PRIORITY) {
+                conn.add(actionIri, ontologyRegistry.actionsOntology(HAS_PRIORITY),
+                        vf.createLiteral(String.valueOf(template.priority()), XSD.INTEGER));
+            }
+            if (template.executionDelay() > MIN_DELAY) {
+                conn.add(actionIri, ontologyRegistry.actionsOntology(HAS_EXECUTION_DELAY),
+                        vf.createLiteral(String.valueOf(template.executionDelay()), XSD.INTEGER));
+            }
+            if (template.idempotencyKey() != null) {
+                conn.add(actionIri, ontologyRegistry.actionsOntology(HAS_IDEMPOTENCY_KEY),
+                        vf.createLiteral(template.idempotencyKey()));
+            }
 
             if (template instanceof ActionData.SimpleAction sa) {
                 conn.add(actionIri, ontologyRegistry.actionsOntology(HAS_EXECUTION_PROTOCOL_IRI),
@@ -125,6 +201,24 @@ public class GraphDBGateway {
                 }
                 conn.add(actionIri, ontologyRegistry.actionsOntology(HAS_EXPECTED_STATUS_CODE_IRI),
                         vf.createLiteral(String.valueOf(sa.expectedStatusCode()), XSD.INTEGER));
+                if (sa.timeoutSeconds() > MIN_PRIORITY) {
+                    conn.add(actionIri, ontologyRegistry.actionsOntology(TIMEOUT_SECONDS),
+                            vf.createLiteral(String.valueOf(sa.timeoutSeconds()), XSD.INTEGER));
+                }
+                conn.add(actionIri, ontologyRegistry.actionsOntology(IS_IDEMPOTENT),
+                        vf.createLiteral(String.valueOf(sa.isIdempotent()), XSD.BOOLEAN));
+                if (sa.maxRetries() >= MIN_RETRIES) {
+                    conn.add(actionIri, ontologyRegistry.actionsOntology(MAX_RETRIES),
+                            vf.createLiteral(String.valueOf(sa.maxRetries()), XSD.INTEGER));
+                }
+                if (sa.payload() != null) {
+                    conn.add(actionIri, ontologyRegistry.actionsOntology(HAS_EXECUTION_PAYLOAD),
+                            vf.createLiteral(sa.payload()));
+                }
+                if (sa.authMechanism() != null) {
+                    conn.add(actionIri, ontologyRegistry.actionsOntology(HAS_AUTH_MECHANISM),
+                            vf.createLiteral(sa.authMechanism()));
+                }
             }
 
             conn.commit();
@@ -142,6 +236,24 @@ public class GraphDBGateway {
             }
             return null;
         });
+    }
+
+    public Map<IRI, WorkflowState> getStates(Collection<IRI> actionIris) {
+        if (actionIris == null || actionIris.isEmpty()) {
+            return Map.of();
+        }
+        String collectIds = actionIris.stream()
+                .map(iri -> "<" + iri.stringValue() + ">")
+                .collect(Collectors.joining(" "));
+
+        List<BindingSet> results = sparqlRepository.fetchActionStates(collectIds);
+        Map<IRI, WorkflowState> statesMap = new HashMap<>();
+        for (BindingSet bs : results) {
+            IRI action = (IRI) bs.getValue("action");
+            String stateStr = bs.getValue("state").stringValue();
+            statesMap.put(action, workflowStateMapper.fromFragment(stateStr));
+        }
+        return statesMap;
     }
 
     public void linkDependent(IRI dependent, IRI dependency) {
@@ -268,9 +380,9 @@ public class GraphDBGateway {
                 workloadIri,
                 workloadIri.getLocalName(),
                 ImageRemediationPlanner.parseNamespaceFromDeploymentIri(workloadIri),
-                bs.getValue("containerName").stringValue(),
-                bs.getValue("imageRepository").stringValue(),
-                bs.getValue("currentVersion").stringValue(),
+                bs.getValue(BINDING_CONTAINER_NAME).stringValue(),
+                bs.getValue(BINDING_IMAGE_REPOSITORY).stringValue(),
+                bs.getValue(BINDING_CURRENT_VERSION).stringValue(),
                 null,
                 null,
                 null
@@ -280,15 +392,15 @@ public class GraphDBGateway {
     public List<ImageUpdateTarget> findVulnerableWorkloads(String vulnerablePairs) {
         return sparqlRepository.findVulnerableWorkloads(vulnerablePairs).stream()
                 .map(bs -> new ImageUpdateTarget(
-                        (IRI) bs.getValue("deployment"),
-                        bs.getValue("deploymentName").stringValue(),
-                        ImageRemediationPlanner.parseNamespaceFromDeploymentIri((IRI) bs.getValue("deployment")),
-                        bs.getValue("containerName").stringValue(),
-                        bs.getValue("imageRepository").stringValue(),
-                        bs.getValue("currentVersion").stringValue(),
+                        (IRI) bs.getValue(BINDING_DEPLOYMENT),
+                        bs.getValue(BINDING_DEPLOYMENT_NAME).stringValue(),
+                        ImageRemediationPlanner.parseNamespaceFromDeploymentIri((IRI) bs.getValue(BINDING_DEPLOYMENT)),
+                        bs.getValue(BINDING_CONTAINER_NAME).stringValue(),
+                        bs.getValue(BINDING_IMAGE_REPOSITORY).stringValue(),
+                        bs.getValue(BINDING_CURRENT_VERSION).stringValue(),
                         null,
-                        bs.hasBinding("service") ? (IRI) bs.getValue("service") : null,
-                        bs.hasBinding("serviceName") ? bs.getValue("serviceName").stringValue() : null
+                        bs.hasBinding(BINDING_SERVICE) ? (IRI) bs.getValue(BINDING_SERVICE) : null,
+                        bs.hasBinding(BINDING_SERVICE_NAME) ? bs.getValue(BINDING_SERVICE_NAME).stringValue() : null
                 ))
                 .toList();
     }
@@ -297,10 +409,10 @@ public class GraphDBGateway {
     public List<RegistryAuthTarget> findRegistryAuthFailures() {
         return sparqlRepository.findRegistryAuthFailures().stream()
                 .map(bs -> new RegistryAuthTarget(
-                        (IRI) bs.getValue("deployment"),
-                        bs.getValue("deploymentName").stringValue(),
-                        bs.getValue("namespace").stringValue(),
-                        bs.getValue("pullSecretName").stringValue()))
+                        (IRI) bs.getValue(BINDING_DEPLOYMENT),
+                        bs.getValue(BINDING_DEPLOYMENT_NAME).stringValue(),
+                        bs.getValue(BINDING_NAMESPACE).stringValue(),
+                        bs.getValue(BINDING_PULL_SECRET_NAME).stringValue()))
                 .toList();
     }
 
@@ -309,7 +421,7 @@ public class GraphDBGateway {
             return;
         }
         IRI actionIri = ontologyRegistry.actionsOntology(actionId);
-        IRI hydrationKey = ontologyRegistry.actionsOntology("hydrationPayload");
+        IRI hydrationKey = ontologyRegistry.actionsOntology(HYDRATION_PAYLOAD_IRI);
         String payload = ActionHydrationPayload.serialize(parameters);
         sparqlClient.executeWithConnection(conn -> {
             var vf = conn.getValueFactory();
@@ -332,7 +444,7 @@ public class GraphDBGateway {
         Map<IRI, Map<String, String>> hydrations = new LinkedHashMap<>();
         for (BindingSet bs : results) {
             IRI action = (IRI) bs.getValue(ACTION_IRI);
-            String payload = bs.getValue("payload").stringValue();
+            String payload = bs.getValue(BINDING_PAYLOAD_VAR).stringValue();
             hydrations.put(action, ActionHydrationPayload.deserialize(payload));
         }
         return hydrations;
@@ -376,4 +488,64 @@ public class GraphDBGateway {
     public boolean executeConditionQuery(String query) {
         return sparqlClient.executeBooleanQuery(query);
     }
+
+    public void updateExecutionStatus(IRI actionId, String status) {
+        IRI hasExecutionStatus = ontologyRegistry.actionsOntology(HAS_EXECUTION_STATUS_IRI);
+        sparqlClient.executeWithConnection(conn -> {
+            ValueFactory vf = conn.getValueFactory();
+            conn.begin();
+            conn.remove(actionId, hasExecutionStatus, null);
+            conn.add(actionId, hasExecutionStatus, vf.createLiteral(status));
+            conn.commit();
+            log.info("Updated action {} execution status to {}", actionId, status);
+        });
+    }
+
+    public Map<IRI, IntentMetadata> fetchIntentMetadata(List<IRI> intentIds) {
+        if (intentIds.isEmpty()) return Map.of();
+        String joinedIds = intentIds.stream()
+                .map(iri -> "<" + iri.stringValue() + ">")
+                .collect(Collectors.joining(" "));
+        
+        List<BindingSet> results = sparqlRepository.fetchIntentMetadata(joinedIds);
+        Map<IRI, IntentMetadata> metadata = new LinkedHashMap<>();
+        for (BindingSet bs : results) {
+            IRI intent = (IRI) bs.getValue(BINDING_INTENT_VAR);
+            float risk = bs.getValue(BINDING_RISK_MULTIPLIER) != null ? ((Literal) bs.getValue(BINDING_RISK_MULTIPLIER)).floatValue() : DEFAULT_RISK_MULTIPLIER;
+            int cap = bs.getValue(BINDING_CARDINALITY_CAP) != null ? ((Literal) bs.getValue(BINDING_CARDINALITY_CAP)).intValue() : Integer.MAX_VALUE;
+            boolean healing = bs.getValue(BINDING_IS_HEALING) != null ? ((Literal) bs.getValue(BINDING_IS_HEALING)).booleanValue() : true;
+            
+            metadata.put(intent, new IntentMetadata(intent, risk, cap, healing));
+        }
+        for (IRI id : intentIds) {
+            metadata.putIfAbsent(id, new IntentMetadata(id, DEFAULT_RISK_MULTIPLIER, Integer.MAX_VALUE, true));
+        }
+        return metadata;
+    }
+
+    public boolean isDependentResource(IRI source, IRI target) {
+        if (source == null || target == null) return false;
+        return sparqlRepository.isDependentResource(source.stringValue(), target.stringValue());
+    }
+
+    public java.time.Instant getLastTransitionTimestamp(IRI actionIri) {
+        IRI hasLastTransitionTimestamp = ontologyRegistry.actionsOntology(HAS_LAST_TRANSITION_TIMESTAMP_IRI);
+        return sparqlClient.executeWithConnection(conn -> {
+            var statements = conn.getStatements(actionIri, hasLastTransitionTimestamp, null);
+            if (statements.hasNext()) {
+                String val = statements.next().getObject().stringValue();
+                try {
+                    return java.time.Instant.parse(val);
+                } catch (Exception e) {
+                    try {
+                        return java.time.OffsetDateTime.parse(val).toInstant();
+                    } catch (Exception ex) {
+                        return null;
+                    }
+                }
+            }
+            return null;
+        });
+    }
 }
+

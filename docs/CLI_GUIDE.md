@@ -276,6 +276,28 @@ The `benchmark` subcommand provides automated control loops to run evaluation sc
   ./amocna.py benchmark run --scenario 7
   ```
 
+#### Scenario 8: Semantic Control Plane Scalability Benchmark
+
+- **Goal**: Evaluate the performance and scalability of the autonomic semantic control plane (GraphDB query times, Metis ingestion, and Palamedes planning) under a large volume of resources.
+- **Process**: Starts a local `kubectl proxy`, programmatically creates a baseline of 200 virtual nodes and 1,000 virtual pods in the `amocna-benchmark` namespace using the KWOK simulator. Once Metis completes pod ingestion into GraphDB, it records baseline semantic triple counts and GraphDB memory footprints. It then triggers stress by injecting `ConfigDriftState` into 500 pods simultaneously via a batch SPARQL update, and monitors GraphDB memory under stress and Palamedes logs to inspect planning phases/latencies.
+- **Execution**:
+
+  ```bash
+  ./amocna.py benchmark run --scenario 8
+  ```
+
+#### Scenario 9: 6-Hour Stress Test & Performance Monitoring
+
+- **Goal**: Long-term reliability validation, resource leak detection, and continuous latency profiling of the AMoCNA autonomic loop components.
+- **Process**: Establishes a baseline of 200 nodes and 1,000 pods via KWOK. Over a long duration (default: 6 hours, configurable via `AMOCNA_BENCHMARK_DURATION` in seconds), it cycles through anomaly stress (injecting `ConfigDriftState` into 500 pods at 0m, clearing them at 5m) and pod churn (re-creating 50 pods every 10m). Every 30 seconds, it samples CPU/memory usage, RabbitMQ queue sizes, total triples, SPARQL query/update latencies, and planner/execution durations, exporting the timeline to a CSV file (`benchmark_metrics_9_<timestamp>.csv`).
+- **Execution**:
+
+  ```bash
+  export AMOCNA_BENCHMARK_DURATION=21600 # 6 hours in seconds
+  ./amocna.py benchmark run --scenario 9
+  ```
+
+
 ### 5.2 Helper Routines
 
 - **Status Check**: Inspect active workloads, pod counts, and Locust traffic parameters:

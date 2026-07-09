@@ -1,10 +1,7 @@
 package com.kubiki.themis.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.springframework.amqp.core.Binding;
-import org.springframework.amqp.core.BindingBuilder;
-import org.springframework.amqp.core.DirectExchange;
-import org.springframework.amqp.core.Queue;
+import org.springframework.amqp.core.*;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.context.annotation.Bean;
@@ -21,7 +18,9 @@ public class RabbitMQConfig {
 
     @Bean
     public Queue actionQueue() {
-        return new Queue(ACTION_QUEUE);
+        return QueueBuilder.durable(ACTION_QUEUE)
+                .maxPriority(10)
+                .build();
     }
 
     @Bean
@@ -47,5 +46,18 @@ public class RabbitMQConfig {
     @Bean
     public MessageConverter jsonMessageConverter(ObjectMapper objectMapper) {
         return new Jackson2JsonMessageConverter(objectMapper);
+    }
+
+    @Bean
+    public org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory rabbitListenerContainerFactory(
+            org.springframework.amqp.rabbit.connection.ConnectionFactory connectionFactory,
+            MessageConverter messageConverter) {
+        org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory factory = new org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory();
+        factory.setConnectionFactory(connectionFactory);
+        factory.setMessageConverter(messageConverter);
+        factory.setPrefetchCount(10);
+        factory.setConcurrentConsumers(3);
+        factory.setMaxConcurrentConsumers(5);
+        return factory;
     }
 }

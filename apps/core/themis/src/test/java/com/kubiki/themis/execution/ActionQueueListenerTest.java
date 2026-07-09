@@ -42,7 +42,8 @@ class ActionQueueListenerTest {
         when(conditionEvaluator.evaluatePreConditions(any())).thenReturn(true);
         when(conditionEvaluator.evaluatePostConditions(any())).thenReturn(true);
         
-        ActionExecutionHandler targetHandler = new ActionExecutionHandler(List.of(executor));
+        ExecutorFactory executorFactory = new ExecutorFactory(List.of(executor));
+        ActionExecutionHandler targetHandler = new ActionExecutionHandler(executorFactory);
         
         var factory = new AspectJProxyFactory(targetHandler);
         var aspect = new ActionVerificationAspect(conditionEvaluator, statusProducer, properties);
@@ -83,7 +84,8 @@ class ActionQueueListenerTest {
         // Ensure no executor supports this protocol
         ProtocolExecutor otherExecutor = mock(ProtocolExecutor.class);
         when(otherExecutor.supports(any())).thenReturn(false);
-        ActionExecutionHandler rawHandler = new ActionExecutionHandler(List.of(otherExecutor));
+        ExecutorFactory otherFactory = new ExecutorFactory(List.of(otherExecutor));
+        ActionExecutionHandler rawHandler = new ActionExecutionHandler(otherFactory);
         
         AspectJProxyFactory factory = new AspectJProxyFactory(rawHandler);
         ActionVerificationAspect aspect = new ActionVerificationAspect(conditionEvaluator, statusProducer, properties);
@@ -140,4 +142,24 @@ class ActionQueueListenerTest {
         verify(executor, times(2)).executeStateless(message);
         verify(statusProducer).sendUpdate(argThat(u -> u.status() == ExecutionStatus.COMPLETED));
     }
+
+    @Test
+    void shouldNotRetryOnRetryableFailureIfNonIdempotent() {
+        ActionMessage message = new ActionMessage(
+                "action-no-retry", Protocol.REST, "instruction", "POST", null,
+                null, 10, false, 3, 200 // 3 retries defined, but isIdempotent = false
+        );
+        when(executor.supports(Protocol.REST)).thenReturn(true);
+
+        // Fail first time with timeout
+        when(executor.executeStateless(message))
+                .thenReturn(ExecutionResult.failure(504, "Timeout", ExecutionStatus.FAILED_TIMEOUT));
+
+        listener.receiveAction(message);
+
+        // Verify executor was called only once
+        verify(executor, times(1)).executeStateless(message);
+        verify(statusProducer).sendUpdate(argThat(u -> u.status() == ExecutionStatus.FAILED_TIMEOUT));
+    }
 }
+

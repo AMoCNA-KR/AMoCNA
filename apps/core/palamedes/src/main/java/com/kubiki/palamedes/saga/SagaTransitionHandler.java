@@ -16,6 +16,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Map;
 
 @Component
 @RequiredArgsConstructor
@@ -118,8 +119,9 @@ public class SagaTransitionHandler {
         List<IRI> children = gateway.findChildren(parentIri);
         boolean allSucceeded = true;
 
+        Map<IRI, WorkflowState> childStates = gateway.getStates(children);
         for (IRI child : children) {
-            WorkflowState childState = gateway.getState(child);
+            WorkflowState childState = childStates.get(child);
             if (childState != WorkflowState.SUCCEEDED) {
                 log.debug("Parent {} not finished: child {} is in state {}", parentIri, child, childState);
                 allSucceeded = false;

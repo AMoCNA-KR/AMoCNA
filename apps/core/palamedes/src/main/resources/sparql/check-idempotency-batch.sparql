@@ -11,12 +11,26 @@ WHERE {
 
   ?intent ${PREFIX::ACTIONS_PREFIX}:idempotencyWindowSeconds ?window .
 
+  OPTIONAL { ?action ${PREFIX::ACTIONS_PREFIX}:hasIdempotencyKey ?key } .
+
   OPTIONAL {
-    ?prevAction a ?intent ;
-                ${PREFIX::ACTIONS_PREFIX}:targetsEntity ?target ;
-                ${PREFIX::ACTIONS_PREFIX}:hasCurrentState ${PREFIX::ACTIONS_PREFIX}:${INDIVIDUAL::STATE_SUCCEEDED} ;
-                ${PREFIX::ACTIONS_PREFIX}:hasLastTransitionTimestamp ?prevLastTransition .
-    FILTER(?prevAction != ?action)
+    {
+      FILTER(bound(?key))
+      ?prevAction ${PREFIX::ACTIONS_PREFIX}:hasIdempotencyKey ?key ;
+                  ${PREFIX::ACTIONS_PREFIX}:hasCurrentState ${PREFIX::ACTIONS_PREFIX}:${INDIVIDUAL::STATE_SUCCEEDED} ;
+                  ${PREFIX::ACTIONS_PREFIX}:hasLastTransitionTimestamp ?prevLastTransition .
+      FILTER(?prevAction != ?action)
+    }
+    UNION
+    {
+      FILTER(!bound(?key))
+      ?prevAction a ?intent ;
+                  ${PREFIX::ACTIONS_PREFIX}:targetsEntity ?target ;
+                  ${PREFIX::ACTIONS_PREFIX}:hasCurrentState ${PREFIX::ACTIONS_PREFIX}:${INDIVIDUAL::STATE_SUCCEEDED} ;
+                  ${PREFIX::ACTIONS_PREFIX}:hasLastTransitionTimestamp ?prevLastTransition .
+      FILTER(?prevAction != ?action)
+    }
   }
 }
 GROUP BY ?action ?window
+

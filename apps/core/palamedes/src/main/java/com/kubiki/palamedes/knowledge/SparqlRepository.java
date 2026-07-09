@@ -69,4 +69,30 @@ public interface SparqlRepository {
 
     @SparqlQuery(resource = "sparql/find-registry-auth-failures.sparql")
     List<BindingSet> findRegistryAuthFailures();
+
+    @SparqlQuery(resource = "sparql/fetch-intent-metadata.sparql")
+    List<BindingSet> fetchIntentMetadata(@Type(TemplateType.PLAIN) @Bind("IRI::intentIds") String intentIds);
+
+    @SparqlQuery(resource = "sparql/is-dependent-resource.sparql")
+    boolean isDependentResource(
+            @Type(TemplateType.IRI) @Bind("IRI::source") String source,
+            @Type(TemplateType.IRI) @Bind("IRI::target") String target
+    );
+
+    @SparqlQuery(resource = "sparql/fetch-action-states.sparql")
+    List<BindingSet> fetchActionStates(@Type(TemplateType.PLAIN) @Bind("IRI::actionIds") String actionIds);
+
+    @SparqlUpdate(resource = "sparql/save-outbox-event.sparql")
+    void saveOutboxEvent(
+            @Type(TemplateType.IRI) @Bind("IRI::eventIri") String eventIri,
+            @Type(TemplateType.LITERAL) @Bind("LITERAL::payload") String payload,
+            @Type(TemplateType.LITERAL) @Bind("LITERAL::timestamp") String timestamp
+    );
+
+    @SparqlQuery(resource = "sparql/find-pending-outbox-events.sparql")
+    List<BindingSet> findPendingEvents();
+
+    @SparqlUpdate(resource = "sparql/delete-outbox-event.sparql")
+    void deleteOutboxEvent(@Type(TemplateType.IRI) @Bind("IRI::eventIri") String eventIri);
 }
+

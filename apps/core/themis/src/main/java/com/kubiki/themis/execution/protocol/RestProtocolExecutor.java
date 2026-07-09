@@ -23,12 +23,39 @@ import org.springframework.web.client.RestClient;
 @Component
 public class RestProtocolExecutor implements ProtocolExecutor {
     private static final Logger log = LoggerFactory.getLogger(RestProtocolExecutor.class);
-    private final RestClient restClient;
+    private static final int DEFAULT_TIMEOUT_FALLBACK = 30;
+    private static final int MS_PER_SECOND = 1000;
+    private static final int HTTP_STATUS_UNAUTHORIZED = 401;
+    private static final int HTTP_STATUS_FORBIDDEN = 403;
+    private static final int HTTP_STATUS_GATEWAY_TIMEOUT = 504;
+    private static final int HTTP_STATUS_INTERNAL_SERVER_ERROR = 500;
+
+    private final RestClient.Builder restClientBuilder;
     private final ThemisProperties themisProperties;
+    private final io.github.resilience4j.circuitbreaker.CircuitBreaker circuitBreaker;
 
     public RestProtocolExecutor(RestClient.Builder restClientBuilder, ThemisProperties themisProperties) {
-        this.restClient = restClientBuilder.build();
+        this.restClientBuilder = restClientBuilder;
         this.themisProperties = themisProperties;
+
+        ThemisProperties.CircuitBreaker cbProps = null;
+        if (themisProperties != null && themisProperties.execution() != null) {
+            cbProps = themisProperties.execution().circuitBreaker();
+        }
+        if (cbProps == null) {
+            cbProps = new ThemisProperties.CircuitBreaker(50.0f, 10, 2, 10);
+        }
+
+        io.github.resilience4j.circuitbreaker.CircuitBreakerConfig circuitBreakerConfig =
+                io.github.resilience4j.circuitbreaker.CircuitBreakerConfig.custom()
+                .failureRateThreshold(cbProps.failureRateThreshold())
+                .waitDurationInOpenState(java.time.Duration.ofSeconds(cbProps.waitDurationInOpenStateSeconds()))
+                .permittedNumberOfCallsInHalfOpenState(cbProps.permittedNumberOfCallsInHalfOpenState())
+                .slidingWindowSize(cbProps.slidingWindowSize())
+                .recordExceptions(ResourceAccessException.class, HttpServerErrorException.class, java.io.IOException.class)
+                .ignoreExceptions(HttpClientErrorException.class)
+                .build();
+        this.circuitBreaker = io.github.resilience4j.circuitbreaker.CircuitBreaker.of("restExecutor", circuitBreakerConfig);
     }
 
     @Override
@@ -42,15 +69,44 @@ public class RestProtocolExecutor implements ProtocolExecutor {
     }
 
     private ExecutionResult doExecute(ActionMessage action) {
+        try {
+            return circuitBreaker.executeCallable(() -> executeCall(action));
+        } catch (io.github.resilience4j.circuitbreaker.CallNotPermittedException e) {
+            log.error("REST action {} blocked: Circuit Breaker is OPEN", action.actionId());
+            return ExecutionResult.failure(HTTP_STATUS_GATEWAY_TIMEOUT, "Circuit Breaker is OPEN", ExecutionStatus.FAILED_TIMEOUT);
+        } catch (Exception e) {
+            log.error("REST action {} failed during circuit breaker invocation: {}", action.actionId(), e.getMessage());
+            if (e instanceof ResourceAccessException || e instanceof java.io.IOException) {
+                return ExecutionResult.failure(HTTP_STATUS_GATEWAY_TIMEOUT, e.getMessage(), ExecutionStatus.FAILED_TIMEOUT);
+            }
+            if (e instanceof HttpServerErrorException hsee) {
+                return ExecutionResult.failure(hsee.getStatusCode().value(), e.getMessage(), ExecutionStatus.FAILED_HTTP);
+            }
+            return ExecutionResult.failure(HTTP_STATUS_INTERNAL_SERVER_ERROR, e.getMessage(), ExecutionStatus.FAILED_INTERNAL);
+        }
+    }
+
+    private ExecutionResult executeCall(ActionMessage action) throws Exception {
         HttpMethod httpMethod = action.method() != null ? HttpMethod.valueOf(action.method().toUpperCase()) : HttpMethod.GET;
         String url = action.instruction();
         String payload = action.payload();
         int expectedStatusCode = action.expectedStatusCode();
 
-        log.info("Executing REST {} request to {} for action {}", httpMethod, url, action.actionId());
+        int fallbackTimeout = (themisProperties != null && themisProperties.execution() != null)
+                ? themisProperties.execution().defaultTimeoutSeconds()
+                : DEFAULT_TIMEOUT_FALLBACK;
+        int usedTimeout = action.timeoutSeconds() > 0 ? action.timeoutSeconds() : fallbackTimeout;
+
+        log.info("Executing REST {} request to {} for action {} with timeout {}s", httpMethod, url, action.actionId(), usedTimeout);
 
         try {
-            RestClient.RequestBodySpec request = restClient.method(httpMethod).uri(url);
+            int timeoutMs = usedTimeout * MS_PER_SECOND;
+            org.springframework.http.client.SimpleClientHttpRequestFactory requestFactory = new org.springframework.http.client.SimpleClientHttpRequestFactory();
+            requestFactory.setConnectTimeout(timeoutMs);
+            requestFactory.setReadTimeout(timeoutMs);
+            RestClient perRequestClient = restClientBuilder.requestFactory(requestFactory).build();
+
+            RestClient.RequestBodySpec request = perRequestClient.method(httpMethod).uri(url);
 
             // Auth Injection
             if ("BearerToken".equalsIgnoreCase(action.authMechanism())) {
@@ -78,18 +134,18 @@ public class RestProtocolExecutor implements ProtocolExecutor {
         } catch (HttpClientErrorException e) {
             int observed = e.getStatusCode().value();
             log.error("REST action {} failed with client error {}: {}", action.actionId(), observed, e.getMessage());
-            ExecutionStatus status = (observed == 401 || observed == 403) ? ExecutionStatus.FAILED_AUTH : ExecutionStatus.FAILED_HTTP;
+            ExecutionStatus status = (observed == HTTP_STATUS_UNAUTHORIZED || observed == HTTP_STATUS_FORBIDDEN) ? ExecutionStatus.FAILED_AUTH : ExecutionStatus.FAILED_HTTP;
             return ExecutionResult.failure(observed, e.getMessage(), status);
         } catch (HttpServerErrorException e) {
             int observed = e.getStatusCode().value();
             log.error("REST action {} failed with server error {}: {}", action.actionId(), observed, e.getMessage());
-            return ExecutionResult.failure(observed, e.getMessage(), ExecutionStatus.FAILED_HTTP);
+            throw e;
         } catch (ResourceAccessException e) {
             log.error("REST action {} failed with timeout or connection error: {}", action.actionId(), e.getMessage());
-            return ExecutionResult.failure(504, e.getMessage(), ExecutionStatus.FAILED_TIMEOUT);
+            throw e;
         } catch (Exception e) {
             log.error("Failed to execute REST action {}: {}", action.actionId(), e.getMessage());
-            return ExecutionResult.failure(500, e.getMessage(), ExecutionStatus.FAILED_INTERNAL);
+            throw e;
         }
     }
 }

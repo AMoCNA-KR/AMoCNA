@@ -34,6 +34,9 @@ public class ModelMapper {
     private static final String BINDING_IS_IDEMPOTENT = "isIdempotent";
     private static final String BINDING_MAX_RETRIES = "maxRetries";
     private static final String BINDING_IDEMPOTENCY_WINDOW = "idempotencyWindowSeconds";
+    private static final String BINDING_PRIORITY = "priority";
+    private static final String BINDING_EXECUTION_DELAY = "executionDelay";
+    private static final String BINDING_IDEMPOTENCY_KEY = "idempotencyKey";
 
     private static final String BINDING_FUNCTIONAL_INTENT = "functionalIntent";
     private static final String BINDING_LAYER_BOUNDARY = "layerBoundary";
@@ -45,6 +48,21 @@ public class ModelMapper {
     private static final String BINDING_POST_ID = "postId";
     private static final String BINDING_POST_TYPE = "postType";
     private static final String BINDING_POST_POLICY = "postPolicy";
+
+    private static final String ONT_AUTONOMIC_ACTION = "AutonomicAction";
+    private static final String ONT_SIMPLE_ACTION = "SimpleAction";
+    private static final String ONT_COMPLEX_WORKFLOW = "ComplexWorkflow";
+
+    private static final float DEFAULT_COST = 1.0f;
+    private static final int DEFAULT_IDEMPOTENCY_WINDOW = 60;
+    private static final int DEFAULT_TIMEOUT = 30;
+    private static final int DEFAULT_MAX_RETRIES = 3;
+    private static final int DEFAULT_PRIORITY_OR_DELAY = 0;
+
+    private static final int EXPECTED_STATUS_CODE_SUCCESS = 200;
+    private static final int EXPECTED_STATUS_CODE_SHELL = 0;
+
+    private static final int INDEX_OFFSET = 1;
 
     public Map<IRI, ActionData> mapActions(Map<IRI, List<BindingSet>> allBindings, List<IRI> rootActionIds) {
         Map<IRI, ActionData> results = new HashMap<>();
@@ -79,9 +97,9 @@ public class ModelMapper {
                 .toList();
 
         return intents.stream()
-                .filter(i -> !i.getLocalName().equals("AutonomicAction")
-                        && !i.getLocalName().equals("SimpleAction")
-                        && !i.getLocalName().equals("ComplexWorkflow"))
+                .filter(i -> !i.getLocalName().equals(ONT_AUTONOMIC_ACTION)
+                        && !i.getLocalName().equals(ONT_SIMPLE_ACTION)
+                        && !i.getLocalName().equals(ONT_COMPLEX_WORKFLOW))
                 .findFirst()
                 .orElse(intents.isEmpty() ? null : intents.get(0));
     }
@@ -91,42 +109,43 @@ public class ModelMapper {
                 .map(bs -> bs.getValue(BINDING_INTENT))
                 .filter(v -> v instanceof IRI)
                 .map(v -> (IRI) v)
-                .anyMatch(i -> i.getLocalName().equals("ComplexWorkflow") || i.getLocalName().endsWith(INTENT_SUFFIX_COMPLEX));
+                .anyMatch(i -> i.getLocalName().equals(ONT_COMPLEX_WORKFLOW) || i.getLocalName().endsWith(INTENT_SUFFIX_COMPLEX));
     }
 
     private Result<ActionData> mapSimpleAction(IRI actionId, List<BindingSet> bindings) {
         Result<Protocol> protocolResult = getProtocol(bindings);
         Result<String> instructionResult = getString(bindings, BINDING_INSTRUCTION);
 
-        IRI target = getIRI(bindings, BINDING_TARGET).value();
-        IRI functionalIntent = getIRI(bindings, BINDING_FUNCTIONAL_INTENT).value();
-        IRI layerBoundary = getIRI(bindings, BINDING_LAYER_BOUNDARY).value();
-        float cost = getOptionalFloat(bindings, BINDING_COST_VALUE, 1.0f);
-        int window = getOptionalInt(bindings, BINDING_IDEMPOTENCY_WINDOW, 60);
-
         return Result.combine(protocolResult, instructionResult, (protocol, instruction) -> {
             List<ActionData.Condition> pre = extractConditions(bindings, BINDING_PRE_ID, BINDING_PRE_TYPE, BINDING_PRE_POLICY);
             List<ActionData.Condition> post = extractConditions(bindings, BINDING_POST_ID, BINDING_POST_TYPE, BINDING_POST_POLICY);
 
+            ActionData.SimpleAction action = OtmMapper.map(bindings, ActionData.SimpleAction.class, actionId, pre, post);
+
+            int expected = getExpectedStatusCode(bindings, protocol);
+
             return ActionData.SimpleAction.builder()
-                    .id(actionId)
-                    .functionalIntent(functionalIntent)
-                    .layerBoundary(layerBoundary)
-                    .executionCost(cost)
-                    .protocol(protocol)
-                    .target(target)
-                    .instruction(instruction)
-                    .method(getHttpMethod(bindings).value())
-                    .payload(getOptionalString(bindings, BINDING_PAYLOAD))
-                    .data(new HashMap<>())
-                    .preConditions(pre)
-                    .postConditions(post)
-                    .expectedStatusCode(getExpectedStatusCode(bindings, protocol))
-                    .authMechanism(getOptionalString(bindings, BINDING_AUTH_MECHANISM))
-                    .timeoutSeconds(getOptionalInt(bindings, BINDING_TIMEOUT, 30))
-                    .isIdempotent(getOptionalBoolean(bindings, BINDING_IS_IDEMPOTENT, true))
-                    .maxRetries(getOptionalInt(bindings, BINDING_MAX_RETRIES, 3))
-                    .idempotencyWindowSeconds(window)
+                    .id(action.id())
+                    .functionalIntent(action.functionalIntent())
+                    .layerBoundary(action.layerBoundary())
+                    .executionCost(action.executionCost())
+                    .protocol(action.protocol())
+                    .instruction(action.instruction())
+                    .target(action.target())
+                    .data(action.data())
+                    .method(action.method())
+                    .payload(action.payload())
+                    .preConditions(action.preConditions())
+                    .postConditions(action.postConditions())
+                    .expectedStatusCode(expected)
+                    .authMechanism(action.authMechanism())
+                    .timeoutSeconds(action.timeoutSeconds())
+                    .isIdempotent(action.isIdempotent())
+                    .maxRetries(action.maxRetries())
+                    .idempotencyWindowSeconds(action.idempotencyWindowSeconds())
+                    .priority(action.priority())
+                    .executionDelay(action.executionDelay())
+                    .idempotencyKey(action.idempotencyKey())
                     .build();
         });
     }
@@ -139,7 +158,7 @@ public class ModelMapper {
             } catch (NumberFormatException _) {
             }
         }
-        return protocol == Protocol.SHELL ? 0 : 200;
+        return protocol == Protocol.SHELL ? EXPECTED_STATUS_CODE_SHELL : EXPECTED_STATUS_CODE_SUCCESS;
     }
 
     private String getOptionalString(List<BindingSet> bindings, String name) {
@@ -189,12 +208,6 @@ public class ModelMapper {
         List<ActionData> steps = new ArrayList<>();
         Map<IRI, ActionData> compensations = new HashMap<>();
 
-        IRI target = getIRI(bindings, BINDING_TARGET).value();
-        IRI functionalIntent = getIRI(bindings, BINDING_FUNCTIONAL_INTENT).value();
-        IRI layerBoundary = getIRI(bindings, BINDING_LAYER_BOUNDARY).value();
-        float cost = getOptionalFloat(bindings, BINDING_COST_VALUE, 1.0f);
-        int window = getOptionalInt(bindings, BINDING_IDEMPOTENCY_WINDOW, 60);
-
         for (BindingSet bs : bindings) {
             Result<IRI> stepIdResult = getIRI(bs, BINDING_STEP);
             if (!stepIdResult.isSuccess()) {
@@ -227,8 +240,23 @@ public class ModelMapper {
         // De-duplicate steps
         List<ActionData> distinctSteps = steps.stream().distinct().toList();
 
-        return Result.success(new ActionData.ComplexWorkflow(actionId, functionalIntent, layerBoundary, cost, target, window, distinctSteps, compensations));
+        ActionData.ComplexWorkflow mapped = OtmMapper.map(bindings, ActionData.ComplexWorkflow.class, actionId, distinctSteps, compensations);
+
+        return Result.success(new ActionData.ComplexWorkflow(
+                mapped.id(),
+                mapped.functionalIntent(),
+                mapped.layerBoundary(),
+                mapped.executionCost(),
+                mapped.target(),
+                mapped.idempotencyWindowSeconds(),
+                mapped.priority(),
+                mapped.executionDelay(),
+                mapped.idempotencyKey(),
+                distinctSteps,
+                compensations
+        ));
     }
+
 
     private List<ActionData.Condition> extractConditions(
             List<BindingSet> bindings,
@@ -303,9 +331,9 @@ public class ModelMapper {
     private Result<Protocol> parseProtocol(String raw) {
         String name = raw;
         if (raw.contains("#")) {
-            name = raw.substring(raw.indexOf("#") + 1);
+            name = raw.substring(raw.indexOf("#") + INDEX_OFFSET);
         } else if (raw.contains("/")) {
-            name = raw.substring(raw.lastIndexOf("/") + 1);
+            name = raw.substring(raw.lastIndexOf("/") + INDEX_OFFSET);
         }
         try {
             return Result.success(Protocol.valueOf(name.toUpperCase()));
@@ -323,7 +351,7 @@ public class ModelMapper {
     }
 
     private HttpMethod parseHttpMethod(String raw) {
-        String name = raw.contains("#") ? raw.substring(raw.indexOf("#") + 1) : raw;
+        String name = raw.contains("#") ? raw.substring(raw.indexOf("#") + INDEX_OFFSET) : raw;
         try {
             return HttpMethod.valueOf(name.toUpperCase());
         } catch (Exception e) {

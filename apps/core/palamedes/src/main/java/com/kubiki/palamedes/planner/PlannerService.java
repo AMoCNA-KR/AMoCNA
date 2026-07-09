@@ -45,7 +45,8 @@ public class PlannerService {
                 action.timeoutSeconds(),
                 action.isIdempotent(),
                 action.maxRetries(),
-                action.expectedStatusCode()
+                action.expectedStatusCode(),
+                action.priority()
         );
     }
 }

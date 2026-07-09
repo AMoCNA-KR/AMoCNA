@@ -7,7 +7,8 @@ moam:ScaleUpAction moam:hasExecutionProtocol "SHELL" ;
                    moam:hasExpectedStatusCode "0"^^xsd:integer ;
                    moam:hasFunctionalIntent moam:HorizontalScalingUpIntent ;
                    moam:hasLayerBoundary moam:ContainerizationLayer ;
-                   moam:idempotencyWindowSeconds "300"^^xsd:integer .
+                   moam:idempotencyWindowSeconds "300"^^xsd:integer ;
+                   moam:hasExecutionCost [ a moam:ExecutionCost ; moam:costValue "2.0"^^xsd:float ] .
 
 # Scenario 1 (Scale Down)
 moam:ScaleDownAction moam:hasExecutionProtocol "SHELL" ;
@@ -15,7 +16,8 @@ moam:ScaleDownAction moam:hasExecutionProtocol "SHELL" ;
                      moam:hasExpectedStatusCode "0"^^xsd:integer ;
                      moam:hasFunctionalIntent moam:HorizontalScalingDownIntent ;
                      moam:hasLayerBoundary moam:ContainerizationLayer ;
-                     moam:idempotencyWindowSeconds "300"^^xsd:integer .
+                     moam:idempotencyWindowSeconds "300"^^xsd:integer ;
+                     moam:hasExecutionCost [ a moam:ExecutionCost ; moam:costValue "1.0"^^xsd:float ] .
 
 # Scenario 2
 moam:ScaleVerticallyAction moam:hasExecutionProtocol "SHELL" ;
@@ -23,7 +25,8 @@ moam:ScaleVerticallyAction moam:hasExecutionProtocol "SHELL" ;
                             moam:hasExpectedStatusCode "0"^^xsd:integer ;
                             moam:hasFunctionalIntent moam:VerticalScalingUpIntent ;
                             moam:hasLayerBoundary moam:ContainerizationLayer ;
-                            moam:idempotencyWindowSeconds "300"^^xsd:integer .
+                            moam:idempotencyWindowSeconds "300"^^xsd:integer ;
+                            moam:hasExecutionCost [ a moam:ExecutionCost ; moam:costValue "1.5"^^xsd:float ] .
 
 # Scenario 3
 moam:ImageUpdateAction moam:hasExecutionProtocol "SHELL" ;
@@ -31,7 +34,8 @@ moam:ImageUpdateAction moam:hasExecutionProtocol "SHELL" ;
                         moam:hasExpectedStatusCode "0"^^xsd:integer ;
                         moam:hasFunctionalIntent moam:ImageUpdateIntent ;
                         moam:hasLayerBoundary moam:ContainerizationLayer ;
-                        moam:idempotencyWindowSeconds "300"^^xsd:integer .
+                        moam:idempotencyWindowSeconds "300"^^xsd:integer ;
+                        moam:hasExecutionCost [ a moam:ExecutionCost ; moam:costValue "1.0"^^xsd:float ] .
 
 # Scenario 4
 moam:ConfigRemediationBlueprint moam:hasFunctionalIntent moam:SagaRemediationIntent ;
@@ -44,7 +48,8 @@ moam:PatchConfigAction moam:hasExecutionProtocol "SHELL" ;
                        moam:hasFunctionalIntent moam:PatchConfigIntent ;
                        moam:hasCompensation moam:RollbackConfigAction ;
                        moam:hasLayerBoundary moam:ContainerizationLayer ;
-                       moam:idempotencyWindowSeconds "300"^^xsd:integer .
+                       moam:idempotencyWindowSeconds "300"^^xsd:integer ;
+                       moam:hasExecutionCost [ a moam:ExecutionCost ; moam:costValue "0.5"^^xsd:float ] .
 
 moam:RestartPodAction moam:hasExecutionProtocol "SHELL" ;
                       moam:hasExecutionInstruction "kubectl rollout restart deployment/${resourceName} -n ${namespace}" ;
@@ -52,14 +57,16 @@ moam:RestartPodAction moam:hasExecutionProtocol "SHELL" ;
                       moam:hasFunctionalIntent moam:RestartPodIntent ;
                       moam:hasLayerBoundary moam:ContainerizationLayer ;
                       moam:dependsOn moam:PatchConfigAction ; 
-                      moam:idempotencyWindowSeconds "300"^^xsd:integer .
+                      moam:idempotencyWindowSeconds "300"^^xsd:integer ;
+                      moam:hasExecutionCost [ a moam:ExecutionCost ; moam:costValue "1.5"^^xsd:float ] .
 
 moam:RollbackConfigAction moam:hasExecutionProtocol "SHELL" ;
                           moam:hasExecutionInstruction "kubectl patch configmap ${resourceName}-config -n ${namespace} --type merge -p '{\"data\":{\"updated\":\"false\"}}'" ;
                           moam:hasExpectedStatusCode "0"^^xsd:integer ;
                           moam:hasFunctionalIntent moam:RollbackConfigIntent ;
                           moam:hasLayerBoundary moam:ContainerizationLayer ;
-                          moam:idempotencyWindowSeconds "300"^^xsd:integer .
+                          moam:idempotencyWindowSeconds "300"^^xsd:integer ;
+                          moam:hasExecutionCost [ a moam:ExecutionCost ; moam:costValue "0.5"^^xsd:float ] .
 
 # Scenario 7 — Registry Credential Remediation
 moam:AddImagePullSecretAction moam:hasExecutionProtocol "SHELL" ;
@@ -67,4 +74,5 @@ moam:AddImagePullSecretAction moam:hasExecutionProtocol "SHELL" ;
                               moam:hasExpectedStatusCode "0"^^xsd:integer ;
                               moam:hasFunctionalIntent moam:AddImagePullSecretIntent ;
                               moam:hasLayerBoundary moam:ContainerizationLayer ;
-                              moam:idempotencyWindowSeconds "300"^^xsd:integer .
+                              moam:idempotencyWindowSeconds "300"^^xsd:integer ;
+                              moam:hasExecutionCost [ a moam:ExecutionCost ; moam:costValue "0.5"^^xsd:float ] .

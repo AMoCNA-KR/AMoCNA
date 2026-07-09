@@ -33,7 +33,7 @@ public class SagaManager {
     private final SagaTransitionHandler transitionHandler;
 
     public void handleFeedback(ActionStatusUpdate update) {
-        log.info("SagaManager: Handling feedback");
+        log.info("SagaManager: Handling feedback: {}", update);
 
         IRI actionIri = ontologyRegistry.actionsOntology(update.actionId());
 
@@ -42,13 +42,16 @@ public class SagaManager {
             log.info("SagaManager: Action completed. Evaluating post-conditions...");
             if (verifyPostConditions(actionIri)) {
                 log.info("SagaManager: Action succeeded and verified");
+                gateway.updateExecutionStatus(actionIri, "COMPLETED");
                 transitionHandler.processSuccessTransition(actionIri);
             } else {
                 log.error("SagaManager: Action completed but POST-CONDITIONS FAILED");
+                gateway.updateExecutionStatus(actionIri, "FAILED_INTERNAL");
                 transitionHandler.processFailureTransition(actionIri);
             }
         } else {
-            log.error("SagaManager: Action failed");
+            log.error("SagaManager: Action failed: {}", update.status());
+            gateway.updateExecutionStatus(actionIri, update.status().name());
             transitionHandler.processFailureTransition(actionIri);
         }
 

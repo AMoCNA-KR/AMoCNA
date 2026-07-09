@@ -54,7 +54,8 @@ class RestProtocolExecutorTest {
 
     @BeforeEach
     void setUp() {
-        when(restClientBuilder.build()).thenReturn(restClient);
+        org.mockito.Mockito.lenient().when(restClientBuilder.requestFactory(org.mockito.ArgumentMatchers.any())).thenReturn(restClientBuilder);
+        org.mockito.Mockito.lenient().when(restClientBuilder.build()).thenReturn(restClient);
         restProtocolExecutor = new RestProtocolExecutor(restClientBuilder, themisProperties);
     }
 

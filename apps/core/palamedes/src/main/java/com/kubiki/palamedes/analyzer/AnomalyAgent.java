@@ -4,7 +4,8 @@ import com.kubiki.common.logging.LogLoopStep;
 import com.kubiki.common.logging.LoopPhase;
 import com.kubiki.palamedes.analyzer.hydration.ActionHydrator;
 import com.kubiki.palamedes.config.PalamedesProperties;
-import com.kubiki.palamedes.knowledge.GraphDBGateway;
+import com.kubiki.palamedes.knowledge.ActionHydrationService;
+import com.kubiki.palamedes.knowledge.ResourceDependencyService;
 import com.kubiki.palamedes.model.AnomalyTarget;
 import com.kubiki.palamedes.pipeline.EngineWakeupEvent;
 import com.kubiki.palamedes.reasoner.RcaEngine;
@@ -31,7 +32,8 @@ import java.util.concurrent.atomic.AtomicLong;
 public class AnomalyAgent {
     private static final Logger log = LoggerFactory.getLogger(AnomalyAgent.class);
 
-    private final GraphDBGateway gateway;
+    private final ResourceDependencyService resourceDependencyService;
+    private final ActionHydrationService actionHydrationService;
     private final RcaEngine rcaEngine;
     private final ActionUtils utils;
     private final ApplicationEventPublisher publisher;
@@ -79,7 +81,7 @@ public class AnomalyAgent {
     private void doAnalyze() {
         log.debug("AnomalyAgent: Starting cluster anomaly scan...");
 
-        List<AnomalyTarget> anomalies = gateway.findAnomalies();
+        List<AnomalyTarget> anomalies = resourceDependencyService.findAnomalies();
         if (anomalies.isEmpty()) {
             log.debug("AnomalyAgent: No anomalies found in GraphDB.");
             return;
@@ -147,7 +149,7 @@ public class AnomalyAgent {
         Map<String, String> hydration = hydrator.hydrate(target);
 
         log.debug("AnomalyAgent: Storing action hydration for {}: {}", actionId, hydration);
-        gateway.storeActionHydration(actionId, hydration);
+        actionHydrationService.storeActionHydration(actionId, hydration);
     }
 
     private ActionHydrator findBestHydrator(IRI intentIri) {

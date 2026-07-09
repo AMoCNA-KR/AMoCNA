@@ -1,6 +1,7 @@
 package com.kubiki.palamedes.model;
 
 import com.kubiki.common.model.Protocol;
+import com.kubiki.palamedes.knowledge.RdfBinding;
 import lombok.Builder;
 import org.eclipse.rdf4j.model.IRI;
 import org.springframework.http.HttpMethod;
@@ -23,6 +24,12 @@ public sealed interface ActionData
 
     int idempotencyWindowSeconds();
 
+    int priority();
+
+    int executionDelay();
+
+    String idempotencyKey();
+
     List<Condition> preConditions();
 
     List<Condition> postConditions();
@@ -33,34 +40,40 @@ public sealed interface ActionData
     @Builder
     record SimpleAction(
             IRI id,
-            IRI functionalIntent,
-            IRI layerBoundary,
-            float executionCost,
-            Protocol protocol,
-            String instruction,
-            IRI target,
+            @RdfBinding("functionalIntent") IRI functionalIntent,
+            @RdfBinding("layerBoundary") IRI layerBoundary,
+            @RdfBinding(value = "costValue", defaultValue = "1.0") float executionCost,
+            @RdfBinding("protocol") Protocol protocol,
+            @RdfBinding("instruction") String instruction,
+            @RdfBinding("target") IRI target,
             Map<String, String> data,
-            HttpMethod method,
-            String payload,
+            @RdfBinding("method") HttpMethod method,
+            @RdfBinding("payload") String payload,
             List<Condition> preConditions,
             List<Condition> postConditions,
-            int expectedStatusCode,
-            String authMechanism,
-            int timeoutSeconds,
-            boolean isIdempotent,
-            int maxRetries,
-            int idempotencyWindowSeconds
+            @RdfBinding("expectedStatusCode") int expectedStatusCode,
+            @RdfBinding("authMechanism") String authMechanism,
+            @RdfBinding(value = "timeoutSeconds", defaultValue = "30") int timeoutSeconds,
+            @RdfBinding(value = "isIdempotent", defaultValue = "true") boolean isIdempotent,
+            @RdfBinding(value = "maxRetries", defaultValue = "3") int maxRetries,
+            @RdfBinding(value = "idempotencyWindowSeconds", defaultValue = "30") int idempotencyWindowSeconds,
+            @RdfBinding(value = "priority", defaultValue = "5") int priority,
+            @RdfBinding(value = "executionDelay", defaultValue = "0") int executionDelay,
+            @RdfBinding("idempotencyKey") String idempotencyKey
     ) implements ActionData {
     }
 
     @Builder
     record ComplexWorkflow(
             IRI id,
-            IRI functionalIntent,
-            IRI layerBoundary,
-            float executionCost,
-            IRI target,
-            int idempotencyWindowSeconds,
+            @RdfBinding("functionalIntent") IRI functionalIntent,
+            @RdfBinding("layerBoundary") IRI layerBoundary,
+            @RdfBinding(value = "costValue", defaultValue = "1.0") float executionCost,
+            @RdfBinding("target") IRI target,
+            @RdfBinding(value = "idempotencyWindowSeconds", defaultValue = "30") int idempotencyWindowSeconds,
+            @RdfBinding(value = "priority", defaultValue = "5") int priority,
+            @RdfBinding(value = "executionDelay", defaultValue = "0") int executionDelay,
+            @RdfBinding("idempotencyKey") String idempotencyKey,
             List<ActionData> steps,
             Map<IRI, ActionData> compensations
     ) implements ActionData {
@@ -75,3 +88,4 @@ public sealed interface ActionData
         }
     }
 }
+
