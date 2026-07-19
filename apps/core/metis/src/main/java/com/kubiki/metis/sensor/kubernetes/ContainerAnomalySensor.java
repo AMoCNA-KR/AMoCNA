@@ -28,9 +28,9 @@ import java.util.List;
  * </ul>
  *
  * <p>Emits {@link StateChangedEvent} on the container's parent pod IRI when an
- * anomaly condition is detected. These states are subclasses of both
- * {@code ContainerState} and {@code Anomaly} in CNEEOnt, which allows Palamedes
- * to detect them as anomalies requiring remediation.
+ * anomaly condition is detected. These states are CNEEOnt State subclasses;
+ * BridgeOnt marks them as {@code Anomaly} and maps remediable ones via
+ * {@code isResolvedByIntent} for Palamedes discovery.
  */
 @Component
 @ConditionalOnProperty(name = "metis.sensor.enabled", havingValue = "true", matchIfMissing = false)

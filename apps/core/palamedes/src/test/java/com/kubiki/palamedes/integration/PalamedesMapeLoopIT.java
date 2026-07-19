@@ -94,7 +94,7 @@ class PalamedesMapeLoopIT {
             conn.add(pod, registry.resourcesOntology("hasState"), state);
             conn.add(state, RDF.TYPE, anomalyType);
 
-            conn.add(anomalyType, RDFS.SUBCLASSOF, registry.resourcesOntology("Anomaly"));
+            conn.add(anomalyType, RDFS.SUBCLASSOF, registry.bridgeOntology("Anomaly"));
 
             conn.add(pod, registry.resourcesOntology("resourceName"), vf.createLiteral("pod1"));
 
@@ -140,7 +140,7 @@ class PalamedesMapeLoopIT {
         try (RepositoryConnection conn = inMemoryRepo.getConnection()) {
             conn.add(pod, registry.resourcesOntology("hasState"), state);
             conn.add(state, RDF.TYPE, anomalyType);
-            conn.add(anomalyType, RDFS.SUBCLASSOF, registry.resourcesOntology("Anomaly"));
+            conn.add(anomalyType, RDFS.SUBCLASSOF, registry.bridgeOntology("Anomaly"));
 
             conn.add(pod, registry.resourcesOntology("resourceName"), vf.createLiteral("pod3"));
 

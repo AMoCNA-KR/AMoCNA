@@ -61,7 +61,7 @@ public final class CneeOntology {
     public static final String STATE_CONTAINER_CRASH_LOOP = "ContainerCrashLoopBackOffState";
 
     // -------------------------------------------------------------------------
-    // Container anomaly states — subclasses of both ContainerState and Anomaly.
+    // Container anomaly states — CNEEOnt State subclasses; BridgeOnt marks them Anomaly.
     // -------------------------------------------------------------------------
     public static final String STATE_CONTAINER_LIVENESS_FAILED = "ContainerLivenessProbeFailedState";
     public static final String STATE_CONTAINER_READINESS_FAILED = "ContainerReadinessProbeFailedState";
@@ -71,13 +71,13 @@ public final class CneeOntology {
     public static final String STATE_POD_EVICTED = "ExecutionUnitEvictedState";
 
     // -------------------------------------------------------------------------
-    // Pod anomaly states — subclasses of both ExecutionUnitState and Anomaly.
+    // Pod anomaly states — CNEEOnt State subclasses; BridgeOnt marks them Anomaly.
     // -------------------------------------------------------------------------
     public static final String STATE_IMAGE_PULL_BACKOFF = "ImagePullBackOffState";
     public static final String STATE_NODE_NOT_READY = "NodeNotReadyState";
 
     // -------------------------------------------------------------------------
-    // Node anomaly states — subclasses of both NodeState and Anomaly.
+    // Node anomaly states — CNEEOnt State subclasses; BridgeOnt marks them Anomaly.
     // -------------------------------------------------------------------------
     public static final String STATE_NODE_CPU_SATURATED = "NodeCPUSaturatedState";
     public static final String STATE_NODE_MEMORY_STARVED = "NodeMemoryStarvedState";
