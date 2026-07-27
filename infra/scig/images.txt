@@ -1,0 +1,5 @@
+# Images scanned by the SCIG Syft CronJob (one image ref per line).
+# Used when DISCOVER_CLUSTER_IMAGES=false (default PoC mode).
+#
+# Sock Shop front-end — matches Palamedes Scenario 5 vulnerable baseline.
+docker.io/weaveworksdemos/front-end:0.3.0
