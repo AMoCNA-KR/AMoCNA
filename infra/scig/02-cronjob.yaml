@@ -1,10 +1,10 @@
 apiVersion: batch/v1
 kind: CronJob
 metadata:
-  name: scig-syft
+  name: scig
   namespace: amocna-scig
   labels:
-    app: scig-syft
+    app: scig
     amocna.io/pillar: scig
 spec:
   # Daily at 02:00 UTC
@@ -19,14 +19,14 @@ spec:
       template:
         metadata:
           labels:
-            app: scig-syft
+            app: scig
             amocna.io/pillar: scig
         spec:
-          serviceAccountName: scig-syft
+          serviceAccountName: scig
           restartPolicy: Never
           containers:
             - name: syft-scan
-              image: alpine:3.20
+              image: ghcr.io/amocna-kr/scig:1.12.12-SNAPSHOT
               imagePullPolicy: IfNotPresent
               command: ["/bin/sh", "/scripts/scan.sh"]
               env:
@@ -36,8 +36,6 @@ spec:
                   value: "6379"
                 - name: SBOM_TTL_SECONDS
                   value: "172800"
-                - name: SYFT_VERSION
-                  value: v1.20.0
                 # PoC default: scan ConfigMap image list only
                 - name: DISCOVER_CLUSTER_IMAGES
                   value: "false"
@@ -62,8 +60,8 @@ spec:
           volumes:
             - name: scripts
               configMap:
-                name: scig-syft-scripts
+                name: scig-scripts
                 defaultMode: 0755
             - name: config
               configMap:
-                name: scig-syft-images
+                name: scig-images

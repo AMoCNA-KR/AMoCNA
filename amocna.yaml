@@ -53,6 +53,15 @@ core_apps:
       grpc: 50051
     description: Themis Autonomic Action Executor
 
+# ─── Standalone images (not Maven modules) ─────────────────────────────
+standalone_apps:
+  scig:
+    path: infra/scig
+    type: docker-image
+    image_name: scig
+    dockerfile: infra/scig/scig.dockerfile
+    description: SCIG sensor image (SBOM generation for ASPOF supply-chain pillar)
+
 # ─── Kubernetes port-forwarding shortcuts ──────────────────────────────
 forward:
   graphdb:
@@ -87,8 +96,8 @@ k8s:
   cluster_resources:
     - { kind: clusterrole, name: pod-reader }
     - { kind: clusterrolebinding, name: read-secrets-global }
-    - { kind: clusterrole, name: scig-syft-pod-reader }
-    - { kind: clusterrolebinding, name: scig-syft-pod-reader }
+    - { kind: clusterrole, name: scig-pod-reader }
+    - { kind: clusterrolebinding, name: scig-pod-reader }
   # GraphDB hostPath PV (infra/graphdb/01-storage.yaml) — wiped on undeploy unless --keep-graphdb-data
   graphdb_storage:
     host_path: /data/graphdb

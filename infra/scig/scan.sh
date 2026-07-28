@@ -8,30 +8,23 @@ set -eu
 REDIS_HOST="${REDIS_HOST:-redis.redis.svc.cluster.local}"
 REDIS_PORT="${REDIS_PORT:-6379}"
 SBOM_TTL_SECONDS="${SBOM_TTL_SECONDS:-172800}"
-SYFT_VERSION="${SYFT_VERSION:-v1.20.0}"
 IMAGE_LIST_FILE="${IMAGE_LIST_FILE:-/config/images.txt}"
 DISCOVER_CLUSTER_IMAGES="${DISCOVER_CLUSTER_IMAGES:-false}"
 SCAN_NAMESPACES="${SCAN_NAMESPACES:-sock-shop}"
 
-log() { echo "[scig-syft] $*"; }
+log() { echo "[scig] $*"; }
 
-install_tools() {
-  apk add --no-cache curl tar redis >/dev/null
-
-  if ! command -v syft >/dev/null 2>&1; then
-    log "Installing syft ${SYFT_VERSION}..."
-    # Asset name uses version without leading 'v', e.g. syft_1.20.0_linux_amd64.tar.gz
-    VER_NUM="${SYFT_VERSION#v}"
-    curl -sSfL "https://github.com/anchore/syft/releases/download/${SYFT_VERSION}/syft_${VER_NUM}_linux_amd64.tar.gz" \
-      | tar -xz -C /usr/local/bin syft
-    chmod +x /usr/local/bin/syft
-  fi
+require_tools() {
+  for tool in syft redis-cli; do
+    if ! command -v "$tool" >/dev/null 2>&1; then
+      log "ERROR: missing required tool '$tool' in image"
+      exit 1
+    fi
+  done
 
   if [ "${DISCOVER_CLUSTER_IMAGES}" = "true" ] && ! command -v kubectl >/dev/null 2>&1; then
-    log "Installing kubectl..."
-    KVER="$(curl -sL https://dl.k8s.io/release/stable.txt)"
-    curl -sSfL "https://dl.k8s.io/release/${KVER}/bin/linux/amd64/kubectl" -o /usr/local/bin/kubectl
-    chmod +x /usr/local/bin/kubectl
+    log "ERROR: DISCOVER_CLUSTER_IMAGES=true requires kubectl in image"
+    exit 1
   fi
 }
 
@@ -118,8 +111,6 @@ scan_and_store() {
   pkg_count="$(grep -o '"id":' "${out}" | wc -l | tr -d ' ')"
   scanned_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
-  # -x reads the *last* argument from stdin — do not put EX after the value slot.
-  # SET then EXPIRE keeps large JSON payloads safe.
   redis-cli -h "${REDIS_HOST}" -p "${REDIS_PORT}" -x SET "${key}" < "${out}" >/dev/null
   redis-cli -h "${REDIS_HOST}" -p "${REDIS_PORT}" EXPIRE "${key}" "${SBOM_TTL_SECONDS}" >/dev/null
 
@@ -132,7 +123,7 @@ scan_and_store() {
 }
 
 main() {
-  install_tools
+  require_tools
   wait_for_redis
 
   IMG_FILE="$(mktemp)"

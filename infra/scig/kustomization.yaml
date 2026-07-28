@@ -7,11 +7,11 @@ resources:
   - 02-cronjob.yaml
 
 configMapGenerator:
-  - name: scig-syft-scripts
+  - name: scig-scripts
     namespace: amocna-scig
     files:
       - scan.sh
-  - name: scig-syft-images
+  - name: scig-images
     namespace: amocna-scig
     files:
       - images.txt

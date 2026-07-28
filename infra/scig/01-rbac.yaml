@@ -1,13 +1,13 @@
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: scig-syft
+  name: scig
   namespace: amocna-scig
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: scig-syft-pod-reader
+  name: scig-pod-reader
 rules:
   - apiGroups: [""]
     resources: ["pods"]
@@ -16,12 +16,12 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: scig-syft-pod-reader
+  name: scig-pod-reader
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: scig-syft-pod-reader
+  name: scig-pod-reader
 subjects:
   - kind: ServiceAccount
-    name: scig-syft
+    name: scig
     namespace: amocna-scig
