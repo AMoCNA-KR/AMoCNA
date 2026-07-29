@@ -147,6 +147,8 @@ Compile, containerize, and push AMoCNA applications.
 ./amocna.py build --all
 ```
 
+Maven apps (`metis`, `palamedes`, `themis`, `metrics-adapter`) and standalone images (`scig`) are configured in `amocna.yaml`.
+
 ### `test`
 
 Run Maven-based integration and unit test suites.

@@ -4,4 +4,6 @@ kind: Kustomization
 resources:
   - core/
   - rabbitmq/
+  - redis/
+  - scig/
   - prometheus/amocna-monitors.yaml
