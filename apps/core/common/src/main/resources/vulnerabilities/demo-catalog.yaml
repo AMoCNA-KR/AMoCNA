@@ -12,8 +12,7 @@ vulnerabilities:
   - id: CVE-2024-DEMO-002
     imageRepository: weaveworksdemos/orders
     affectedVersions:
-      - "0.3.1"
-      - "0.3.0"
+      - "0.4.0"
     fixedVersions:
       - "0.4.7"
     severity: CRITICAL
@@ -22,7 +21,6 @@ vulnerabilities:
   - id: CVE-2024-DEMO-003
     imageRepository: weaveworksdemos/carts
     affectedVersions:
-      - "0.3.0"
       - "0.3.5"
     fixedVersions:
       - "0.4.8"

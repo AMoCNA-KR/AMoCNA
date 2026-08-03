@@ -21,14 +21,14 @@ REMEDIATION_TARGETS = [
     {
         "namespace": "sock-shop",
         "deployment": "orders",
-        "vulnerable_image": "docker.io/weaveworksdemos/orders:0.3.1",
+        "vulnerable_image": "docker.io/weaveworksdemos/orders:0.4.0",
         "expected_tag": "0.4.7",
         "policy": "MINOR",
     },
     {
         "namespace": "sock-shop",
         "deployment": "carts",
-        "vulnerable_image": "docker.io/weaveworksdemos/carts:0.3.0",
+        "vulnerable_image": "docker.io/weaveworksdemos/carts:0.3.5",
         "expected_tag": "0.4.8",
         "policy": "MINOR",
     },
@@ -47,7 +47,13 @@ def wait_for_image(ns: str, dep: str, expected_tag: str, timeout: int = 300) -> 
     raise TimeoutError(f"Deployment {dep} in {ns} did not update to {expected_tag} within {timeout}s")
 
 def trigger_scig_scan():
-    subprocess.run(["./infra/scig/scan.sh"], env={**os.environ, "IMAGE_LIST_FILE": "infra/scig/images.txt"}, check=True)
+    job_name = f"scig-eval-s2-{time.time_ns() % 1000000}"
+    ns = "amocna-scig"
+    subprocess.run(["kubectl", "create", "job", f"--from=cronjob/scig", job_name, "-n", ns], check=True)
+    try:
+        subprocess.run(["kubectl", "wait", f"job/{job_name}", "-n", ns, "--for=condition=complete", "--timeout=300s"], check=True)
+    finally:
+        subprocess.run(["kubectl", "delete", f"job/{job_name}", "-n", ns, "--ignore-not-found", "--wait=false"], capture_output=True)
 
 def run_s2(iterations: int, output_dir: Path) -> dict:
     console.print(f"[bold green]Starting Experiment S2: Multi-Service Remediation ({iterations} iterations)[/bold green]")

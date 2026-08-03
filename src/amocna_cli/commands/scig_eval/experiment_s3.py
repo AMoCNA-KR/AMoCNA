@@ -34,8 +34,13 @@ def run_s3(iterations: int, output_dir: Path) -> dict:
 
         for it in range(iterations):
             t0 = time.perf_counter()
-            # Run scan.sh
-            subprocess.run(["./infra/scig/scan.sh"], capture_output=True, check=True)
+            job_name = f"scig-eval-s3-{time.time_ns() % 1000000}"
+            ns = "amocna-scig"
+            subprocess.run(["kubectl", "create", "job", f"--from=cronjob/scig", job_name, "-n", ns], check=True)
+            try:
+                subprocess.run(["kubectl", "wait", f"job/{job_name}", "-n", ns, "--for=condition=complete", "--timeout=300s"], check=True)
+            finally:
+                subprocess.run(["kubectl", "delete", f"job/{job_name}", "-n", ns, "--ignore-not-found", "--wait=false"], capture_output=True)
             elapsed_s = time.perf_counter() - t0
 
             round_data["total_times_s"].append(elapsed_s)

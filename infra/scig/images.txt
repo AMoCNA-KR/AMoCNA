@@ -4,8 +4,8 @@
 # ── Sock Shop ─────────────────────────────────────────────────────
 # Vulnerable baseline images for multi-service remediation (S2)
 docker.io/weaveworksdemos/front-end:0.3.0
-docker.io/weaveworksdemos/orders:0.3.1
-docker.io/weaveworksdemos/carts:0.3.0
+docker.io/weaveworksdemos/orders:0.4.0
+docker.io/weaveworksdemos/carts:0.3.5
 # Additional Sock Shop services for comprehensive scanning (S1)
 docker.io/weaveworksdemos/user:0.4.7
 docker.io/weaveworksdemos/catalogue:0.3.5

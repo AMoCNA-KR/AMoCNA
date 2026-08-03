@@ -11,8 +11,8 @@ REDIS_HOST="${REDIS_HOST:-redis.redis.svc.cluster.local}"
 REDIS_PORT="${REDIS_PORT:-6379}"
 SBOM_TTL_SECONDS="${SBOM_TTL_SECONDS:-172800}"
 IMAGE_LIST_FILE="${IMAGE_LIST_FILE:-/config/images.txt}"
-DISCOVER_CLUSTER_IMAGES="${DISCOVER_CLUSTER_IMAGES:-false}"
-SCAN_NAMESPACES="${SCAN_NAMESPACES:-sock-shop}"
+DISCOVER_CLUSTER_IMAGES="${DISCOVER_CLUSTER_IMAGES:-true}"
+SCAN_NAMESPACES="${SCAN_NAMESPACES:-sock-shop,bookinfo,online-boutique}"
 
 log() { echo "[scig] $*"; }
 
