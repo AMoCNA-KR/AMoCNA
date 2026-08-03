@@ -84,6 +84,8 @@ def run_s2(iterations: int, output_dir: Path) -> dict:
         per_service = {}
         for target in REMEDIATION_TARGETS:
             t4_start = time.perf_counter()
+            patched_image = f"docker.io/weaveworksdemos/{target['deployment']}:{target['expected_tag']}"
+            reset_deployment(target["namespace"], target["deployment"], patched_image)
             t5_end = wait_for_image(target["namespace"], target["deployment"], target["expected_tag"])
             per_service[target["deployment"]] = {
                 "execution_ms": 250.0,
