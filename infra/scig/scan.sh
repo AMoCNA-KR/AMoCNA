@@ -14,7 +14,7 @@ IMAGE_LIST_FILE="${IMAGE_LIST_FILE:-/config/images.txt}"
 DISCOVER_CLUSTER_IMAGES="${DISCOVER_CLUSTER_IMAGES:-true}"
 SCAN_NAMESPACES="${SCAN_NAMESPACES:-sock-shop,bookinfo,online-boutique}"
 
-log() { echo "[scig] $*"; }
+log() { echo "[scig] $*" >&2; }
 
 require_tools() {
   for tool in syft redis-cli; do
