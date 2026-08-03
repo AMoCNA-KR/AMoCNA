@@ -26,7 +26,7 @@ spec:
           restartPolicy: Never
           containers:
             - name: syft-scan
-              image: ghcr.io/amocna-kr/scig:1.12.12-SNAPSHOT
+              image: ghcr.io/amocna-kr/scig:1.14.1-SNAPSHOT
               imagePullPolicy: IfNotPresent
               command: ["/bin/sh", "/scripts/scan.sh"]
               env:
