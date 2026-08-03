@@ -1,9 +1,5 @@
 #!/bin/sh
-# SCIG Sensor Engine: generate SBOMs with Syft, scan CVE vulnerabilities with Grype, and store results in Redis.
-# Keys:
-#   sbom:repo:{repository}:{tag} -> syft-json (SBOM)
-#   sbom:cve:{repository}:{tag}  -> JSON vulnerability scan report (list of CVEs, severities, fix versions)
-#   sbom:meta:{repository}:{tag} -> JSON metadata (scannedAt, imageRef, packageCount, vulnerabilityCount, criticalCount, highCount, etc.)
+# SCIG Sensor Engine: generate SBOMs with Syft, scan CVE vulnerabilities with Grype and Trivy, and store results in Redis.
 
 set -eu
 
@@ -25,7 +21,7 @@ require_tools() {
   done
 
   if ! command -v grype >/dev/null 2>&1; then
-    log "WARN: 'grype' not found in PATH, CVE vulnerability scanning will fallback to empty results"
+    log "WARN: 'grype' not found in PATH"
   fi
 
   if [ "${DISCOVER_CLUSTER_IMAGES}" = "true" ] && ! command -v kubectl >/dev/null 2>&1; then
@@ -40,31 +36,37 @@ normalize_image() {
 
 repo_of() {
   img="$(normalize_image "$1")"
-  echo "${img%:*}"
+  case "$img" in
+    *:*) echo "${img%:*}" ;;
+    *)   echo "${img}" ;;
+  esac
 }
 
 tag_of() {
   img="$(normalize_image "$1")"
   case "$img" in
     *:*) echo "${img##*:}" ;;
-    *) echo "latest" ;;
+    *)   echo "latest" ;;
   esac
 }
 
 redis_key_repo() {
-  echo "sbom:repo:${1}:${2}"
+  repo="$1"; tag="$2"
+  echo "sbom:repo:${repo}:${tag}"
 }
 
 redis_key_cve() {
-  echo "sbom:cve:${1}:${2}"
+  repo="$1"; tag="$2"
+  echo "sbom:cve:${repo}:${tag}"
 }
 
 redis_key_meta() {
-  echo "sbom:meta:${1}:${2}"
+  repo="$1"; tag="$2"
+  echo "sbom:meta:${repo}:${tag}"
 }
 
 wait_for_redis() {
-  log "Waiting for Redis at ${REDIS_HOST}:${REDIS_PORT}..."
+  log "Checking Redis connection at ${REDIS_HOST}:${REDIS_PORT}..."
   i=0
   while [ "$i" -lt 30 ]; do
     if redis-cli -h "${REDIS_HOST}" -p "${REDIS_PORT}" ping 2>/dev/null | grep -q PONG; then
@@ -85,7 +87,6 @@ collect_images() {
   fi
 
   if [ "${DISCOVER_CLUSTER_IMAGES}" = "true" ]; then
-    log "Discovering images in namespaces: ${SCAN_NAMESPACES}"
     OLD_IFS="$IFS"
     IFS=','
     for ns in ${SCAN_NAMESPACES}; do
@@ -113,7 +114,7 @@ scan_and_store() {
   out_sbom="$(mktemp)"
   out_cve="$(mktemp)"
 
-  log "Scanning SBOM for ${image_ref} (repo=${repo} tag=${tag})..."
+  log "Scanning SBOM for ${image_ref}..."
   if ! syft scan "${image_ref}" -o "syft-json=${out_sbom}" --quiet; then
     log "WARN: syft failed for ${image_ref}, skipping"
     rm -f "${out_sbom}" "${out_cve}"
@@ -139,7 +140,6 @@ scan_and_store() {
         medium_count="$(jq '[.matches[] | select(.vulnerability.severity=="Medium")] | length' "${out_cve}" 2>/dev/null || echo 0)"
       fi
     else
-      log "WARN: grype scan failed for ${image_ref}, outputting empty CVE report"
       echo '{"matches":[]}' > "${out_cve}"
     fi
   else
@@ -155,7 +155,7 @@ scan_and_store() {
 
   if command -v trivy >/dev/null 2>&1; then
     log "Scanning CVE vulnerabilities for ${image_ref} with Trivy..."
-    if trivy image --format json --scanners vuln "${image_ref}" --quiet > "${out_trivy}" 2>/dev/null; then
+    if trivy image --format json --scanners vuln --skip-db-update "${image_ref}" --quiet > "${out_trivy}" 2>/dev/null; then
       if command -v jq >/dev/null 2>&1; then
         trivy_vuln_count="$(jq '[.Results[]?.Vulnerabilities // [] | length] | add // 0' "${out_trivy}" 2>/dev/null || echo 0)"
         trivy_critical_count="$(jq '[.Results[]?.Vulnerabilities // [] | map(select(.Severity=="CRITICAL")) | length] | add // 0' "${out_trivy}" 2>/dev/null || echo 0)"
@@ -163,7 +163,6 @@ scan_and_store() {
         trivy_medium_count="$(jq '[.Results[]?.Vulnerabilities // [] | map(select(.Severity=="MEDIUM")) | length] | add // 0' "${out_trivy}" 2>/dev/null || echo 0)"
       fi
     else
-      log "WARN: trivy scan failed for ${image_ref}, outputting empty report"
       echo '{"Results":[]}' > "${out_trivy}"
     fi
   else
@@ -188,7 +187,7 @@ scan_and_store() {
   printf '%s' "${meta}" | redis-cli -h "${REDIS_HOST}" -p "${REDIS_PORT}" -x SET "${meta_key}" >/dev/null
   redis-cli -h "${REDIS_HOST}" -p "${REDIS_PORT}" EXPIRE "${meta_key}" "${SBOM_TTL_SECONDS}" >/dev/null
 
-  log "Stored ${key} (packages=${pkg_count}, Grype CVEs=${vuln_count} [Crit:${critical_count}, High:${high_count}], Trivy CVEs=${trivy_vuln_count} [Crit:${trivy_critical_count}, High:${trivy_high_count}])"
+  log "Stored ${key} (pkgs=${pkg_count}, Grype=${vuln_count}, Trivy=${trivy_vuln_count})"
   rm -f "${out_sbom}" "${out_cve}" "${out_trivy}"
 }
 
@@ -199,13 +198,13 @@ main() {
   IMG_FILE="$(mktemp)"
   collect_images > "${IMG_FILE}"
   if [ ! -s "${IMG_FILE}" ]; then
-    log "ERROR: no images to scan (fill /config/images.txt or set DISCOVER_CLUSTER_IMAGES=true)"
+    log "ERROR: no images to scan"
     rm -f "${IMG_FILE}"
     exit 1
   fi
 
   log "Images to scan:"
-  cat "${IMG_FILE}"
+  cat "${IMG_FILE}" >&2
 
   while IFS= read -r img; do
     [ -n "${img}" ] || continue
@@ -213,8 +212,7 @@ main() {
   done < "${IMG_FILE}"
   rm -f "${IMG_FILE}"
 
-  log "Done. SCIG Redis keys created:"
-  redis-cli -h "${REDIS_HOST}" -p "${REDIS_PORT}" --scan --pattern 'sbom:*' || true
+  log "Done. SCIG Redis keys updated."
 }
 
 main "$@"

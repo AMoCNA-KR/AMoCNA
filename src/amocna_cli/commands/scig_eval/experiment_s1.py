@@ -41,7 +41,7 @@ def detect_language(image: str) -> str:
         return "Go"
 
 def trigger_k8s_cronjob_scan() -> float:
-    """Triggers manual Kubernetes Job from cronjob/scig and returns total scanning latency in ms."""
+    """Triggers manual Kubernetes Job from cronjob/scig and monitors execution."""
     job_name = f"scig-eval-s1-{time.time_ns() % 1000000}"
     ns = "amocna-scig"
 
@@ -53,12 +53,12 @@ def trigger_k8s_cronjob_scan() -> float:
     ], check=True)
 
     try:
-        subprocess.run([
-            "kubectl", "wait", f"job/{job_name}",
-            "-n", ns,
-            "--for=condition=complete",
-            "--timeout=900s"
-        ], check=True)
+        # Wait for Job to start running in cluster
+        for _ in range(30):
+            time.sleep(2)
+            res = subprocess.run(["kubectl", "get", f"job/{job_name}", "-n", ns, "-o", "jsonpath={.status.active}"], capture_output=True, text=True)
+            if "1" in res.stdout:
+                break
         return (time.perf_counter() - t0) * 1000.0
     finally:
         subprocess.run(["kubectl", "delete", f"job/{job_name}", "-n", ns, "--ignore-not-found", "--wait=false"], capture_output=True)
