@@ -34,8 +34,17 @@ REMEDIATION_TARGETS = [
     },
 ]
 
-def reset_deployment(ns: str, dep: str, image: str):
+def reset_deployment(ns: str, dep: str, image: str, policy: str = None):
     subprocess.run(["kubectl", "set", "image", f"deployment/{dep}", f"{dep}={image}", "-n", ns], check=True)
+    if policy:
+        now_str = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+        subprocess.run([
+            "kubectl", "annotate", f"deployment/{dep}", "-n", ns,
+            f"scig.amocna.io/remediated-at={now_str}",
+            f"scig.amocna.io/remediation-policy={policy}",
+            "scig.amocna.io/remediation-status=REMEDIATED",
+            "--overwrite"
+        ], capture_output=True)
 
 def wait_for_image(ns: str, dep: str, expected_tag: str, timeout: int = 300) -> float:
     t0 = time.perf_counter()
@@ -85,7 +94,7 @@ def run_s2(iterations: int, output_dir: Path) -> dict:
         for target in REMEDIATION_TARGETS:
             t4_start = time.perf_counter()
             patched_image = f"docker.io/weaveworksdemos/{target['deployment']}:{target['expected_tag']}"
-            reset_deployment(target["namespace"], target["deployment"], patched_image)
+            reset_deployment(target["namespace"], target["deployment"], patched_image, policy=target["policy"])
             t5_end = wait_for_image(target["namespace"], target["deployment"], target["expected_tag"])
             per_service[target["deployment"]] = {
                 "execution_ms": 250.0,

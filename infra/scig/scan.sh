@@ -188,6 +188,35 @@ scan_and_store() {
   redis-cli -h "${REDIS_HOST}" -p "${REDIS_PORT}" EXPIRE "${meta_key}" "${SBOM_TTL_SECONDS}" >/dev/null
 
   log "Stored ${key} (pkgs=${pkg_count}, Grype=${vuln_count}, Trivy=${trivy_vuln_count})"
+
+  # Annotate matching deployments in Kubernetes cluster
+  if command -v kubectl >/dev/null 2>&1; then
+    status="CLEAN"
+    if [ "${critical_count}" -gt 0 ] || [ "${high_count}" -gt 0 ]; then
+      status="VULNERABLE"
+    fi
+    OLD_IFS="$IFS"
+    IFS=','
+    for ns in ${SCAN_NAMESPACES}; do
+      IFS="$OLD_IFS"
+      ns="$(echo "$ns" | tr -d ' ')"
+      [ -n "$ns" ] || continue
+      deps="$(kubectl get deployments -n "$ns" -o jsonpath="{range .items[*]}{.metadata.name}{' '}{.spec.template.spec.containers[*].image}{'\n'}{end}" 2>/dev/null | grep "${image_ref}" | awk '{print $1}' || true)"
+      for dep in $deps; do
+        [ -n "$dep" ] || continue
+        kubectl annotate deployment "$dep" -n "$ns" \
+          "scig.amocna.io/managed-by=SCIG-Engine" \
+          "scig.amocna.io/last-scanned-at=${scanned_at}" \
+          "scig.amocna.io/vulnerability-status=${status}" \
+          "scig.amocna.io/vulnerabilities-total=${vuln_count}" \
+          "scig.amocna.io/critical-count=${critical_count}" \
+          "scig.amocna.io/high-count=${high_count}" \
+          --overwrite >/dev/null 2>&1 || true
+      done
+    done
+    IFS="$OLD_IFS"
+  fi
+
   rm -f "${out_sbom}" "${out_cve}" "${out_trivy}"
 }
 
