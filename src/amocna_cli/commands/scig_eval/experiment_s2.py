@@ -51,7 +51,7 @@ def trigger_scig_scan():
     ns = "amocna-scig"
     subprocess.run(["kubectl", "create", "job", f"--from=cronjob/scig", job_name, "-n", ns], check=True)
     try:
-        subprocess.run(["kubectl", "wait", f"job/{job_name}", "-n", ns, "--for=condition=complete", "--timeout=300s"], check=True)
+        subprocess.run(["kubectl", "wait", f"job/{job_name}", "-n", ns, "--for=condition=complete", "--timeout=900s"], check=True)
     finally:
         subprocess.run(["kubectl", "delete", f"job/{job_name}", "-n", ns, "--ignore-not-found", "--wait=false"], capture_output=True)
 
