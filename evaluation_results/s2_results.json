@@ -1,0 +1,53 @@
+{
+  "iterations": [
+    {
+      "note": "ImageUpdateIntent filter enabled; remediations timed out — deployed Palamedes build did not emit ImageRemediationPlanner logs within timeout",
+      "scig_scan_ms": 0.0,
+      "redis_sync_ms": 0.0,
+      "planning_ms": 0.0,
+      "total_e2e_ms": 1260000.0,
+      "per_service": {
+        "front-end": {
+          "success": false,
+          "final_image": "docker.io/weaveworksdemos/front-end:0.3.0",
+          "expected_tag": "0.3.12",
+          "policy": "PATCH",
+          "severity": "HIGH",
+          "execution_ms": 0.0,
+          "rollout_ms": 420000.0
+        },
+        "orders": {
+          "success": false,
+          "final_image": "docker.io/weaveworksdemos/orders:0.4.0",
+          "expected_tag": "0.4.7",
+          "policy": "MINOR",
+          "severity": "CRITICAL",
+          "execution_ms": 0.0,
+          "rollout_ms": 420000.0
+        },
+        "carts": {
+          "success": false,
+          "final_image": "docker.io/weaveworksdemos/carts:0.3.5",
+          "expected_tag": "0.4.8",
+          "policy": "MINOR",
+          "severity": "HIGH",
+          "execution_ms": 0.0,
+          "rollout_ms": 420000.0
+        }
+      }
+    }
+  ],
+  "success_rates": {
+    "front-end": 0.0,
+    "orders": 0.0,
+    "carts": 0.0
+  },
+  "trigger_scig_scan": false,
+  "pre_eval_observation": {
+    "front-end": "docker.io/weaveworksdemos/front-end:0.3.12",
+    "orders": "docker.io/weaveworksdemos/orders:0.4.7",
+    "carts": "docker.io/weaveworksdemos/carts:0.4.8",
+    "note": "Before evaluation reset, all three services already ran catalog-compliant patched tags, consistent with prior successful remediations in this cluster."
+  },
+  "limitation": "Autonomous remediation during this evaluation window timed out. Re-run S2 after deploying Palamedes build that includes ImageRemediationPlanner + VulnerabilityUpdateListener (extend_scig) with ImageUpdateIntent allowed."
+}

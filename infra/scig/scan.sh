@@ -82,9 +82,6 @@ wait_for_redis() {
 
 collect_images() {
   TMP="$(mktemp)"
-  if [ -f "${IMAGE_LIST_FILE}" ]; then
-    grep -v '^[[:space:]]*$' "${IMAGE_LIST_FILE}" | grep -v '^[[:space:]]*#' >> "${TMP}" || true
-  fi
 
   if [ "${DISCOVER_CLUSTER_IMAGES}" = "true" ]; then
     OLD_IFS="$IFS"
@@ -93,11 +90,14 @@ collect_images() {
       IFS="$OLD_IFS"
       ns="$(echo "$ns" | tr -d ' ')"
       [ -n "$ns" ] || continue
+      log "Discovering images in namespace ${ns}"
       kubectl get pods -n "$ns" \
         -o jsonpath='{range .items[*]}{range .spec.containers[*]}{.image}{"\n"}{end}{range .spec.initContainers[*]}{.image}{"\n"}{end}{end}' \
         2>/dev/null >> "${TMP}" || true
     done
     IFS="$OLD_IFS"
+  elif [ -f "${IMAGE_LIST_FILE}" ]; then
+    grep -v '^[[:space:]]*$' "${IMAGE_LIST_FILE}" | grep -v '^[[:space:]]*#' >> "${TMP}" || true
   fi
 
   sort -u "${TMP}" | grep -v '^[[:space:]]*$' || true
@@ -115,11 +115,16 @@ scan_and_store() {
   out_cve="$(mktemp)"
 
   log "Scanning SBOM for ${image_ref}..."
+  syft_ms=0
+  grype_ms=0
+  trivy_ms=0
+  t0="$(date +%s)"
   if ! syft scan "${image_ref}" -o "syft-json=${out_sbom}" --quiet; then
     log "WARN: syft failed for ${image_ref}, skipping"
     rm -f "${out_sbom}" "${out_cve}"
     return 0
   fi
+  syft_ms=$(( ($(date +%s) - t0) * 1000 ))
 
   pkg_count="$(grep -o '"id":' "${out_sbom}" | wc -l | tr -d ' ')"
   scanned_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
@@ -129,19 +134,23 @@ scan_and_store() {
   critical_count=0
   high_count=0
   medium_count=0
+  low_count=0
 
   if command -v grype >/dev/null 2>&1; then
     log "Scanning CVE vulnerabilities for ${image_ref} with Grype..."
+    t0="$(date +%s)"
     if grype "sbom:${out_sbom}" -o json --quiet > "${out_cve}" 2>/dev/null; then
       if command -v jq >/dev/null 2>&1; then
         vuln_count="$(jq '.matches | length' "${out_cve}" 2>/dev/null || echo 0)"
         critical_count="$(jq '[.matches[] | select(.vulnerability.severity=="Critical")] | length' "${out_cve}" 2>/dev/null || echo 0)"
         high_count="$(jq '[.matches[] | select(.vulnerability.severity=="High")] | length' "${out_cve}" 2>/dev/null || echo 0)"
         medium_count="$(jq '[.matches[] | select(.vulnerability.severity=="Medium")] | length' "${out_cve}" 2>/dev/null || echo 0)"
+        low_count="$(jq '[.matches[] | select(.vulnerability.severity=="Low")] | length' "${out_cve}" 2>/dev/null || echo 0)"
       fi
     else
       echo '{"matches":[]}' > "${out_cve}"
     fi
+    grype_ms=$(( ($(date +%s) - t0) * 1000 ))
   else
     echo '{"matches":[]}' > "${out_cve}"
   fi
@@ -155,6 +164,7 @@ scan_and_store() {
 
   if command -v trivy >/dev/null 2>&1; then
     log "Scanning CVE vulnerabilities for ${image_ref} with Trivy..."
+    t0="$(date +%s)"
     if trivy image --format json --scanners vuln --skip-db-update "${image_ref}" --quiet > "${out_trivy}" 2>/dev/null; then
       if command -v jq >/dev/null 2>&1; then
         trivy_vuln_count="$(jq '[.Results[]?.Vulnerabilities // [] | length] | add // 0' "${out_trivy}" 2>/dev/null || echo 0)"
@@ -165,6 +175,7 @@ scan_and_store() {
     else
       echo '{"Results":[]}' > "${out_trivy}"
     fi
+    trivy_ms=$(( ($(date +%s) - t0) * 1000 ))
   else
     echo '{"Results":[]}' > "${out_trivy}"
   fi
@@ -183,11 +194,11 @@ scan_and_store() {
   redis-cli -h "${REDIS_HOST}" -p "${REDIS_PORT}" EXPIRE "${trivy_key}" "${SBOM_TTL_SECONDS}" >/dev/null
 
   # Store Metadata in Redis
-  meta="{\"imageRef\":\"${image_ref}\",\"repository\":\"${repo}\",\"tag\":\"${tag}\",\"scannedAt\":\"${scanned_at}\",\"packageCount\":${pkg_count},\"vulnerabilityCount\":${vuln_count},\"criticalCount\":${critical_count},\"highCount\":${high_count},\"mediumCount\":${medium_count},\"trivyVulnerabilityCount\":${trivy_vuln_count},\"trivyCriticalCount\":${trivy_critical_count},\"trivyHighCount\":${trivy_high_count},\"trivyMediumCount\":${trivy_medium_count},\"ttlSeconds\":${SBOM_TTL_SECONDS}}"
+  meta="{\"imageRef\":\"${image_ref}\",\"repository\":\"${repo}\",\"tag\":\"${tag}\",\"scannedAt\":\"${scanned_at}\",\"packageCount\":${pkg_count},\"vulnerabilityCount\":${vuln_count},\"criticalCount\":${critical_count},\"highCount\":${high_count},\"mediumCount\":${medium_count},\"lowCount\":${low_count},\"syftDurationMs\":${syft_ms},\"grypeDurationMs\":${grype_ms},\"trivyDurationMs\":${trivy_ms},\"trivyVulnerabilityCount\":${trivy_vuln_count},\"trivyCriticalCount\":${trivy_critical_count},\"trivyHighCount\":${trivy_high_count},\"trivyMediumCount\":${trivy_medium_count},\"ttlSeconds\":${SBOM_TTL_SECONDS}}"
   printf '%s' "${meta}" | redis-cli -h "${REDIS_HOST}" -p "${REDIS_PORT}" -x SET "${meta_key}" >/dev/null
   redis-cli -h "${REDIS_HOST}" -p "${REDIS_PORT}" EXPIRE "${meta_key}" "${SBOM_TTL_SECONDS}" >/dev/null
 
-  log "Stored ${key} (pkgs=${pkg_count}, Grype=${vuln_count}, Trivy=${trivy_vuln_count})"
+  log "Stored ${key} (pkgs=${pkg_count}, Grype=${vuln_count}, Trivy=${trivy_vuln_count}, syft=${syft_ms}ms grype=${grype_ms}ms)"
 
   # Annotate matching deployments in Kubernetes cluster
   if command -v kubectl >/dev/null 2>&1; then

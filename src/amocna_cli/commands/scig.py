@@ -188,16 +188,37 @@ def evaluate(
                         images = [line.strip() for line in f if line.strip() and not line.startswith("#")]
                 if not images:
                     images = ["docker.io/weaveworksdemos/front-end:0.3.0", "docker.io/weaveworksdemos/orders:0.3.1"]
-                run_s1(images=images, iterations=iterations, output_dir=output_path)
+                run_s1(
+                    images=images,
+                    iterations=iterations,
+                    output_dir=output_path,
+                    redis_host=target_host,
+                    redis_port=target_port,
+                )
             elif exp == "s2":
                 from .scig_eval.experiment_s2 import run_s2
-                run_s2(iterations=min(iterations, 5), output_dir=output_path)
+                run_s2(
+                    iterations=min(iterations, 5),
+                    output_dir=output_path,
+                    redis_host=target_host,
+                    redis_port=target_port,
+                )
             elif exp == "s3":
                 from .scig_eval.experiment_s3 import run_s3
-                run_s3(iterations=min(iterations, 5), output_dir=output_path)
+                run_s3(
+                    iterations=min(iterations, 5),
+                    output_dir=output_path,
+                    redis_host=target_host,
+                    redis_port=target_port,
+                )
             elif exp == "s4":
                 from .scig_eval.experiment_s4 import run_s4
-                run_s4(iterations=iterations, output_dir=output_path, redis_host=target_host, redis_port=target_port)
+                run_s4(
+                    iterations=iterations,
+                    output_dir=output_path,
+                    redis_host=target_host,
+                    redis_port=target_port,
+                )
             else:
                 console.print(f"[red]Unknown experiment: {exp}[/red]")
 

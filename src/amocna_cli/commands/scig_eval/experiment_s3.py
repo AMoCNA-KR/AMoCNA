@@ -1,72 +1,102 @@
-"""Experiment S3: Multi-Application Cross-Namespace Scanning Scalability."""
+"""Experiment S3: Multi-app scanning scalability with real namespace scoping."""
+
+from __future__ import annotations
 
 import json
-import subprocess
-import time
 from pathlib import Path
+
 from rich.console import Console
 
+from . import k8s_helpers as kh
 from .latex_generator import generate_s3_scalability_table
 
 console = Console()
 
 SCAN_ROUNDS = [
-    {"name": "Sock Shop", "namespaces": ["sock-shop"], "image_count": 8, "filter": "weaveworksdemos"},
-    {"name": "Sock Shop + BookInfo", "namespaces": ["sock-shop", "bookinfo"], "image_count": 14, "filter": "weaveworksdemos|istio"},
-    {"name": "All 3 Applications", "namespaces": ["sock-shop", "bookinfo", "online-boutique"], "image_count": 24, "filter": ".*"},
+    {"name": "Sock Shop", "namespaces": "sock-shop"},
+    {"name": "Sock Shop + BookInfo", "namespaces": "sock-shop,bookinfo"},
+    {"name": "All 3 Applications", "namespaces": "sock-shop,bookinfo,online-boutique"},
 ]
 
-def run_s3(iterations: int, output_dir: Path) -> dict:
-    console.print(f"[bold green]Starting Experiment S3: Multi-App Scanning Scalability ({iterations} iterations)[/bold green]")
-    results = {}
+
+def run_s3(
+    iterations: int,
+    output_dir: Path,
+    redis_host: str = "localhost",
+    redis_port: int = 6379,
+    scan_timeout_s: int = 7200,
+) -> dict:
+    console.print(
+        f"[bold green]S3: multi-app scan scalability "
+        f"({iterations} iterations, discover-only per namespace scope)[/bold green]"
+    )
+    results: dict = {}
 
     for round_info in SCAN_ROUNDS:
         round_name = round_info["name"]
-        console.print(f"[bold]Evaluating {round_name} ({round_info['image_count']} images)...[/bold]")
+        namespaces = round_info["namespaces"]
+        console.print(f"[bold]Evaluating {round_name} (ns={namespaces})...[/bold]")
 
         round_data = {
-            "image_count": round_info["image_count"],
+            "namespaces": namespaces,
+            "image_count": 0,
             "total_times_s": [],
             "per_image_times_s": [],
             "redis_mem_mb": [],
             "cve_count": 0,
+            "overhead": [],
         }
 
         for it in range(iterations):
-            t0 = time.perf_counter()
-            job_name = f"scig-eval-s3-{time.time_ns() % 1000000}"
-            ns = "amocna-scig"
-            subprocess.run(["kubectl", "create", "job", f"--from=cronjob/scig", job_name, "-n", ns], check=True)
-            try:
-                for _ in range(30):
-                    time.sleep(2)
-                    res = subprocess.run(["kubectl", "get", f"job/{job_name}", "-n", ns, "-o", "jsonpath={.status.active}"], capture_output=True, text=True)
-                    if "1" in res.stdout:
-                        break
-            finally:
-                subprocess.run(["kubectl", "delete", f"job/{job_name}", "-n", ns, "--ignore-not-found", "--wait=false"], capture_output=True)
-            elapsed_s = time.perf_counter() - t0
+            console.print(f"  Iteration {it + 1}/{iterations}")
+            _, elapsed_s = kh.run_scig_scan(
+                namespaces=namespaces,
+                timeout_s=scan_timeout_s,
+                discover=True,
+                image_list_only=False,
+            )
 
+            metas = kh.collect_sbom_meta(redis_host, redis_port)
+            # Count only metas whose image likely belongs to scanned namespaces by scannedAt recency
+            # Prefer counting unique images discovered: use meta count that matches live discover scope.
+            # Practical approach: recount unique repos from latest scan by reading job isn't available;
+            # use current meta keys filtered by known app markers for this round.
+            markers = []
+            if "sock-shop" in namespaces:
+                markers.append("weaveworksdemos")
+            if "bookinfo" in namespaces:
+                markers.append("istio")
+            if "online-boutique" in namespaces:
+                markers.append("microservices-demo")
+
+            scoped = [
+                m for m in metas
+                if any(mk in (m.get("repository") or "") or mk in (m.get("imageRef") or "") for mk in markers)
+            ]
+            image_count = max(len(scoped), 1)
+            cve_total = sum(int(m.get("vulnerabilityCount", 0) or 0) for m in scoped)
+
+            round_data["image_count"] = len(scoped)
+            round_data["cve_count"] = cve_total
             round_data["total_times_s"].append(elapsed_s)
-            round_data["per_image_times_s"].append(elapsed_s / round_info["image_count"])
-
-            # Check Redis memory
-            try:
-                res = subprocess.run(["redis-cli", "info", "memory"], capture_output=True, text=True)
-                for line in res.stdout.splitlines():
-                    if line.startswith("used_memory:"):
-                        bytes_used = int(line.split(":")[1])
-                        round_data["redis_mem_mb"].append(bytes_used / (1024 * 1024))
-                        break
-            except Exception:
-                round_data["redis_mem_mb"].append(15.0)
+            round_data["per_image_times_s"].append(elapsed_s / image_count)
+            mem = kh.redis_used_memory_mb(redis_host, redis_port)
+            round_data["redis_mem_mb"].append(mem)
+            round_data["overhead"].append({
+                "palamedes": kh.pod_metrics("palamedes", "app=palamedes"),
+                "redis_mb": mem,
+            })
+            console.print(
+                f"    {elapsed_s:.1f}s, images={len(scoped)}, CVEs={cve_total}, Redis={mem:.1f}MB"
+            )
 
         results[round_name] = round_data
 
+    output_dir.mkdir(parents=True, exist_ok=True)
     with open(output_dir / "s3_results.json", "w") as f:
         json.dump(results, f, indent=2)
     with open(output_dir / "s3_scalability_table.tex", "w") as f:
         f.write(generate_s3_scalability_table(results))
 
-    console.print(f"[bold green]Experiment S3 completed![/bold green]")
+    console.print("[bold green]Experiment S3 completed.[/bold green]")
     return results

@@ -132,17 +132,42 @@ def generate_s2_remediation_latency_table(results: dict) -> str:
         "\\midrule"
     ]
 
-    scan_stats = compute_stats([i["scig_scan_ms"] for i in results.get("iterations", [])])
-    sync_stats = compute_stats([i["redis_sync_ms"] for i in results.get("iterations", [])])
-    plan_stats = compute_stats([i["planning_ms"] for i in results.get("iterations", [])])
-    total_stats = compute_stats([i["total_e2e_ms"] for i in results.get("iterations", [])])
+    iterations = results.get("iterations", [])
+    scan_stats = compute_stats([i["scig_scan_ms"] for i in iterations])
+    sync_stats = compute_stats([i.get("redis_sync_ms", 0.0) for i in iterations])
+    plan_stats = compute_stats([i.get("planning_ms", 0.0) for i in iterations])
+    total_stats = compute_stats([i["total_e2e_ms"] for i in iterations])
 
-    for svc in ["front-end", "orders", "carts"]:
-        policy = "PATCH" if svc == "front-end" else "MINOR"
-        sev = "CRITICAL" if svc == "orders" else "HIGH"
-        exec_stats = compute_stats([i["per_service"][svc]["execution_ms"] for i in results.get("iterations", []) if svc in i.get("per_service", {})])
-        rollout_stats = compute_stats([i["per_service"][svc]["rollout_ms"] for i in results.get("iterations", []) if svc in i.get("per_service", {})])
-        lines.append(f"{svc} & {policy} & {sev} & {scan_stats.latex_str()} & {sync_stats.latex_str()} & {plan_stats.latex_str()} & {exec_stats.latex_str()} & {rollout_stats.latex_str()} & {total_stats.latex_str()} \\\\")
+    services = []
+    for it in iterations:
+        for svc in it.get("per_service", {}):
+            if svc not in services:
+                services.append(svc)
+    if not services:
+        services = ["front-end", "orders", "carts"]
+
+    for svc in services:
+        sample = next(
+            (i["per_service"][svc] for i in iterations if svc in i.get("per_service", {})),
+            {},
+        )
+        policy = sample.get("policy", "PATCH")
+        sev = sample.get("severity", "HIGH")
+        exec_stats = compute_stats([
+            i["per_service"][svc].get("execution_ms", 0.0)
+            for i in iterations if svc in i.get("per_service", {})
+        ])
+        rollout_stats = compute_stats([
+            i["per_service"][svc].get("rollout_ms", 0.0)
+            for i in iterations if svc in i.get("per_service", {})
+        ])
+        success = results.get("success_rates", {}).get(svc)
+        success_note = f" ({success*100:.0f}\\% OK)" if success is not None else ""
+        lines.append(
+            f"{svc}{success_note} & {policy} & {sev} & {scan_stats.latex_str()} & "
+            f"{sync_stats.latex_str()} & {plan_stats.latex_str()} & {exec_stats.latex_str()} & "
+            f"{rollout_stats.latex_str()} & {total_stats.latex_str()} \\\\"
+        )
 
     lines.extend([
         "\\bottomrule",
