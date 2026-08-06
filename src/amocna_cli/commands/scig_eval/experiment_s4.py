@@ -1,4 +1,4 @@
-"""Experiment S4: Real Redis CVE sync + catalog merge + SPARQL clause build latency."""
+"""Experiment S4: Redis CVE parse + catalog merge + SPARQL VALUES clause latency."""
 
 from __future__ import annotations
 
@@ -21,10 +21,28 @@ def _load_cve_records(host: str, port: int, max_keys: int = 15, max_records: int
     keys = kh.redis_scan_keys(host, port, "sbom:cve:*")[:max_keys]
     records: list[dict] = []
     for key in keys:
+        # Skip pathological blobs (same policy as ScigRedisSyncService).
+        raw = kh.redis_cli(host, port, "STRLEN", key, check=False)
+        try:
+            if int(raw) > 2_000_000:
+                console.print(f"[yellow]Skipping oversized key {key} ({raw} bytes)[/yellow]")
+                continue
+        except ValueError:
+            pass
         parts = key.split(":")
         if len(parts) < 4:
             continue
-        repo, tag = parts[2], parts[3]
+        # repository may contain host; take everything between sbom:cve: and last :tag
+        rest = key[len("sbom:cve:") :]
+        last = rest.rfind(":")
+        if last <= 0:
+            continue
+        repo, tag = rest[:last], rest[last + 1 :]
+        # Align with Metis resourceName (no registry host)
+        if "/" in repo:
+            host_part, path = repo.split("/", 1)
+            if "." in host_part or ":" in host_part or host_part == "localhost":
+                repo = path
         data = kh.redis_get_json(host, port, key)
         if not data:
             continue
@@ -32,15 +50,11 @@ def _load_cve_records(host: str, port: int, max_keys: int = 15, max_records: int
             vuln = match.get("vulnerability") or {}
             cve_id = vuln.get("id") or "UNKNOWN"
             severity = vuln.get("severity") or "Medium"
-            fixed = []
-            fix = vuln.get("fix") or {}
-            for v in fix.get("versions") or []:
-                fixed.append(str(v))
             records.append({
                 "id": cve_id,
                 "imageRepository": repo,
                 "affectedVersions": [tag],
-                "fixedVersions": fixed,
+                "fixedVersions": [],  # package fixes ≠ image tags
                 "severity": severity,
             })
             if len(records) >= max_records:
@@ -61,13 +75,12 @@ def _merge_records(base: list[dict], incoming: list[dict]) -> list[dict]:
 
 
 def _sparql_values_clause(records: list[dict]) -> str:
+    """Match VulnerabilityCatalog.toSparqlValuesClause (no commas between tuples)."""
     pairs = set()
     for r in records:
         for ver in r.get("affectedVersions") or []:
             pairs.add((r["imageRepository"], ver))
-    return " ,\n    ".join(
-        f'("{repo}" "{ver}")' for repo, ver in sorted(pairs)
-    )
+    return "\n    ".join(f'("{repo}" "{ver}")' for repo, ver in sorted(pairs))
 
 
 def run_s4(
@@ -77,11 +90,10 @@ def run_s4(
     redis_port: int = 6379,
 ) -> dict:
     console.print(
-        f"[bold green]S4: real Redis sync / merge / SPARQL-clause latency "
+        f"[bold green]S4: Redis parse / merge / SPARQL-clause latency "
         f"({iterations} iterations)[/bold green]"
     )
 
-    # Ensure Redis has CVE data; if empty, run one discover scan first
     keys = kh.redis_scan_keys(redis_host, redis_port, "sbom:cve:*")
     if not keys:
         console.print("[yellow]No sbom:cve:* keys — running one SCIG scan first...[/yellow]")
@@ -91,8 +103,14 @@ def run_s4(
             image_list_only=True,
         )
 
+    # One-time Redis load (wall cost reported separately); microbench uses in-memory records.
+    t_load0 = time.perf_counter()
     all_records = _load_cve_records(redis_host, redis_port)
-    console.print(f"Loaded {len(all_records)} CVE records from Redis")
+    redis_load_ms = (time.perf_counter() - t_load0) * 1000.0
+    console.print(
+        f"Loaded {len(all_records)} CVE records from Redis "
+        f"in {redis_load_ms:.0f} ms (one-shot; not scaled with N)"
+    )
     if not all_records:
         console.print("[red]No CVE records available — S4 cannot measure meaningfully[/red]")
         all_records = [
@@ -100,13 +118,23 @@ def run_s4(
                 "id": f"CVE-SYNTH-{i}",
                 "imageRepository": "example/app",
                 "affectedVersions": ["1.0.0"],
-                "fixedVersions": ["1.0.1"],
+                "fixedVersions": [],
                 "severity": "High",
             }
             for i in range(500)
         ]
 
-    results: dict = {}
+    results: dict = {
+        "_meta": {
+            "redis_load_ms": redis_load_ms,
+            "records_available": len(all_records),
+            "note": (
+                "sync_ms = re-serialize/parse of N records (proxy for catalog ingest shape); "
+                "merge_ms/sparql_ms = in-process mirrors of VulnerabilityCatalog; "
+                "throughput = N / (sync+merge+sparql)."
+            ),
+        }
+    }
     for count in RECORD_COUNTS:
         console.print(f"[bold]N={count} CVE records...[/bold]")
         rec_data = {
@@ -116,29 +144,24 @@ def run_s4(
             "throughput_evts": [],
         }
         subset = all_records[: min(count, len(all_records))]
-        # If Redis has fewer records than N, tile the list to reach N (same parse cost shape)
         while len(subset) < count:
             subset = subset + all_records[: min(count - len(subset), len(all_records))]
         subset = subset[:count]
-
-        # Cache key list once per N (KEYS is expensive on large Redis)
-        cve_keys = kh.redis_scan_keys(redis_host, redis_port, "sbom:cve:*")
-        limit = min(len(cve_keys), max(1, min(5, count // 50 + 1)))
+        payload = json.dumps(subset)
 
         for _ in range(iterations):
             t0 = time.perf_counter()
-            for key in cve_keys[:limit]:
-                _ = kh.redis_get_json(redis_host, redis_port, key)
+            parsed = json.loads(payload)
             sync_ms = (time.perf_counter() - t0) * 1000.0
 
             t0 = time.perf_counter()
-            merged = _merge_records([], subset)
+            merged = _merge_records([], parsed)
             merge_ms = (time.perf_counter() - t0) * 1000.0
 
             t0 = time.perf_counter()
             clause = _sparql_values_clause(merged)
             sparql_ms = (time.perf_counter() - t0) * 1000.0
-            assert clause or True
+            assert clause  # non-empty for N>=1
 
             tot_s = (sync_ms + merge_ms + sparql_ms) / 1000.0
             throughput = count / tot_s if tot_s > 0 else 0.0

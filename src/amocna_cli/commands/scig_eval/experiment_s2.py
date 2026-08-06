@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
 from rich.console import Console
@@ -53,6 +54,67 @@ def _reset_vulnerable(target: dict) -> None:
     )
 
 
+def _enable_image_update_intent() -> None:
+    """Restrict Palamedes to ImageUpdateIntent (same fixture as Scenario 5)."""
+    from amocna_cli.commands.benchmark import set_palamedes_filter
+
+    set_palamedes_filter(["ImageUpdateIntent"])
+
+
+def _clean_stuck_actions() -> None:
+    """Clear non-terminal actions so find-vulnerable-workloads is not filtered out."""
+    from pathlib import Path
+    import subprocess
+
+    script = Path("cli/resources/sparql/clean-actions.sparql")
+    if not script.exists():
+        console.print("[yellow]clean-actions.sparql not found — skipping GraphDB cleanup[/yellow]")
+        return
+    try:
+        res = subprocess.run(
+            [".cursor/skills/graphdb-sparql/scripts/run_sparql.py", "--file", str(script), "--update"],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        if res.returncode == 0:
+            console.print("  Cleared stuck GraphDB actions")
+        else:
+            console.print(f"  [yellow]Action cleanup warning: {res.stderr or res.stdout}[/yellow]")
+    except Exception as e:
+        console.print(f"  [yellow]Action cleanup skipped: {e}[/yellow]")
+
+
+def _wait_one(target: dict, timeout_s: int) -> dict:
+    dep = target["deployment"]
+    t_wait0 = time.perf_counter()
+    try:
+        wait_s = kh.wait_for_image_tag(
+            target["namespace"],
+            dep,
+            target["expected_tag"],
+            timeout_s=timeout_s,
+        )
+        success = True
+        final_image = kh.get_deployment_image(target["namespace"], dep)
+    except TimeoutError as e:
+        console.print(f"  [red]{e}[/red]")
+        wait_s = time.perf_counter() - t_wait0
+        success = False
+        final_image = kh.get_deployment_image(target["namespace"], dep)
+
+    return dep, {
+        "success": success,
+        "final_image": final_image,
+        "expected_tag": target["expected_tag"],
+        "policy": target["policy"],
+        "severity": target["severity"],
+        "execution_ms": 0.0,
+        "rollout_ms": wait_s * 1000.0,
+        "wait_after_scan_ms": wait_s * 1000.0,
+    }
+
+
 def run_s2(
     iterations: int,
     output_dir: Path,
@@ -69,15 +131,28 @@ def run_s2(
     )
     results: dict = {"iterations": [], "success_rates": {}, "trigger_scig_scan": trigger_scig_scan}
 
+    console.print("  Enabling ImageUpdateIntent filter...")
+    _enable_image_update_intent()
+    _clean_stuck_actions()
+
+    pre_eval = {
+        t["deployment"]: kh.get_deployment_image(t["namespace"], t["deployment"])
+        for t in REMEDIATION_TARGETS
+    }
+    results["pre_eval_observation"] = {
+        **pre_eval,
+        "note": "Images before intentional vulnerable reset.",
+    }
+
     for i in range(iterations):
         console.print(f"[bold]Iteration {i + 1}/{iterations}[/bold]")
+        if i > 0:
+            _clean_stuck_actions()
+        t0 = time.perf_counter()
         for target in REMEDIATION_TARGETS:
             console.print(f"  Reset {target['deployment']} → {target['vulnerable_image']}")
             _reset_vulnerable(target)
-        # Allow Metis topology / rollout to settle on vulnerable tags
-        time.sleep(30)
 
-        t0 = time.perf_counter()
         scan_s = 0.0
         if trigger_scig_scan:
             console.print("  Triggering SCIG scan (wait for completion)...")
@@ -93,37 +168,26 @@ def run_s2(
                 scan_s = 0.0
         t_after_scan = time.perf_counter()
 
-        # Wait for AMoCNA control loop to remediate each service (no kubectl set image)
+        # Wait in parallel from reset — planner typically remediates during Metis settle
+        console.print(
+            f"  Waiting (parallel, {remediation_timeout_s}s) for autonomous remediations..."
+        )
         per_service: dict = {}
-        for target in REMEDIATION_TARGETS:
-            dep = target["deployment"]
-            console.print(f"  Waiting for autonomous remediations of {dep} → {target['expected_tag']}...")
-            t_wait0 = time.perf_counter()
-            try:
-                wait_s = kh.wait_for_image_tag(
-                    target["namespace"],
-                    dep,
-                    target["expected_tag"],
-                    timeout_s=remediation_timeout_s,
+        with ThreadPoolExecutor(max_workers=len(REMEDIATION_TARGETS)) as pool:
+            futures = [
+                pool.submit(_wait_one, target, remediation_timeout_s)
+                for target in REMEDIATION_TARGETS
+            ]
+            for fut in as_completed(futures):
+                dep, data = fut.result()
+                # rollout_ms is wait-from-reset for this service (includes Metis/plan/exec)
+                data["rollout_ms"] = data["wait_after_scan_ms"]
+                per_service[dep] = data
+                status = "OK" if data["success"] else "FAIL"
+                console.print(
+                    f"  [{status}] {dep} → {data['final_image']} "
+                    f"({data['rollout_ms']:.0f} ms)"
                 )
-                success = True
-                final_image = kh.get_deployment_image(target["namespace"], dep)
-            except TimeoutError as e:
-                console.print(f"  [red]{e}[/red]")
-                wait_s = time.perf_counter() - t_wait0
-                success = False
-                final_image = kh.get_deployment_image(target["namespace"], dep)
-
-            per_service[dep] = {
-                "success": success,
-                "final_image": final_image,
-                "expected_tag": target["expected_tag"],
-                "policy": target["policy"],
-                "severity": target["severity"],
-                "execution_ms": 0.0,
-                "rollout_ms": wait_s * 1000.0,
-                "wait_after_scan_ms": wait_s * 1000.0,
-            }
 
         t_end = time.perf_counter()
         iter_data = {
@@ -145,6 +209,15 @@ def run_s2(
             if it["per_service"].get(dep, {}).get("success")
         ]
         results["success_rates"][dep] = sum(oks) / max(len(results["iterations"]), 1)
+
+    all_ok = all(rate >= 1.0 for rate in results["success_rates"].values())
+    if not all_ok:
+        results["limitation"] = (
+            "One or more remediations timed out. Check Palamedes ImageRemediationPlanner "
+            "logs and that demo-catalog fix tags are reachable."
+        )
+    else:
+        results.pop("limitation", None)
 
     output_dir.mkdir(parents=True, exist_ok=True)
     with open(output_dir / "s2_results.json", "w") as f:

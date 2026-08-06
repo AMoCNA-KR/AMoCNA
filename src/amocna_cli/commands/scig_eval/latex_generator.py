@@ -207,15 +207,19 @@ def generate_s4_policy_latency_table(data: dict) -> str:
     lines = [
         "\\begin{table}[htbp]",
         "\\centering",
-        "\\caption{SCIG policy evaluation latency as a function of vulnerability record count. Values are $\\overline{x} \\pm \\sigma$ (ms).}",
+        "\\caption{In-process catalog ingest / merge / SPARQL VALUES cost vs.\\ record count "
+        "(Python mirror of \\texttt{VulnerabilityCatalog}; $N{=}10$). "
+        "Values are $\\overline{x} \\pm \\sigma$ (ms).}",
         "\\label{tab:scig_s4_policy}",
         "\\begin{tabular}{rrrrr}",
         "\\toprule",
-        "\\textbf{Records} & \\textbf{Sync (ms)} & \\textbf{Merge (ms)} & \\textbf{SPARQL (ms)} & \\textbf{Throughput (evt/s)} \\\\",
+        "\\textbf{Records} & \\textbf{Parse (ms)} & \\textbf{Merge (ms)} & \\textbf{SPARQL (ms)} & \\textbf{Throughput (rec/s)} \\\\",
         "\\midrule"
     ]
 
     for rec_count, d in data.items():
+        if rec_count.startswith("_"):
+            continue
         sync_s = compute_stats(d.get("sync_ms", []))
         merge_s = compute_stats(d.get("merge_ms", []))
         sparql_s = compute_stats(d.get("sparql_ms", []))

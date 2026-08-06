@@ -96,10 +96,10 @@ Raw JSON/LaTeX artifacts live in [`evaluation_results/`](../evaluation_results/)
 
 From Redis `sbom:meta:*` after completed SCIG Jobs (Syft+Grype; Trivy produced empty vulnerability arrays in this cluster build):
 
-| Application | Images with meta | Packages (Σ) | Grype CVEs (Σ) | Critical | High |
-|-------------|------------------|--------------|----------------|----------|------|
-| Sock Shop | 7 | 5659 | 2304 | 252 | 1051 |
-| BookInfo | 4 | 19434 | 1827 | 24 | 141 |
+| Application | Images (listed) | Packages (Σ) | Grype CVEs (Σ) | Critical | High |
+|-------------|-----------------|--------------|----------------|----------|------|
+| Sock Shop | 8 | 5659 | 2309 | 252 | 1052 |
+| BookInfo | 6 | 19434 | 1827 | 24 | 141 |
 | Online Boutique | 10 | 13263 | 2836 | 145 | 1047 |
 
 Per-image Syft/Grype wall times are written into Redis metadata (`syftDurationMs`, `grypeDurationMs`; second-resolution). Observed Grype times are typically on the order of **2–6 minutes per image** on this cluster; Syft is usually tens of seconds. Insert `s1_per_image_table.tex` / `s1_severity_table.tex` in the camera-ready PDF.
@@ -108,9 +108,15 @@ Per-image Syft/Grype wall times are written into Redis metadata (`syftDurationMs
 
 #### Table III — End-to-end remediation (RQ2)
 
-**Pre-evaluation observation:** `front-end:0.3.12`, `orders:0.4.7`, `carts:0.4.8` were already deployed (catalog-compliant patched tags), consistent with prior successful remediations.
+Controlled S2 run (\(N=3\)): reset `front-end`/`orders`/`carts` to vulnerable tags, allow only `ImageUpdateIntent`, wait for Deployment image tags to match catalog fixes. **Success rate 100%** for all three services. Wall-clock from reset to patched tag (mean ± std, ms):
 
-**Controlled S2 run (this revision):** After resetting to vulnerable tags and allowing only `ImageUpdateIntent`, remediations **timed out at 420 s/service** in the evaluation window. The running Palamedes image did not emit `ImageRemediationPlanner` logs. Re-run S2 after deploying the `extend_scig` Palamedes build that includes `ImageRemediationPlanner` + `VulnerabilityUpdateListener` + `ScigRedisSyncService`. Results file: `s2_results.json` (success rate 0% for this window; do not claim S2 latency numbers until a green re-run).
+| Service | Policy | Rollout (ms) |
+|---------|--------|--------------|
+| front-end | PATCH → 0.3.12 | \(10643 \pm 36\) |
+| orders | MINOR → 0.4.7 | \(12690 \pm 2752\) |
+| carts | MINOR → 0.4.8 | \(17675 \pm 2875\) |
+
+Parallel iteration E2E \(\approx 19 \pm 3\) s. Results: `s2_results.json` / `s2_remediation_latency.tex`.
 
 #### Table IV — Scanning scalability (RQ3)
 
@@ -124,26 +130,26 @@ Per-image Grype dominates Job time (~200 s+/image). Discover mode also scans anc
 
 #### Policy-path microbenchmark (S4, \(N=10\))
 
-Real Redis CVE payloads + in-memory merge + SPARQL VALUES construction:
+In-process mirror of catalog ingest (JSON parse of \(N\) records), merge, and SPARQL VALUES construction (no commas between tuples). One-shot Redis load of up to 600 CVE records took \(\approx 2.4\) s and is **not** scaled with \(N\).
 
-| Records | Sync (ms) | Merge (ms) | SPARQL clause (ms) | Throughput (evt/s) |
-|---------|-----------|------------|--------------------|--------------------|
-| 10 | \(2772 \pm 1280\) | \(0.018 \pm 0.012\) | \(0.011 \pm 0.002\) | \(4.1 \pm 1.4\) |
-| 50 | \(6960 \pm 907\) | \(0.032 \pm 0.002\) | \(0.012 \pm 0.001\) | \(7.3 \pm 0.9\) |
-| 100 | \(18031 \pm 2603\) | \(0.067 \pm 0.039\) | \(0.020 \pm 0.009\) | \(5.6 \pm 0.7\) |
-| 250 | \(16693 \pm 1673\) | \(0.112 \pm 0.011\) | \(0.029 \pm 0.001\) | \(15.1 \pm 1.4\) |
-| 500 | \(16884 \pm 1371\) | \(0.240 \pm 0.021\) | \(0.058 \pm 0.002\) | \(29.8 \pm 2.4\) |
+| Records | Parse (ms) | Merge (ms) | SPARQL (ms) | Throughput (rec/s) |
+|---------|------------|------------|-------------|--------------------|
+| 10 | \(0.019 \pm 0.002\) | \(0.007 \pm 0.002\) | \(0.005 \pm 0.002\) | \(\sim 3.4 \times 10^{5}\) |
+| 50 | \(0.080 \pm 0.002\) | \(0.027 \pm 0.001\) | \(0.011 \pm 0.001\) | \(\sim 4.2 \times 10^{5}\) |
+| 100 | \(0.161 \pm 0.006\) | \(0.056 \pm 0.001\) | \(0.025 \pm 0.001\) | \(\sim 4.1 \times 10^{5}\) |
+| 250 | \(0.410 \pm 0.013\) | \(0.145 \pm 0.009\) | \(0.057 \pm 0.002\) | \(\sim 4.1 \times 10^{5}\) |
+| 500 | \(0.829 \pm 0.051\) | \(0.278 \pm 0.006\) | \(0.114 \pm 0.008\) | \(\sim 4.1 \times 10^{5}\) |
 
-Sync cost is dominated by fetching large Grype JSON blobs over Redis; merge/SPARQL clause build stay sub-millisecond to sub-millisecond×hundreds.
+Merge/SPARQL stay sub-millisecond; cost is negligible vs.\ multi-minute Grype Jobs.
 
 ### Discussion
 
 - The PoC **confirms feasibility of SCIG monitoring**: continuous SBOM/CVE generation with Syft/Grype across three heterogeneous microservice suites, with Redis as the shared knowledge store and Deployment annotations for vulnerability status.
-- Scanner wall-clock is dominated by Grype (minutes per image); Redis memory for this PoC inventory is on the order of **~150+ MB**.
-- **Remediation (RQ2):** the architecture maps Analyze→Plan→Execute onto Palamedes/Themis with a curated fix-tag catalog. Pre-evaluation cluster state already showed patched tags on the three Sock Shop targets. A controlled re-reset during this revision timed out because the **deployed** Palamedes build did not exercise `ImageRemediationPlanner` in-cluster; the manuscript must state this limitation and re-measure after redeploying the `extend_scig` Palamedes artifact—not claim green S2 latencies from this window.
+- Scanner wall-clock is dominated by Grype (minutes per image); Redis memory for this PoC inventory is on the order of **~150+ MB** (during full scans; lower after TTL/cleanup).
+- **Remediation (RQ2):** Analyze→Plan→Execute on Palamedes/Themis with a curated fix-tag catalog autonomously patched all three Sock Shop targets in \(\approx\)10–21 s from reset (\(N=3\), 100% success).
 - Relative to the earlier overhead study of AMoCNA/Falco/KubeArmor, SCIG adds a batch scanner Job and Redis knowledge rather than a continuous dataplane interceptor; its cost is dominated by image pull/SBOM/CVE scanning, not steady-state request latency of the business application.
 - Evaluating a **single pillar** does not validate full ASPOF. Cross-pillar conflict resolution inside one global MAPE-K loop was not exercised; federated/hierarchical loops remain future work.
-- Editor concern on “single instance”: heterogeneous apps show monitoring generality; remediation remains demonstrated on Sock Shop where curated fix tags exist—consistent with a Computing Practices PoC rather than a multi-industry field study.
+- Editor concern on “single instance”: heterogeneous apps show monitoring generality; remediation is demonstrated on Sock Shop where curated fix tags exist—consistent with a Computing Practices PoC rather than a multi-industry field study.
 
 ### Threats to validity
 

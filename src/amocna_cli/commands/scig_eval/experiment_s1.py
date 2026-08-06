@@ -33,18 +33,37 @@ def detect_app(image: str) -> str:
 
 
 def detect_language(image: str) -> str:
-    name = image.lower()
-    if any(k in name for k in ["front-end", "frontend", "currencyservice", "paymentservice", "ratings"]):
-        return "Node.js"
-    if any(k in name for k in ["orders", "carts", "shipping", "reviews", "adservice"]):
-        return "Java"
-    if any(k in name for k in ["productpage", "emailservice", "recommendationservice"]):
-        return "Python"
-    if "details" in name:
-        return "Ruby"
-    if "cartservice" in name:
-        return "C#"
-    return "Go"
+    """Best-effort language label for tables; check specific names before substrings."""
+    name = image.lower().rsplit("/", 1)[-1]
+    # Longer / more specific tokens first (avoid "carts" matching cartservice).
+    rules = [
+        ("cartservice", "C#"),
+        ("shippingservice", "Go"),
+        ("productcatalogservice", "Go"),
+        ("checkoutservice", "Go"),
+        ("currencyservice", "Node.js"),
+        ("paymentservice", "Node.js"),
+        ("emailservice", "Python"),
+        ("recommendationservice", "Python"),
+        ("adservice", "Java"),
+        ("frontend", "Go"),  # Online Boutique frontend (Go)
+        ("front-end", "Node.js"),  # Sock Shop
+        ("productpage", "Python"),
+        ("details", "Ruby"),
+        ("ratings", "Node.js"),
+        ("reviews", "Java"),
+        ("orders", "Java"),
+        ("carts", "Java"),
+        ("shipping", "Java"),
+        ("queue-master", "Java"),
+        ("catalogue", "Go"),
+        ("payment", "Go"),
+        ("user", "Go"),
+    ]
+    for token, lang in rules:
+        if token in name:
+            return lang
+    return "Unknown"
 
 
 def _meta_key(m: dict) -> str:
